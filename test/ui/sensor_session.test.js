@@ -132,10 +132,21 @@ test('連續 10 筆「不是指北」的事件 → failed relative-not-north;少
   assert.equal(b.session.getState().failStatus, 'relative-not-north');
 });
 
-test('事件沒有角度(no-sensor)→ waiting', async () => {
+test('事件沒有角度(no-sensor):一筆空事件不算數,之後有角度就正常;一直沒有角度約 1.5 秒後 → waiting', async () => {
+  const a = setup();
+  await a.session.start();
+  a.fake.dispatch('deviceorientationabsolute', { alpha: null, beta: null, gamma: null, absolute: true });
+  a.fake.advance(50);
+  assert.notEqual(a.session.getState().phase, 'waiting', '剛啟動的一筆空事件不可直接判定沒有感測器');
+  feed(a.fake, [175, 175, 175, 175, 175, 175]);
+  assert.equal(a.session.getState().phase, 'running');
+  a.session.destroy();
+
   const { fake, session } = setup();
   await session.start();
   fake.dispatch('deviceorientationabsolute', { alpha: null, beta: null, gamma: null, absolute: true });
+  for (let i = 0; i < 29; i += 1) fake.advance(50);
+  assert.notEqual(session.getState().phase, 'waiting', '29 筆還不判定');
   fake.advance(50);
   const s = session.getState();
   assert.equal(s.phase, 'waiting');

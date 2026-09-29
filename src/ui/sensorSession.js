@@ -13,17 +13,20 @@ const noop = () => {};
  * @param {{env:object, settings?:object, onChange?:(state:object, kind:'phase'|'reading'|'lock')=>void,
  *   relativeFailAfter?:number, startLabel?:string}} p
  *   settings 可直接傳 store.get().settings(只取有限數字的 lockSeconds、measureUncertainty);
- *   relativeFailAfter = 連續幾筆「不是指北」的事件才判定失敗;startLabel = 畫面上啟動按鈕的文字(鎖定被擋時的提示用)
+ *   relativeFailAfter = 連續幾筆「不是指北」的事件才判定失敗;noSensorAfter = 連續幾筆「沒有角度」才當成沒有感測器
+ *   (預設 30 筆,約 1.5 秒,和來源的 watchdog 一樣長;有些裝置剛啟動時先送一筆空事件);startLabel = 畫面上啟動按鈕的文字(鎖定被擋時的提示用)
  * @returns {{start:()=>Promise<{ok:boolean, status:string}>, stop:()=>void, lock:()=>Promise<object|null>,
  *   getState:()=>object, destroy:()=>void}}
  */
-export function createSensorSession({ env, settings = {}, onChange = noop, relativeFailAfter = 10, startLabel = '使用手機指北針' } = {}) {
+export function createSensorSession({ env, settings = {}, onChange = noop, relativeFailAfter = 10, noSensorAfter = 30, startLabel = '使用手機指北針' } = {}) {
   const opts = {};
   const s = settings && typeof settings === 'object' ? settings : {};
   if (isNum(s.lockSeconds)) opts.lockSeconds = s.lockSeconds;
   if (isNum(s.measureUncertainty)) opts.measureUncertainty = s.measureUncertainty;
   const lockSeconds = isNum(opts.lockSeconds) ? opts.lockSeconds : DEFAULT_SETTINGS.lockSeconds;
   const relLimit = Number.isInteger(relativeFailAfter) && relativeFailAfter > 0 ? relativeFailAfter : 10;
+  const noSensorLimit = Number.isInteger(noSensorAfter) && noSensorAfter > 0 ? noSensorAfter : 30;
+  let noSensorCount = 0;
 
   const st = {
     phase: 'idle',
@@ -95,6 +98,7 @@ export function createSensorSession({ env, settings = {}, onChange = noop, relat
     if (destroyed) return;
     st.reading = r;
     if (r.status !== 'relative-not-north') relativeCount = 0;
+    if (r.status !== 'no-sensor') noSensorCount = 0;
     let phaseChanged = false;
     if (r.status === 'ok' && isNum(r.smoothedDeg)) {
       st.headingRaw = r.smoothedDeg;
@@ -109,6 +113,8 @@ export function createSensorSession({ env, settings = {}, onChange = noop, relat
         return;
       }
     } else if (r.status === 'no-sensor') {
+      noSensorCount += 1;
+      if (noSensorCount < noSensorLimit) return;
       phaseChanged = setPhase('waiting');
       st.failStatus = 'no-sensor';
       st.message = sensorMessage('no-events');
