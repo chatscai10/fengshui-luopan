@@ -1,23 +1,19 @@
-// 啟動與分頁路由。每個畫面是 views/<id>.js,匯出 mount(root, ctx) -> { destroy?() }。
+// 啟動與路由。每個畫面是 views/<id>.js,匯出 mount(root, ctx) -> { destroy?() }。
+// 網址 #/easy 是簡單模式,#/<分頁> 是完整功能(規則在 route.js);只有 navigate() 寫入 ui.mode。
 import { h, clear } from './dom.js';
 import { createStore } from './store.js';
 import { icons } from './components/icons.js';
 import { toast } from './components/toast.js';
 import { openSheet } from './components/sheet.js';
 import { installPunct } from './punct.js';
-
-const TABS = [
-  { id: 'compass', label: '羅盤', icon: 'compass' },
-  { id: 'house', label: '住宅', icon: 'home' },
-  { id: 'plan', label: '平面圖', icon: 'plan' },
-  { id: 'wealth', label: '財位', icon: 'coin' },
-  { id: 'report', label: '報告', icon: 'doc' },
-];
+import { TABS, resolveRoute, hashViewId, modeToggleTarget } from './route.js';
+import { EASY_TEXT } from './easy/text.js';
 
 const store = createStore();
 const viewEl = document.getElementById('view');
 const tabbar = document.getElementById('tabbar');
 const subEl = document.getElementById('app-sub');
+const modeBtn = document.getElementById('btn-mode');
 let current = { id: null, instance: null };
 let navToken = 0;
 
@@ -65,6 +61,17 @@ function renderTabs(activeId) {
   if (keepId) { const again = document.getElementById(keepId); if (again) again.focus(); }
 }
 
+/** 標題列的模式切換鈕:簡單模式時寫「完整功能」,完整功能時寫「簡單模式」 */
+function renderModeButton(mode) {
+  if (!modeBtn) return;
+  const easy = mode === 'easy';
+  modeBtn.textContent = EASY_TEXT[easy ? 'mode.toPro' : 'mode.toEasy'];
+  modeBtn.setAttribute('aria-label', EASY_TEXT[easy ? 'mode.toProAria' : 'mode.toEasyAria']);
+  // 簡單模式在齒輪旁邊顯示「設定」兩個字
+  const gearLabel = document.querySelector('#btn-settings .icon-btn-label');
+  if (gearLabel) gearLabel.hidden = !easy;
+}
+
 // 分頁列的方向鍵:左右移動焦點(Home/End 跳頭尾),按 Enter 或空白鍵切換
 tabbar.addEventListener('keydown', (e) => {
   const keys = { ArrowRight: 1, ArrowLeft: -1, Home: 'first', End: 'last' };
@@ -88,19 +95,31 @@ function showFatal(err, where) {
 }
 
 async function navigate() {
-  const id = (location.hash.match(/^#\/(\w+)/) || [])[1];
-  const tab = TABS.find((t) => t.id === id) || TABS.find((t) => t.id === store.get().ui.tab) || TABS[0];
+  const route = resolveRoute(hashViewId(location.hash), store.get().ui);
+  // 網址空白或不認得時補正(不留歷史紀錄),從完整功能按「上一頁」才會回到 #/easy
+  if (location.hash !== route.canonicalHash) history.replaceState(null, '', route.canonicalHash);
+  document.documentElement.dataset.mode = route.mode;
   const token = ++navToken;
 
   if (current.instance && current.instance.destroy) {
     try { current.instance.destroy(); } catch (e) { console.error('destroy', e); }
   }
-  current = { id: tab.id, instance: null };
-  renderTabs(tab.id);
+  current = { id: route.view, instance: null };
+  if (route.mode === 'pro') {
+    renderTabs(route.view);
+    viewEl.setAttribute('role', 'tabpanel');
+    viewEl.removeAttribute('aria-label');
+  } else {
+    clear(tabbar);
+    viewEl.removeAttribute('role');
+    viewEl.removeAttribute('aria-labelledby');
+    viewEl.setAttribute('aria-label', EASY_TEXT['view.aria']);
+  }
+  renderModeButton(route.mode);
   // .view 設了 smooth 捲動,直接改 scrollTop 會變成「慢慢滑回頂端」;換分頁要立刻回到頂端
   viewEl.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   clear(viewEl);
-  store.update((d) => { d.ui.tab = tab.id; });
+  store.update((d) => { d.ui.mode = route.mode; if (route.mode === 'pro') d.ui.tab = route.view; });
 
   // 畫面載入超過一瞬間才顯示「整理中」,避免快速切換時閃一下
   const loadingTimer = setTimeout(() => {
@@ -110,7 +129,7 @@ async function navigate() {
   }, 180);
 
   try {
-    const mod = await import(`./views/${tab.id}.js`);
+    const mod = await import(`./views/${route.view}.js`);
     if (token !== navToken) return; // 使用者已切走
     const stale = viewEl.querySelector(':scope > .view-loading');
     if (stale) stale.remove();
@@ -128,7 +147,7 @@ async function navigate() {
     const active = document.activeElement;
     if (!active || active === document.body) viewEl.focus({ preventScroll: true });
   } catch (e) {
-    if (token === navToken) showFatal(e, tab.id);
+    if (token === navToken) showFatal(e, route.view);
   } finally {
     clearTimeout(loadingTimer);
   }
@@ -141,8 +160,15 @@ function boot() {
   addEventListener('pointerdown', () => {
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch { /* 忽略 */ }
   }, { once: true });
+  if (modeBtn) {
+    modeBtn.addEventListener('click', () => {
+      const ui = store.get().ui;
+      location.hash = modeToggleTarget(ui.mode, ui);
+    });
+  }
   const gear = document.getElementById('btn-settings');
-  gear.innerHTML = icons.gear;
+  // 簡單模式在齒輪旁邊加上「設定」兩個字(renderModeButton 依模式切換),光看圖示不一定知道是設定
+  gear.innerHTML = `${icons.gear}<span class="icon-btn-label"${document.documentElement.dataset.mode === 'easy' ? '' : ' hidden'}>設定</span>`;
   gear.addEventListener('click', async () => {
     try {
       const mod = await import('./views/settings.js');

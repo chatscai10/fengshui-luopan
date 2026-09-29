@@ -22,12 +22,23 @@
   <link rel="stylesheet" href="css/v-wealth.css">
   <link rel="stylesheet" href="css/v-report.css">
   <link rel="stylesheet" href="css/v-settings.css">
+  <link rel="stylesheet" href="css/c-easy.css">
+  <link rel="stylesheet" href="css/v-easy.css">
   <script>
     // 先套用使用者選的主題,避免載入時閃一下。讀不到就用系統偏好。
+    // 同時先依網址與存檔決定簡單模式或完整功能,避免分頁列閃一下(規則同 src/ui/route.js)
+    var s = null;
     try {
-      var s = JSON.parse(localStorage.getItem('fengshui.state.v1') || 'null');
+      s = JSON.parse(localStorage.getItem('fengshui.state.v1') || 'null');
       var t = s && s.ui && s.ui.theme;
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+    try {
+      var hm = /^#\/(\w+)/.exec(location.hash), hid = hm ? hm[1] : null;
+      var mode = hid === 'easy' ? 'easy'
+        : ['compass', 'house', 'plan', 'wealth', 'report'].indexOf(hid) >= 0 ? 'pro'
+        : (s && s.ui && s.ui.mode === 'pro') ? 'pro' : 'easy';
+      document.documentElement.dataset.mode = mode;
     } catch (e) {}
   </script>
 </head>
@@ -36,6 +47,7 @@
     <header class="app-header">
       <h1 class="app-title">風水羅盤</h1>
       <div class="app-sub" id="app-sub" aria-live="polite"></div>
+      <button class="btn btn-sm btn-ghost" id="btn-mode" type="button"></button>
       <button class="icon-btn" id="btn-settings" aria-label="設定"></button>
     </header>
     <main class="view" id="view" role="tabpanel" tabindex="-1"></main>

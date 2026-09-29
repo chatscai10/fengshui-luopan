@@ -215,7 +215,7 @@ export function buildChecks(cand, page) {
     checks.push({ ok: false, text: `${softScoreWords(scrubText(d.label))}${reason}` });
   }
   if (cand.sectorInfo && cand.sectorInfo.borderline) {
-    checks.push({ ok: false, text: '位置接近兩個方位的交界,畫圖的小誤差就可能落到另一個方位' });
+    checks.push({ ok: false, kind: 'borderline', text: '位置接近兩個方位的交界,畫圖的小誤差就可能落到另一個方位' });
   }
   const id = cand.id;
   const remedies = cardsMatching(page, (cid) =>
@@ -223,7 +223,7 @@ export function buildChecks(cand, page) {
     cid.startsWith(`wealth.ming.deduction.${id}.`) ||
     cid.startsWith(`wealth.ming.excluded.${id}.`) ||
     cid === `wealth.annual.bad_on_ming.${id}` ||
-    cid === `wealth.borderline.${id}`).map((c) => ({ headline: c.headline, body: c.body, level: c.level }));
+    cid === `wealth.borderline.${id}`).map((c) => ({ id: c.id, headline: c.headline, body: c.body, level: c.level }));
   return { checks, remedies };
 }
 

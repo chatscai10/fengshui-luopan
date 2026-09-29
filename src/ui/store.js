@@ -2,7 +2,10 @@
 // 分析結果由 src/core/analyze.js 的 analyzeHouse 產生(docs/API.md),這裡只做記憶化。
 import { analyzeHouse } from '../core/analyze.js';
 import * as geo from '../core/geo.js';
+import { DEFAULT_SETTINGS } from '../core/settings.js';
 import { repairDraft, dropInvalidSettings } from './repair.js';
+import { uncertaintyFor } from './easy/direction.js';
+import { facingCheckOf } from './easy/measure.js';
 
 const KEY = 'fengshui.state.v1';
 export const STATE_VERSION = 1;
@@ -12,9 +15,10 @@ export const DEFAULT_STATE = Object.freeze({
   facing: {
     bearing: null,        // 宅向羅盤讀數(度,基準隨 settings.northMode);null=尚未設定
     doorBearing: null,    // 大門朝向;null=與宅向相同
-    source: 'manual',     // 'manual' | 'sensor'
+    source: 'manual',     // 'manual' | 'sensor' | 'pick8'(簡單模式自己選的 8 方位,存該方位正中間)
     sigma: null,          // 鎖定平均的圓周標準差(度)
     lockedAtMs: null,
+    check: null,          // 簡單模式「移一步再量」的結果 { n, spreadDeg, lockedAtMs };lockedAtMs 與上面不同就失效
     cityId: '台北',       // 磁偏角城市(geo.CITY_DECLINATIONS 的鍵,中文)
   },
   building: { type: 'apartment', builtYear: null, moveInYear: null, renovation: 'none', floor: null },
@@ -22,7 +26,9 @@ export const DEFAULT_STATE = Object.freeze({
   mainResidentId: null,
   plan: null,             // PlanV1(規格 2.7.1)外加 upMode:'facing'|'north'、upOffset(度)。這兩欄只給 UI 用,送進引擎前會拿掉
   settings: {},           // DEFAULT_SETTINGS 的覆寫
-  ui: { tab: 'compass', layer: 'wealth', theme: 'auto' },
+  // mode:'easy' 簡單模式(預設)| 'pro' 完整功能;只有 main.js 的 navigate() 寫入。
+  // 簡單模式另外會寫 easyStep、easyLayout、easyIntroShown(docs/EASY_SPEC.md 3.1)
+  ui: { tab: 'compass', layer: 'wealth', theme: 'auto', mode: 'easy' },
 });
 
 const clone = (o) => (typeof structuredClone === 'function' ? structuredClone(o) : JSON.parse(JSON.stringify(o)));
@@ -62,6 +68,75 @@ function normalize(raw) {
   return s;
 }
 
+// 磁偏角一律傳給引擎:northMode='true' 時用來換算,磁北時用來並列「換成真北會變成哪一山」
+function declinationOf(s, nowMs) {
+  try {
+    const d = geo.declinationFor(s.facing.cityId, nowMs);
+    return Number.isFinite(d) ? d : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 自己選的 8 方位(存該方位正中間):真正的方向可能在這一格的任何地方,所以不確定度是半格寬 */
+export const PICK8_UNCERTAINTY = 22.5;
+
+/**
+ * 送進引擎的不確定度(度);null = 交給引擎用設定值。
+ * = max(設定的誤差, 2σ, iPhone 自己估計的誤差, 簡單模式兩次量測的差距);後兩項只在綁定同一次鎖定時有效。
+ * 自己選的 8 方位至少 PICK8_UNCERTAINTY,完整功能的報告才會提醒玄空等細格要再確認。
+ */
+export function facingUncertaintyOf(s) {
+  const f = s && s.facing ? s.facing : {};
+  const settings = s && s.settings ? s.settings : {};
+  const mu = Number.isFinite(settings.measureUncertainty) ? settings.measureUncertainty : DEFAULT_SETTINGS.measureUncertainty;
+  if (f.source === 'pick8') return Math.max(mu, PICK8_UNCERTAINTY);
+  const chk = facingCheckOf(f);
+  const spread = chk && chk.spreadDeg != null ? chk.spreadDeg : null;
+  const acc = chk && Number.isFinite(chk.accuracyDeg) ? chk.accuracyDeg : null;
+  if (f.sigma == null && spread == null && acc == null) return null;
+  return uncertaintyFor({ measureUncertainty: mu, sigmaDeg: f.sigma, spreadDeg: spread, accuracyDeg: acc });
+}
+
+/**
+ * analyzeHouse 的輸入(docs/API.md),由狀態算出;純函式。store.input() 與「方向差幾度會不會換位置」的試算共用。
+ * @param {object} s store 狀態
+ * @param {number} [nowMs] 取整點以利記憶化
+ */
+export function inputOf(s, nowMs = Date.now()) {
+  const hourMs = Math.floor(nowMs / 3600000) * 3600000;
+  const declination = declinationOf(s, hourMs);
+  const trueMode = s.settings.northMode === 'true' && declination != null;
+  let plan = null;
+  if (s.plan) {
+    const { upMode, upOffset: rawOffset, ...core } = clone(s.plan);
+    // 匯入或手改的備份可能帶非數字,一律當 0,不讓字串相加把整個 App 弄白屏
+    const upOffset = Number.isFinite(rawOffset) ? rawOffset : 0;
+    // 圖面上方的方位角必須是目前北基準下的值(API.md 第 8 節)
+    let facingUsed = null;
+    if (s.facing.bearing != null) {
+      facingUsed = trueMode ? geo.toTrue(s.facing.bearing, declination) : s.facing.bearing;
+    }
+    const base = upMode === 'north' ? 0 : facingUsed;
+    core.planUpBearing = base == null ? null : geo.normalizeBearing(base + upOffset);
+    plan = core;
+  }
+  return {
+    nowMs: hourMs,
+    utcOffsetMinutes: 480,
+    facing: {
+      bearing: s.facing.bearing,
+      doorBearing: s.facing.doorBearing,
+      declination,
+      uncertainty: facingUncertaintyOf(s),
+    },
+    building: s.building,
+    residents: s.residents,
+    mainResidentId: s.mainResidentId,
+    plan,
+  };
+}
+
 export function newId() {
   return Math.random().toString(36).slice(2, 8);
 }
@@ -99,16 +174,6 @@ export function createStore(storage = safeStorage()) {
     for (const fn of [...subs]) fn(state);
   };
 
-  // 磁偏角一律傳給引擎:northMode='true' 時用來換算,磁北時用來並列「換成真北會變成哪一山」
-  const declinationOf = (s, nowMs) => {
-    try {
-      const d = geo.declinationFor(s.facing.cityId, nowMs);
-      return Number.isFinite(d) ? d : null;
-    } catch {
-      return null;
-    }
-  };
-
   const api = {
     get: () => state,
 
@@ -126,38 +191,7 @@ export function createStore(storage = safeStorage()) {
 
     /** analyzeHouse 的輸入(docs/API.md);nowMs 取整點以利記憶化 */
     input(nowMs = Date.now()) {
-      const s = state;
-      const hourMs = Math.floor(nowMs / 3600000) * 3600000;
-      const declination = declinationOf(s, hourMs);
-      const trueMode = s.settings.northMode === 'true' && declination != null;
-      let plan = null;
-      if (s.plan) {
-        const { upMode, upOffset: rawOffset, ...core } = clone(s.plan);
-        // 匯入或手改的備份可能帶非數字,一律當 0,不讓字串相加把整個 App 弄白屏
-        const upOffset = Number.isFinite(rawOffset) ? rawOffset : 0;
-        // 圖面上方的方位角必須是目前北基準下的值(API.md 第 8 節)
-        let facingUsed = null;
-        if (s.facing.bearing != null) {
-          facingUsed = trueMode ? geo.toTrue(s.facing.bearing, declination) : s.facing.bearing;
-        }
-        const base = upMode === 'north' ? 0 : facingUsed;
-        core.planUpBearing = base == null ? null : geo.normalizeBearing(base + upOffset);
-        plan = core;
-      }
-      return {
-        nowMs: hourMs,
-        utcOffsetMinutes: 480,
-        facing: {
-          bearing: s.facing.bearing,
-          doorBearing: s.facing.doorBearing,
-          declination,
-          uncertainty: s.facing.sigma != null ? Math.max(5, 2 * s.facing.sigma) : null,
-        },
-        building: s.building,
-        residents: s.residents,
-        mainResidentId: s.mainResidentId,
-        plan,
-      };
+      return inputOf(state, nowMs);
     },
 
     /** 分析結果(記憶化)。尚未量朝向回 { error:'NO_FACING' };其他失敗回 { error: 訊息 }。 */

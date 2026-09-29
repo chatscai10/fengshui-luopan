@@ -1501,6 +1501,26 @@ Finding 在分段內依家族排序(下表 `order`),同家族維持原順序。�
 ]
 ```
 
+### 簡單模式與「手機指北針準嗎?」用的匯出
+
+`src/core/copy.js` 另外匯出下列句子與函式,給簡單模式(`docs/EASY_SPEC.md`)與羅盤頁使用。全部只從既有報告衍生或是量測說明,**不新增任何風水判斷**;`renderReport` 的輸出不受影響(財位卡的標籤句與交界句改用下面的常數,文字逐字相同)。
+
+| 匯出 | 內容 |
+|---|---|
+| `TIER_SENTENCE` | `{ suitable, consider, notAdvised }`:財位卡開頭的三段標籤說明句 |
+| `BORDERLINE_SENTENCE` | 財位角落接近兩個方位交界的提醒句 |
+| `EASY_METHOD` | `{ ming, mingRoom, corner, dark }`:這個財位怎麼找出來的(從大門算的進門斜對角、從某個房間自己的房門算的斜對角、兩面實牆的牆角、依方位推算) |
+| `EASY_TITLE` | `{ spot, dark, none }`:簡單模式財位卡的標題 |
+| `EASY_NONE_SENTENCE`、`TIER_NOTE` | 沒有候選時的句子;三段標籤只是整理排序、不保證任何結果 |
+| `EASY_DOOR_WHY`、`EASY_DOOR_SAME` | 為什麼要問大門在左邊、正中間還是右邊;三種位置排第一的財位都一樣時改用後者 |
+| `EASY_PICK8_NOTE` | 方向是自己選的大方位時的一句說明(用方位正中間計算) |
+| `EASY_DISCLAIMERS` | 簡單模式結果頁「更多說明」的白話版免責句 |
+| `IMPACT_SHORT` | `{ ok, near }`:鎖定後一句話說明誤差會不會影響 8 個大方位 |
+| `renderEasySummary(report)` | 由 `summary.wealthTop[0]`、`wealth.layers.ming` 與 `findings` 組出 `{ status:'ok'\|'none', kind:'ming'\|'mingRoom'\|'corner'\|'dark'\|null, tier, tierLabel, title, sentences[], softTips[], tierNote, borderline }`;`sentences` 只會是上面幾個常數;有平面圖且有 `wealth.soft.tips` 時 `softTips` = 傳統佈置說法全文 |
+| `renderDirectionImpact({ eight, wealth, origin })` | 「手機差幾度,會不會影響結果?」區塊:`{ title, lines:[{ icon:'✓'\|'!'\|'i', head, text }] }`。`eight` 由呼叫端用 `src/ui/easy/direction.js` 的 `eightImpact` 算好傳入(門檻與引擎的 `bazhai.house.boundary.nearGuaBoundary` 相同);`wealth` 是 `src/ui/easy/stability.js` 的 `wealthStability` 整理後的結果(排第一的財位在 ±U 內會不會換,`null` = 還沒有平面圖);`origin` 為 `'sensor'`、`'typed'` 或 `'pick8'` |
+| `renderStabilityNote({ change, place, from, to, origin })` | 簡單模式結果頁「排第一的財位可能會換」的提醒句;沒有要提醒的回 `''` |
+| `compassHonesty({ trueMode, declinationDeg, measureUncertainty, easy, cityName })` | 「手機指北針準嗎?」面板:`{ title, items:[{ head, body }], details:{ title, items } }`;`items` 是最上面的結論與三個做得到的檢查方法,`details` 是摺疊起來的細節(依北基準選句);`declinationDeg` 為 `null` 時差距寫「4 到 5」;`easy` 時不提設定裡的誤差調整 |
+
 ## 5. 文案規則(規格 5)
 
 | 規則 | 做法 |

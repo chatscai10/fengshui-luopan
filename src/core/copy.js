@@ -6,6 +6,7 @@
 import { dirOfGua } from './geo.js';
 import { inArc } from './annual.js';
 import { ROOM_NAME, cornerText, sectorText } from './wealth/findings.js';
+import { SOFT_ADVICE } from './wealth/constants.js';
 
 export const COPY_SCHEMA = 'fengshui.copy/1';
 
@@ -185,6 +186,21 @@ export function applyTone(tag, body) {
 const TAG_BADGE = Object.freeze({ source: '傳統說法', inference: '推論', design: '本 App 的設計', minority: '少數派' });
 const CONF_BADGE = Object.freeze({ high: '確定度較高', medium: '確定度中等', low: '確定度較低' });
 const TIER_LABEL = Object.freeze({ suitable: '較適合', consider: '可以考慮', notAdvised: '不建議' });
+
+/** 財位卡片開頭的三段標籤說明句(財位卡與簡單模式共用)。 */
+export const TIER_SENTENCE = Object.freeze({
+  suitable: '在目前整理的候選位置中,這裡排在比較前面,較適合放置擺設或保持整潔。',
+  consider: '這個位置可以考慮,但不是最突出的選擇。',
+  notAdvised: '這個位置目前不建議作為財位,下面列出需要先處理的地方。',
+});
+
+/** 財位角落接近兩個方位交界時的提醒句。 */
+/** 簡單模式:流年凶星落在財位角落時的白話版(同 wealth.annual.bad_on_ming 卡片,只拿掉星名與宮名) */
+export const EASY_ANNUAL_REMEDY = Object.freeze({
+  headline: '今年這個角落宜靜',
+  body: '傳統上認為各方位的吉凶每年輪替,今年這個角落不適合大動:建議少動土、少大搬動,保持整潔。它的排序也因此往後調了。',
+});
+export const BORDERLINE_SENTENCE = '這個位置接近兩個方位的交界,請再確認平面圖的方位與尺寸。';
 const STAR_NAME = Object.freeze({ 1: '一白', 2: '二黑', 3: '三碧', 4: '四綠', 5: '五黃', 6: '六白', 7: '七赤', 8: '八白', 9: '九紫' });
 const GOOD_BAZHAI = Object.freeze(['生氣', '延年', '天醫', '伏位']);
 
@@ -438,13 +454,7 @@ function wealthTopCards(report) {
     const sec = e.sector ? w.sectors[e.sector] : null;
     const cand = e.kind === 'dark' ? null : w.candidates.find((c) => c.id === e.id);
     const parts = [];
-    parts.push(
-      e.tier === 'suitable'
-        ? '在目前整理的候選位置中,這裡排在比較前面,較適合放置擺設或保持整潔。'
-        : e.tier === 'consider'
-          ? '這個位置可以考慮,但不是最突出的選擇。'
-          : '這個位置目前不建議作為財位,下面列出需要先處理的地方。',
-    );
+    parts.push(TIER_SENTENCE[e.tier] ?? TIER_SENTENCE.notAdvised);
     if (e.kind === 'ming') parts.push('這是傳統上最通行的算法(依進門的位置與空間形狀),不論排名都會列出。');
     if (sec) {
       parts.push(`它落在${sectorText(e.sector)}。`);
@@ -467,7 +477,7 @@ function wealthTopCards(report) {
       if (stat && !(cand.status.startsWith('void') && issues.some((l) => l.includes('財位見空')))) issues.unshift(stat);
       if (issues.length) parts.push(`需要先處理: ${issues.join('、')}。`);
     }
-    if (e.borderline) parts.push('這個位置接近兩個方位的交界,請再確認平面圖的方位與尺寸。');
+    if (e.borderline) parts.push(BORDERLINE_SENTENCE);
     parts.push('這是本 App 的排序方式,僅供整理空間的參考。');
     cards.push(card({
       id: `card.wealth.${e.id}`,
@@ -661,3 +671,179 @@ export function renderReport(report, opts = {}) {
   return { sections, disclaimers: [...DISCLAIMERS], plainSummary: plain };
 }
 
+// ─────────────────────────── 簡單模式(docs/EASY_SPEC.md 8.9) ───────────────────────────
+// 簡單模式與「手機指北針準嗎?」面板用的句子。全部由既有報告衍生或是量測說明,不新增任何風水判斷。
+
+/**
+ * 簡單模式財位卡的「怎麼找出來的」一句話(依 wealthTop[0] 的種類)。
+ * ming = 從大門算的進門斜對角;mingRoom = 從某個房間自己的房門算的斜對角(不是從大門,要講清楚,免得使用者以為選錯大門位置)。
+ */
+export const EASY_METHOD = Object.freeze({
+  ming: '傳統上認為進門後斜對角遠端的牆角是財位,這個角落就是這樣找出來的。',
+  mingRoom: '傳統上也把「進房門後斜對角遠端的牆角」當作財位。這個角落是從這個房間自己的房門找出來的,不是從大門。',
+  corner: '這是兩面都是實牆的牆角,位置比較穩。',
+  dark: '這是依房子的方位推算出來的位置,不是房間裡的固定角落。',
+});
+export const EASY_TITLE = Object.freeze({ spot: '你家最值得留意的財位', dark: '目前比較有利的方位', none: '目前沒有特別突出的位置' });
+export const EASY_NONE_SENTENCE = '目前沒有可以列出的財位。';
+export const TIER_NOTE = '「較適合、可以考慮、不建議」只是本 App 的整理排序,不保證任何結果。';
+export const EASY_DOOR_WHY = '傳統上常說的財位是進門後斜對角的牆角,所以大門在哪一邊通常會影響結果。';
+/** 同一個格局,大門放左、中、右算出來排第一的位置都一樣時,取代 EASY_DOOR_WHY(免得使用者以為選錯了) */
+export const EASY_DOOR_SAME = '這個格局不管大門在哪一邊,排第一的財位都在同一個角落,所以換邊結果不變,不是選錯了。';
+/** 簡單模式:方向是自己選的 8 方位(只在「已記下」畫面顯示一次) */
+export const EASY_PICK8_NOTE = '方向是你自己選的大方位,會用那個方位的正中間來算。';
+/** 簡單模式結果頁「更多說明」(白話版;完整功能仍用 DISCLAIMERS) */
+export const EASY_DISCLAIMERS = Object.freeze([
+  '各家說法不一樣,本 App 用台灣最常見的「進門斜對角」說法。',
+  '手機指北針附近有鐵門、鋼筋時可能不準。',
+  '要更仔細,請找老師到現場看。',
+]);
+/** 羅盤頁鎖定後的一句短評(8 方位會不會受誤差影響)。 */
+export const IMPACT_SHORT = Object.freeze({ ok: '對 8 個大方位:不影響。', near: '對 8 個大方位:接近分界,可能影響。' });
+
+/** 這個明財位是不是從大門(entrance)算出來的;查不到門的資料時當作是 */
+function mingFromMainDoor(report, top) {
+  const layers = isObj(report.wealth) && isObj(report.wealth.layers) && Array.isArray(report.wealth.layers.ming) ? report.wealth.layers.ming : null;
+  const layer = layers ? layers.find((l) => isObj(l) && l.roomId === top.roomId) : null;
+  if (!layer || !isObj(layer.door) || typeof layer.door.kind !== 'string') return true;
+  return layer.door.kind === 'entrance';
+}
+
+/**
+ * 簡單模式結果頁的財位摘要。只從既有 report 衍生(wealthTop[0] 與 findings),不新增任何風水判斷。
+ * @param {import('./analyze.js').HouseReport} report
+ * @returns {{status:'ok'|'none', kind:'ming'|'mingRoom'|'corner'|'dark'|null, tier:string|null, tierLabel:string|null, title:string,
+ *   sentences:string[], softTips:string[], tierNote:string, borderline:boolean}}
+ */
+export function renderEasySummary(report) {
+  const top = isObj(report) && isObj(report.summary) && Array.isArray(report.summary.wealthTop) ? report.summary.wealthTop[0] : null;
+  if (!isObj(top)) {
+    return { status: 'none', kind: null, tier: null, tierLabel: null, title: EASY_TITLE.none, sentences: [EASY_NONE_SENTENCE], softTips: [], tierNote: TIER_NOTE, borderline: false };
+  }
+  const kind = top.kind === 'ming' ? (mingFromMainDoor(report, top) ? 'ming' : 'mingRoom') : top.kind === 'dark' ? 'dark' : 'corner';
+  const tier = Object.prototype.hasOwnProperty.call(TIER_SENTENCE, top.tier) ? top.tier : 'notAdvised';
+  const title = tier === 'notAdvised' ? EASY_TITLE.none : kind === 'dark' ? EASY_TITLE.dark : EASY_TITLE.spot;
+  const sentences = [EASY_METHOD[kind], TIER_SENTENCE[tier]];
+  if (top.borderline === true) sentences.push(BORDERLINE_SENTENCE);
+  const hasTips = Array.isArray(report.findings) && report.findings.some((f) => f && f.id === 'wealth.soft.tips');
+  return {
+    status: 'ok',
+    kind,
+    tier,
+    tierLabel: TIER_LABEL[tier],
+    title,
+    sentences,
+    softTips: hasTips && kind !== 'dark' ? SOFT_ADVICE.map((a) => a.text) : [],
+    tierNote: TIER_NOTE,
+    borderline: top.borderline === true,
+  };
+}
+
+/** 度數顯示:整數或一位小數,去掉 .0 */
+const deg1 = (x) => String(Math.round(x * 10) / 10);
+
+const IMPACT_TITLE = Object.freeze({
+  sensor: '手機差幾度,會不會影響結果?',
+  typed: '度數差一點,會不會影響結果?',
+  pick8: '方向選得不夠準,會不會影響結果?',
+});
+
+/**
+ * 「手機差幾度,會不會影響結果?」區塊。判斷全部由呼叫端算好傳入(copy.js 不 import UI 檔,門檻見 EASY_SPEC 2.4):
+ * - eight = eightImpact(大門方位, U):大門朝哪一方會不會算到隔壁(origin 'pick8' 時不用,方位就是使用者選的)。
+ * - wealth = 「方向差 U 度,排第一的財位會不會換」(easy/stability.js 的 wealthStability 整理後):
+ *   null = 還沒選格局、算不出來;{ status:'stable', u };{ status:'changes', change:'place', place };
+ *   { status:'changes', change:'tier', from, to }(from/to 是「較適合」這類標籤)。
+ * origin:'sensor' 手機量的、'typed' 自己輸入度數、'pick8' 自己選的 8 方位。
+ * @returns {{title:string, lines:Array<{icon:'✓'|'!'|'i', head:string, text:string}>}}
+ */
+export function renderDirectionImpact({ eight = null, wealth = null, origin = 'sensor' } = {}) {
+  const o = origin === 'pick8' || origin === 'typed' ? origin : 'sensor';
+  const lines = [];
+  const retry = o === 'pick8' ? '可以按「重新量」用手機量一次,會比較確定。' : o === 'typed' ? '建議用手機或羅盤再量一次。' : '建議往旁邊走一大步再量一次。';
+  if (isObj(wealth) && wealth.status === 'stable') {
+    lines.push({
+      icon: '✓',
+      head: '財位在哪個角落',
+      text: o === 'pick8'
+        ? '不受影響。你選的這個大方位範圍裡,排第一的都是同一個角落。'
+        : `不受影響。就算方向差 ${deg1(wealth.u)} 度,排第一的還是同一個角落。`,
+    });
+  } else if (isObj(wealth) && wealth.status === 'changes' && wealth.change === 'tier' && wealth.from && wealth.to) {
+    lines.push({ icon: '!', head: '財位在哪個角落', text: `位置不變,但方向差幾度,評等可能從「${wealth.from}」變成「${wealth.to}」。${retry}` });
+  } else if (isObj(wealth) && wealth.status === 'changes') {
+    const where = wealth.place ? `,排第一的可能換成「${wealth.place}」` : ',排第一的可能換成另一個位置';
+    lines.push({ icon: '!', head: '財位在哪個角落', text: `可能受影響。方向差幾度${where}。${retry}` });
+  } else {
+    lines.push({
+      icon: 'i',
+      head: '財位在哪個角落',
+      text: '進門斜對角的那個角落,看的是大門在屋裡的位置,不看指北針。不過哪個角落排第一,也會參考方向;選好格局後,會再幫你檢查。',
+    });
+  }
+  if (o !== 'pick8' && isObj(eight)) {
+    lines.push(eight.near
+      ? { icon: '!', head: '大門朝哪一方', text: `可能受影響。你家大門剛好在${eight.dir8}方和${eight.neighbor}方中間,差幾度就可能算成另一邊。${retry}` }
+      : { icon: '✓', head: '大門朝哪一方', text: `不受影響。你家大門朝${eight.dir8}方,以差 ${deg1(eight.uncertaintyDeg)} 度來看,還是${eight.dir8}方。` });
+  }
+  return { title: IMPACT_TITLE[o], lines };
+}
+
+/**
+ * 簡單模式結果頁:方向差 U 度,排第一的財位會換(依 wealthStability 的結果)。沒有要提醒的回 ''。
+ * @param {{change:'place'|'tier'|null, place?:string, from?:string, to?:string, origin?:'sensor'|'typed'|'pick8'}} p
+ */
+export function renderStabilityNote({ change = null, place = '', from = '', to = '', origin = 'sensor' } = {}) {
+  if (change === 'tier' && from && to) return `方向差幾度,這個位置的評等可能從「${from}」變成「${to}」。`;
+  if (change !== 'place') return '';
+  const where = place ? `「${place}」` : '另一個位置';
+  return origin === 'pick8'
+    ? `你是自己選大概的方位;真正的方向如果偏一點,排第一的財位可能換成${where}。用手機量一次會比較確定。`
+    : `方向差幾度,排第一的財位可能換成${where}。建議回第 1 步再量一次。`;
+}
+
+/**
+ * 「手機指北針準嗎?」面板的內容(EASY_SPEC 5.4)。最上面先給結論與三個做得到的檢查方法;
+ * 度數、磁北真北、iPhone 內建指南針、分金等細節收在 details(畫面上是摺疊區)。
+ * declinationDeg 為 null 時差距寫「4 到 5」;磁偏角東偏(正值)時「多/少」「大/小」依實際方向對調。
+ * easy = 簡單模式(不提設定裡的誤差調整);cityName = 磁偏角用的城市名稱(沒有就不寫)。
+ * @param {{trueMode?:boolean, declinationDeg?:number|null, measureUncertainty?:number, easy?:boolean, cityName?:string|null}} [p]
+ * @returns {{title:string, items:Array<{head:string, body:string}>, details:{title:string, items:Array<{head:string, body:string}>}}}
+ */
+export function compassHonesty({ trueMode = false, declinationDeg = null, measureUncertainty = 5, easy = false, cityName = null } = {}) {
+  const hasD = typeof declinationDeg === 'number' && Number.isFinite(declinationDeg);
+  const d = hasD ? String(Math.floor(Math.abs(declinationDeg) + 0.5)) : '4 到 5';
+  const east = hasD && declinationDeg > 0; // 東偏:磁北讀數比真北小
+  const mu = typeof measureUncertainty === 'number' && Number.isFinite(measureUncertainty) && measureUncertainty >= 0 ? deg1(measureUncertainty) : '5';
+  const where = hasD && typeof cityName === 'string' && cityName
+    ? `在台灣大約差 4 到 5 度(目前用${cityName}的值,約 ${d} 度)`
+    : `在台灣大約差 ${d} 度`;
+  const iphone = '打開 設定 >(App >)指南針,看「使用真北」有沒有打開(需開啟定位服務)。';
+  const items = [
+    { head: '結論', body: '夠用。要知道大門朝哪一邊(東、南、西、北這 8 個方位),手機通常夠準;只有大門剛好朝在兩個方位中間時,App 會提醒你再量一次。財位在哪個角落,主要看大門在屋裡的位置;方向差幾度會不會換位置,結果頁會幫你檢查。' },
+    { head: '怎麼自己檢查', body: '往旁邊走一大步再量一次,兩次都是同一個方位就比較放心。' },
+    { head: '用地圖對一次', body: '打開 Google 地圖,先按右上角的小指北針,讓地圖轉回北在上面。找到你家,看大門面對的那條街在房子的哪一邊(東、南、西、北)。跟 App 說的方位一樣,就對了。(不要看地圖上的藍色箭頭,那也是用手機的指北針。)' },
+    { head: '量不準時', body: '拿著手機在空中慢慢畫幾個 8 字,再離鐵門、冰箱、冷氣遠一點。' },
+  ];
+  const details = [
+    { head: '大概的誤差', body: `手機指北針平常大約有 5 到 10 度的誤差;靠近鐵門、鋼筋、冷氣或磁吸手機殼時會更大。本 App 預設以 ${mu} 度當作誤差來提醒你${easy ? '。' : '(可在設定的「手機量測的誤差」調整)。'}` },
+    { head: '差幾度會換方位', body: '8 個大方位每個 45 度寬。手機差 5 度時,大約 8 成的方向還在同一個大方位;差到 10 度時,大約只剩一半。玄空飛星(有填建成年份才會用到)把一圈分成 24 格、每格只有 15 度,更容易跨格,完整功能的報告會標示建議再確認。' },
+    { head: '「很穩」不等於「很準」', body: `訊號格只看得出手有沒有在晃,看不出整棟大樓的鋼筋讓每次讀數一起偏。所以建議往旁邊移一步再量一次,兩次差不到 ${mu} 度就比較放心。` },
+    { head: 'iPhone 和 Android 不一樣', body: 'iPhone 會提供它自己估計的誤差,畫面會寫「手機自己估計,可能差幾度左右」,App 也會把它算進去;Android 手機在網頁裡拿不到這個數字,只能從讀數晃不晃來判斷。' },
+    {
+      head: '磁北和真北',
+      body: trueMode
+        ? '本 App 目前設定用「真北」,和手機地圖一樣。'
+        : `本 App 用「磁北」,和傳統羅盤一樣;地圖用「真北」。兩者${where},所以同一個方向,本 App 的度數會比地圖大約${east ? '少' : '多'} ${d} 度。用地圖看東南西北時,這點差距通常不影響。`,
+    },
+    {
+      head: '跟 iPhone 內建「指南針」比',
+      body: `內建「指南針」和本 App 用的是同一個感測器,只能拿來檢查本 App 的設定,看不出手機本身準不準。${iphone}${trueMode
+        ? `有打開:兩邊應該差不多;沒打開:iPhone 的數字會比本 App ${east ? '小' : '大'}約 ${d} 度。`
+        : `有打開:iPhone 的數字會比本 App ${east ? '大' : '小'}約 ${d} 度;沒打開:兩邊應該差不多。`}扣掉這個差距後,兩邊差 2 度以內都正常;差更多,多半是北基準的設定不一樣。`,
+    },
+    { head: '用地圖比時差多少算正常', body: '看地圖上的街道或房子的邊來比方向時,差 10 度以內都算正常。' },
+    { head: '需要更精確時', body: '手機最細只能看到 24 格這一級,而且靠近格線時仍要再確認;更細的格子(例如分金),或「兼向」「空亡」這類要準到 2 度左右的判斷,請找老師用實體羅盤確認。' },
+  ];
+  return { title: '手機指北針準嗎?', items, details: { title: '給想知道細節的人', items: details } };
+}

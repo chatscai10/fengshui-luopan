@@ -1,15 +1,17 @@
 // sw.js - 放在網站根目錄(和 index.html 同層)。scope 自動等於它所在資料夾,
 // 例如 https://chatscai10.github.io/fengshui-luopan/ ,所以所有路徑都用相對路徑,不要寫開頭的 "/"。
 // 發版前執行 node tools/gen-sw.mjs:自動重寫 VERSION(內容雜湊)與 PRECACHE 清單,舊快取會在 activate 時被清掉。
-const VERSION = '96131a671b';
+const VERSION = '0e2a374b04';
 const CACHE = `fengshui-${VERSION}`;
 
 const PRECACHE = [
   // <PRECACHE>
   './',
   'css/base.css',
+  'css/c-easy.css',
   'css/tokens.css',
   'css/v-compass.css',
+  'css/v-easy.css',
   'css/v-house.css',
   'css/v-plan.css',
   'css/v-report.css',
@@ -54,10 +56,20 @@ const PRECACHE = [
   'src/ui/canvas/miniPlan.js',
   'src/ui/canvas/planRenderer.js',
   'src/ui/canvas/starGrid.js',
+  'src/ui/components/compassHelp.js',
+  'src/ui/components/dirDial.js',
   'src/ui/components/icons.js',
   'src/ui/components/sheet.js',
   'src/ui/components/toast.js',
   'src/ui/dom.js',
+  'src/ui/easy/direction.js',
+  'src/ui/easy/flow.js',
+  'src/ui/easy/layout.js',
+  'src/ui/easy/measure.js',
+  'src/ui/easy/result.js',
+  'src/ui/easy/stability.js',
+  'src/ui/easy/svg.js',
+  'src/ui/easy/text.js',
   'src/ui/main.js',
   'src/ui/plan/coords.js',
   'src/ui/plan/editor.js',
@@ -67,8 +79,12 @@ const PRECACHE = [
   'src/ui/plan/templates.js',
   'src/ui/punct.js',
   'src/ui/repair.js',
+  'src/ui/route.js',
+  'src/ui/sensorSession.js',
+  'src/ui/sensorText.js',
   'src/ui/store.js',
   'src/ui/views/compass.js',
+  'src/ui/views/easy.js',
   'src/ui/views/house.js',
   'src/ui/views/plan.js',
   'src/ui/views/report.js',

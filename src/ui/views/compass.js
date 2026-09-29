@@ -5,9 +5,13 @@ import { basisOf, displayedFromRaw, rawFromDisplayed } from '../basis.js';
 import * as geo from '../../core/geo.js';
 import { readout, headingFromDialAngle, dialAngleToward, boundaryCrossings } from '../../core/luopan.js';
 import { createCompassSource, createBrowserEnv } from '../../core/sensor.js';
-import { describeStatus, HINTS, lockAllowed, nearBoundary, roundInt } from '../../core/sensor-core.js';
+import { HINTS, lockAllowed, nearBoundary, roundInt } from '../../core/sensor-core.js';
+import { IMPACT_SHORT } from '../../core/copy.js';
 import { drawDial, drawOverlay, ensureFonts, needleMarkup, needleRotation } from '../canvas/luopanRenderer.js';
 import { createDialGesture, bindDialGestures } from '../canvas/gestures.js';
+import { sensorMessage, lockBlockedMessage, SENSOR_FALLBACK_HINT, DENIED_HELP, STABILITY_LABEL, accuracyView } from '../sensorText.js';
+import { plainDirection, eightImpact, shanImpact, sectorOf8, uncertaintyFor } from '../easy/direction.js';
+import { openCompassHelp } from '../components/compassHelp.js';
 
 // ─────────────────────────── 純邏輯(可在 node 測試) ───────────────────────────
 
@@ -73,6 +77,8 @@ export function buildReadoutModel({ heading, measure = 'facing', settings = {}, 
   const an = r.analysis;
   const sit = measure === 'sit';
   const nb = nearBoundary({ headingDeg: b, sigmaDeg, accuracyDeg });
+  // 同一個門檻下,8 個大方位是否也接近分界(徽章要講清楚是細格還是大方位)
+  const near8 = sectorOf8(b).distDeg < nb.thresholdDeg;
 
   // 換一種北基準會不會換山
   const D = basis.declination ?? hintDeclination;
@@ -88,6 +94,8 @@ export function buildReadoutModel({ heading, measure = 'facing', settings = {}, 
   const facingBearing = sit ? norm(b + 180) : b;
   return {
     heading: b,
+    plainHeading: plainDirection(b),
+    plainFacing: plainDirection(facingBearing),
     degText: fmtDeg(b),
     primary: sit ? '坐' : '向',
     secondary: sit ? '向' : '坐',
@@ -98,6 +106,7 @@ export function buildReadoutModel({ heading, measure = 'facing', settings = {}, 
     lean: an.leanTo,
     onLine: an.onLine,
     near: nb.near && !an.onLine,
+    near8,
     alt,
     facingBearing,
     facingMountain: sit ? r.sitMountain : r.mountain,
@@ -106,29 +115,72 @@ export function buildReadoutModel({ heading, measure = 'facing', settings = {}, 
   };
 }
 
-export const SENSOR_FALLBACK_HINT = '請拖曳盤面或輸入度數。';
+/**
+ * 讀數列最上方的白話行(EASY_SPEC 5.8)。following = 盤面正跟著手機指北針轉(還沒鎖定、沒被拖曳)。
+ * 紅線貫穿整個盤面,所以講清楚是上方那一端(標著「向」;量坐時標著「坐」)。量的是坐時另外講出房子朝向。
+ */
+export const PLAIN_TEXT = Object.freeze({
+  following: '手機頂端正對著:{text}',
+  pointer: '上方「向」那一端指著:{text}',
+  sit: '上方「坐」那一端指著:{sitText}(背後)· 房子朝向:{text}',
+});
 
-/** 感測器狀態碼 → 使用者訊息。訊息逐字取自規格 2.9.5(sensor-core 的 STATUS_INFO)。 */
-export function sensorMessage(status) {
-  // 開發者訊息不對使用者顯示,改用「偵測不到方位感測器」
-  const key = status === 'insecure-context' ? 'unsupported' : status;
-  const info = describeStatus(key);
-  return info ? info.message : null;
-}
+/** 徽章:24 格接近分界,但 8 個大方位沒有(與「接近分界,建議重測」區分,免得看起來互相矛盾) */
+export const NEAR_FINE_ONLY = '24 格接近分界(8 個大方位不受影響)';
 
-/** 鎖定被擋下時的原因訊息。 */
-export function lockBlockedMessage(reason) {
-  switch (reason) {
-    case 'tilt': return sensorMessage('tilt-too-large');
-    case 'uncalibrated': return sensorMessage('uncalibrated');
-    case 'face-down': return HINTS.faceDown;
-    case 'quality-red': return HINTS.calibrate;
-    case 'not-running': return '請先按「使用手機指北針」。';
-    default: return '還沒有讀到方位資料,請稍等一下。';
+/** 鎖定後、還沒按存檔鈕時的提醒。{btn} = 存檔鈕上的字 */
+export const UNSAVED_LOCK_HINT = '還沒存。按下面的「{btn}」才會存起來。';
+
+/**
+ * 鎖定成功後的說明(一句講度數、必要時講手晃與 24 格,最後接 8 大方位的短評)。
+ * 判斷一律用同一個不確定度 U(sensorSession/summarizeLock 的 uncertaintyDeg = max(設定, 2σ, iPhone 估計誤差))。
+ * @param {{status:'ok'|'unstable', displayedDeg:number, sigmaDeg?:number|null, uncertaintyDeg?:number|null, measureUncertainty?:number|null, unstableText?:string}} p
+ */
+export function lockNoteText({ status, displayedDeg, sigmaDeg = null, uncertaintyDeg = null, measureUncertainty = null, unstableText = '' }) {
+  if (!isNum(displayedDeg)) return '';
+  const deg = Math.floor(norm(displayedDeg) + 0.5) % 360;
+  const u = isNum(uncertaintyDeg) && uncertaintyDeg >= 0
+    ? uncertaintyDeg
+    : uncertaintyFor({ measureUncertainty: isNum(measureUncertainty) ? measureUncertainty : undefined, sigmaDeg: isNum(sigmaDeg) ? sigmaDeg : null });
+  const e8 = eightImpact(displayedDeg, u);
+  const e24 = shanImpact(displayedDeg, u);
+  const parts = [];
+  if (status === 'ok') {
+    parts.push(`已記下約 ${deg} 度。`);
+    if (isNum(sigmaDeg) && sigmaDeg >= 1) parts.push('手有一點晃。');
+  } else {
+    parts.push(`${unstableText}。目前的平均約 ${deg} 度,建議換個位置重測。`);
   }
+  if (e24 && e24.near && e8 && !e8.near) parts.push('離 24 格的分界很近,只影響細格。');
+  if (e8) parts.push(e8.near ? IMPACT_SHORT.near : IMPACT_SHORT.ok);
+  return parts.join('');
 }
 
-export const QUALITY_TEXT = { green: '訊號良好', yellow: '訊號普通', red: '訊號不穩', unknown: '讀取中' };
+/** @param {ReturnType<typeof buildReadoutModel>} model @returns {string} */
+export function plainReadoutText(model, { following = false } = {}) {
+  if (!model || !model.plainHeading || !model.plainFacing) return '';
+  if (model.primary === '坐') return PLAIN_TEXT.sit.replace('{sitText}', model.plainHeading.text).replace('{text}', model.plainFacing.text);
+  return (following ? PLAIN_TEXT.following : PLAIN_TEXT.pointer).replace('{text}', model.plainHeading.text);
+}
+
+/**
+ * 鎖定後句尾接的影響句:依鎖定平均值(目前北基準)判斷 8 大方位會不會因誤差跨到隔壁。
+ * 有 uncertaintyDeg(鎖定結果已含 iPhone 估計誤差)就用它;沒有才用設定與 σ 重算。
+ */
+export function lockImpactShort({ displayedDeg, sigmaDeg = null, measureUncertainty = null, uncertaintyDeg = null }) {
+  if (!isNum(displayedDeg)) return '';
+  const u = isNum(uncertaintyDeg) && uncertaintyDeg >= 0
+    ? uncertaintyDeg
+    : uncertaintyFor({ measureUncertainty: isNum(measureUncertainty) ? measureUncertainty : undefined, sigmaDeg: isNum(sigmaDeg) ? sigmaDeg : null });
+  const imp = eightImpact(displayedDeg, u);
+  if (!imp) return '';
+  return imp.near ? IMPACT_SHORT.near : IMPACT_SHORT.ok;
+}
+
+// 感測器訊息與「手機指北針」的講法跟簡單模式共用同一份(../sensorText.js)
+export { SENSOR_FALLBACK_HINT, sensorMessage, lockBlockedMessage };
+
+export const QUALITY_TEXT = STABILITY_LABEL;
 
 /** 要寫進 store 的 facing 欄位。lock 有效時才帶 sigma 與時間;任何手動調整都會讓 lock 失效。 */
 export function buildFacingPatch({ measured, measure, basis, origin, lock }) {
@@ -142,6 +194,15 @@ export function buildFacingPatch({ measured, measure, basis, origin, lock }) {
     sigma: locked ? Math.round(lock.sigma * 100) / 100 : null,
     lockedAtMs: locked && isNum(lock.lockedAtMs) ? Math.round(lock.lockedAtMs) : null,
   };
+}
+
+/**
+ * 羅盤頁鎖定後存檔時的 facing.check:只記一次量測與手機自己估計的誤差(iPhone 才有),
+ * 讓簡單模式與報告用同一個誤差判斷。沒有有效鎖定或沒有誤差估計就回 null。
+ */
+export function facingCheckFromLock(patch, lock) {
+  if (!patch || patch.lockedAtMs == null || !lock || !isNum(lock.accuracyDeg) || lock.accuracyDeg < 0) return null;
+  return { n: 1, spreadDeg: null, lockedAtMs: patch.lockedAtMs, dropped: 0, accuracyDeg: Math.round(lock.accuracyDeg * 10) / 10 };
 }
 
 /** store 裡存的向若不是有限數字(壞資料),一律當成尚未量測。 */
@@ -185,6 +246,7 @@ export async function mount(root, ctx) {
   let lastReading = null;
   const supported = typeof window.DeviceOrientationEvent !== 'undefined';
   let lastSavedRaw = savedBearingOf(store.get());
+  let savedLockAt = null; // 已經存進朝向的那一次鎖定(lockedAtMs);和目前的鎖定不同就提醒「還沒存」
 
   const settingsNow = () => store.get().settings || {};
   const schemeNow = () => (settingsNow().yinyangScheme === 'sanhe' ? 'sanhe' : 'sanyuan');
@@ -214,7 +276,9 @@ export async function mount(root, ctx) {
   const elBadges = h('div', { class: 'v-compass-badges' });
   const elAlt = h('div', { class: 'v-compass-alt hidden' });
   const elHelp = h('p', { class: 'v-compass-note' });
+  const elPlain = h('div', { class: 'v-compass-plain' });
   const readBox = h('div', { class: 'v-compass-read' },
+    elPlain,
     h('div', { class: 'v-compass-r1', 'aria-hidden': 'true' }, elLbl, ' ', elBig),
     h('div', { class: 'v-compass-r2 kai', 'aria-hidden': 'true' }, elMount, ' · ', elSit),
     elConv, elLive, elBadges, elAlt, elHelp);
@@ -230,6 +294,7 @@ export async function mount(root, ctx) {
     h('span', { class: 'v-compass-level-track', role: 'img', 'aria-label': '手機傾斜程度' }, elLevelFill, h('span', { class: 'v-compass-level-mark' })),
     elLevelText);
   const elQualRow = h('div', { class: 'v-compass-qual hidden' }, elLight, elQuality, elLevel);
+  const elQualWhy = h('p', { class: 'v-compass-qwhy hidden' });
   const elMsg = h('p', { class: 'v-compass-msg hidden', role: 'status', 'aria-live': 'polite' });
   const RING_C = 2 * Math.PI * 9;
   const ringSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -243,12 +308,13 @@ export async function mount(root, ctx) {
   ringSvg.append(ringTrack, ringBarSvg);
   const elLockLabel = h('span', null, '鎖定讀數');
   const btnLock = h('button', { class: 'btn btn-block hidden', type: 'button' }, ringSvg, elLockLabel);
-  const btnResume = h('button', { class: 'btn btn-ghost btn-block hidden', type: 'button' }, icons ? h('span', { html: icons.compass }) : null, '回到指北針');
+  const btnResume = h('button', { class: 'btn btn-ghost btn-block hidden', type: 'button' }, icons ? h('span', { html: icons.compass }) : null, '重新跟著手機轉');
   const elLockNote = h('p', { class: 'v-compass-locknote hidden', role: 'status', 'aria-live': 'polite' });
+  const btnAccuracy = h('button', { class: 'btn btn-ghost btn-sm v-compass-acchelp', type: 'button' }, h('span', { html: icons.info }), '手機指北針準嗎?');
 
   const sensorCard = h('section', { class: 'card v-compass-sensor', 'aria-label': '手機指北針' },
     h('div', { class: 'card-title' }, '用手機的指北針'),
-    btnSensor, elMsg, elQualRow, btnLock, elLockNote, btnResume);
+    btnSensor, elMsg, elQualRow, elQualWhy, btnLock, elLockNote, btnResume, btnAccuracy);
 
   // 手動微調
   const btnMinus = h('button', { class: 'btn', type: 'button', 'aria-label': '讀數減 0.5 度' }, h('span', { html: icons.minus }), '0.5°');
@@ -369,6 +435,8 @@ export async function mount(root, ctx) {
     });
     const m = model;
     const setText = (el, t) => { if (el.textContent !== t) el.textContent = t; };
+    const following = st.origin === 'sensor' && !st.lock && st.sensor.following && st.sensor.phase === 'running';
+    setText(elPlain, plainReadoutText(m, { following }));
     setText(elLbl, m.primary);
     setText(elBig, `${st.origin === 'sensor' && !st.lock ? String(Math.round(m.heading)) : m.degText}°`);
     setText(elMount, `${m.mountain}山(${m.gua}宮 · ${m.dragon})`);
@@ -388,7 +456,7 @@ export async function mount(root, ctx) {
     }, basis.trueMode ? '真北' : '磁北'));
     if (m.lean) badges.push(h('span', { class: 'badge badge--info' }, `兼${m.lean}`));
     if (m.onLine) badges.push(h('span', { class: 'badge badge--warn' }, '壓在分界線上,建議重測'));
-    else if (m.near) badges.push(h('span', { class: 'badge badge--warn' }, HINTS.nearBoundary));
+    else if (m.near) badges.push(h('span', { class: 'badge badge--warn' }, m.near8 ? HINTS.nearBoundary : NEAR_FINE_ONLY));
     const sig = badges.map((b) => b.textContent).join('|');
     if (elBadges.dataset.sig !== sig) {
       elBadges.dataset.sig = sig;
@@ -586,7 +654,7 @@ export async function mount(root, ctx) {
     // iOS 按過「不允許」後不會再彈窗,要教使用者怎麼恢復(只加在畫面上,不動規格逐字訊息)
     const denied = status === 'permission-denied' || status === 'permission-error';
     failSensor(denied
-      ? `${sensorMessage(status)}(沒有跳出詢問的話,請完全關閉 Safari 或主畫面 App 後重開;仍不行,到 設定 > Safari > 進階 > 網站資料 移除本網站)`
+      ? `${sensorMessage(status)}${DENIED_HELP}`
       : (sensorMessage(status) || sensorMessage('no-events')));
   }
   let relativeCount = 0;
@@ -729,14 +797,17 @@ export async function mount(root, ctx) {
     } else if ((res.status === 'ok' || res.status === 'unstable') && isNum(res.meanDeg) && isNum(res.displayDeg)) {
       st.sensor.following = false;
       st.origin = 'sensor';
-      st.lock = { sigma: res.stdDeg, lockedAtMs: res.lockedAtMs, unstable: res.status === 'unstable' };
+      st.lock = { sigma: res.stdDeg, lockedAtMs: res.lockedAtMs, unstable: res.status === 'unstable', accuracyDeg: res.accuracyDeg };
       setDial(dialAngleToward(st.dial, displayedFromRaw(res.displayDeg, basis)), { from: 'sync' });
       st.origin = 'sensor';
-      const sig = isNum(res.stdDeg) ? res.stdDeg.toFixed(1) : '?';
-      st.sensor.lockNote = res.status === 'ok'
-        ? `已鎖定 ${fmtDeg(res.displayDeg)}°,讀數波動約 ${sig}°(越小越穩)`
-        : `${sensorMessage('unstable')}。目前的平均是 ${fmtDeg(res.displayDeg)}°(波動 ${sig}°),建議換個位置重測`;
-      if (res.nearBoundary) st.sensor.lockNote += `。${HINTS.nearBoundary}`;
+      st.sensor.lockNote = lockNoteText({
+        status: res.status,
+        displayedDeg: displayedFromRaw(res.displayDeg, basis),
+        sigmaDeg: res.stdDeg,
+        uncertaintyDeg: res.uncertaintyDeg,
+        measureUncertainty: settingsNow().measureUncertainty,
+        unstableText: sensorMessage('unstable'),
+      });
     }
     renderSensor();
     scheduleReadout();
@@ -758,17 +829,20 @@ export async function mount(root, ctx) {
     let msg = st.sensor.message;
     let showMsg = Boolean(msg);
     if (!supported && p === 'idle') { msg = `這台裝置沒有指北針,${SENSOR_FALLBACK_HINT}`; showMsg = true; }
-    else if (p === 'idle') { msg = '手機放平、頂端朝向前方,按下按鈕後盤面會跟著手機轉。'; showMsg = true; }
+    else if (p === 'idle') { msg = '手機放平、頂端朝向前方,按下按鈕後盤面會跟著手機轉。紅線對到的就是手機頂端指的方向。'; showMsg = true; }
     else if (p === 'waiting' || p === 'failed') msg = `${msg},${SENSOR_FALLBACK_HINT}`;
     elMsg.textContent = msg;
     elMsg.classList.toggle('hidden', !showMsg);
     elMsg.classList.toggle('v-compass-msg--warn', p === 'waiting' || p === 'failed' || (p === 'running' && Boolean(st.sensor.message)));
     // 品質 + 水平
     elQualRow.classList.toggle('hidden', p !== 'running');
+    elQualWhy.classList.toggle('hidden', p !== 'running');
     if (p === 'running') {
-      const q = lastReading ? lastReading.quality : 'unknown';
-      elLight.dataset.q = q;
-      elQuality.textContent = QUALITY_TEXT[q] || QUALITY_TEXT.unknown;
+      // 燈號與 reading.quality 同一套門檻(qualityLight),另外講出白話原因
+      const av = accuracyView(lastReading);
+      elLight.dataset.q = av.level;
+      elQuality.textContent = av.label;
+      if (elQualWhy.textContent !== av.reason) elQualWhy.textContent = av.reason;
       const tilt = lastReading && isNum(lastReading.tiltDeg) ? lastReading.tiltDeg : null;
       elLevel.classList.toggle('hidden', tilt == null);
       if (tilt != null) {
@@ -777,7 +851,7 @@ export async function mount(root, ctx) {
         elLevelText.textContent = `傾斜 ${Math.round(tilt)}°${tilt < 15 ? '' : ',請放平'}`;
       }
     }
-    // 鎖定與回到指北針
+    // 鎖定與「重新跟著手機轉」
     btnLock.classList.toggle('hidden', p !== 'running');
     if (p === 'running') {
       const gate = lockAllowed(lastReading);
@@ -786,9 +860,16 @@ export async function mount(root, ctx) {
       if (!st.sensor.lockBusy) elLockLabel.textContent = '鎖定讀數';
     }
     btnResume.classList.toggle('hidden', !(active && !st.sensor.following && !st.sensor.lockBusy));
-    elLockNote.textContent = st.sensor.lockNote;
-    elLockNote.classList.toggle('hidden', !st.sensor.lockNote);
+    // 鎖定結果還沒存進朝向時,提醒要再按存檔鈕
+    const unsaved = st.lock && st.origin === 'sensor' && st.lock.lockedAtMs !== savedLockAt
+      ? UNSAVED_LOCK_HINT.replace('{btn}', btnUse.textContent || '用這個朝向')
+      : '';
+    const note = [st.sensor.lockNote, st.sensor.lockNote ? unsaved : ''].filter(Boolean).join(' ');
+    elLockNote.textContent = note;
+    elLockNote.classList.toggle('hidden', !note);
     stage.classList.toggle('v-compass-following', active && st.sensor.following);
+    // 白話行的「手機頂端正對著 / 紅線指著」跟著感測器狀態換
+    scheduleReadout();
   }
 
   // ── 已存的朝向與主動作 ──
@@ -816,13 +897,17 @@ export async function mount(root, ctx) {
       d.facing.source = patch.source;
       d.facing.sigma = patch.sigma;
       d.facing.lockedAtMs = patch.lockedAtMs;
+      d.facing.check = facingCheckFromLock(patch, st.lock);
     });
     st.dirty = false;
+    savedLockAt = st.lock ? st.lock.lockedAtMs : null;
     toast('已設為宅向');
     renderSaved();
     renderCta();
+    renderSensor();
   });
   btnNext.addEventListener('click', () => ctx.go('house'));
+  btnAccuracy.addEventListener('click', () => openCompassHelp(ctx, store.get()));
   btnHow.addEventListener('click', () => {
     openSheet({
       title: '怎麼量朝向?',

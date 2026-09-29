@@ -7,7 +7,28 @@ export const DEFAULT_CITY = '台北';
 const BUILDING_TYPE_IDS = ['apartment', 'house', 'shop', 'office'];
 const RENOVATION_IDS = ['none', 'partial', 'full', 'anyRenovation'];
 
+const FACING_SOURCES = ['manual', 'sensor', 'pick8'];
+const UI_MODES = ['easy', 'pro'];
+const EASY_STEP_IDS = ['facing', 'layout', 'result'];
+const EASY_TEMPLATE_IDS = ['studio', 'two', 'three', 'shop'];
+const DOOR_SIDE_IDS = ['left', 'center', 'right'];
+
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const isNonNegNum = (v) => typeof v === 'number' && Number.isFinite(v) && v >= 0;
+
+/** facing.check:{ n: 1..3, spreadDeg: 非負數字或 null, lockedAtMs: 數字, dropped?: 0|1, accuracyDeg?: 非負數字或 null } */
+function isFacingCheck(c) {
+  return isObj(c) && Number.isInteger(c.n) && c.n >= 1 && c.n <= 3
+    && (c.spreadDeg === null || isNonNegNum(c.spreadDeg))
+    && typeof c.lockedAtMs === 'number' && Number.isFinite(c.lockedAtMs)
+    && (c.dropped === undefined || c.dropped === 0 || c.dropped === 1)
+    && (c.accuracyDeg === undefined || c.accuracyDeg === null || isNonNegNum(c.accuracyDeg));
+}
+
+/** ui.easyLayout:{ template: 簡單模式的四個範本之一, doorSide: 'left'|'center'|'right' } */
+function isEasyLayout(v) {
+  return isObj(v) && EASY_TEMPLATE_IDS.includes(v.template) && DOOR_SIDE_IDS.includes(v.doorSide);
+}
 const intIn = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
 const finiteOrNull = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
@@ -89,6 +110,15 @@ export function repairDraft(d, makeId = defaultId) {
   if (d.plan != null && !isObj(d.plan)) { d.plan = null; changed = true; }
 
   if (!isObj(d.ui)) { d.ui = {}; changed = true; }
+
+  // 簡單模式的欄位(docs/EASY_SPEC.md 第 6 節):一律「有這個鍵但值不合法」才修,沒有的鍵不補
+  if ('source' in f && !FACING_SOURCES.includes(f.source)) set(f, 'source', 'manual');
+  if ('check' in f && f.check !== null && !isFacingCheck(f.check)) set(f, 'check', null);
+  const ui = d.ui;
+  if ('mode' in ui && !UI_MODES.includes(ui.mode)) set(ui, 'mode', 'easy');
+  if ('easyStep' in ui && !EASY_STEP_IDS.includes(ui.easyStep)) { delete ui.easyStep; changed = true; }
+  if ('easyLayout' in ui && ui.easyLayout !== null && !isEasyLayout(ui.easyLayout)) set(ui, 'easyLayout', null);
+  if ('easyIntroShown' in ui && typeof ui.easyIntroShown !== 'boolean') { delete ui.easyIntroShown; changed = true; }
   return changed;
 }
 

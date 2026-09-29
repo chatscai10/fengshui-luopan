@@ -1,6 +1,6 @@
 # 風水羅盤 App 介面規格 (UI_SPEC)
 
-- 讀者: 實作各畫面的工程師/代理。領域規則以 `docs/DOMAIN_SPEC.md` 為準;引擎介面以 `docs/API.md` 與 `src/core/*` 為準(引擎完成後才存在)。
+- 讀者: 實作各畫面的工程師。領域規則以 `docs/DOMAIN_SPEC.md` 為準;引擎介面以 `docs/API.md` 與 `src/core/*` 為準(引擎完成後才存在)。
 - 使用者: 台灣繁體中文一般人,**不懂風水術語也不懂程式**。這個 App 的價值是「量出朝向 → 填幾個資料 → 看到自己家的財位在哪、為什麼、怎麼用」。
 - 平台: 離線純 HTML/CSS/JS(ES modules、無框架、無外部資源),先在瀏覽器跑,之後用 Capacitor 包 iOS/Android。手機直式優先,桌面置中窄欄。
 
@@ -29,7 +29,7 @@
 
 **畫面契約**: `src/ui/views/<id>.js` 匯出 `async function mount(root, ctx)`,把內容畫進 `root`(已清空),回傳 `{ destroy() }`(要移除的監聽、計時器、感測器、`store.subscribe` 的取消函式都在這裡收乾淨)。切換分頁會先 `destroy()`。`settings.js` 另外匯出 `openSettings(ctx)`(以底部面板開啟)。
 
-**樣式**: 每個畫面只改自己的 `css/v-<id>.css`,class 用 `.v-<id>-*` 前綴。共用元件不夠用時,在自己的 css 裡擴充,不要改 base.css(避免互相覆蓋);確實需要共用的新元件,在回報中列出讓整合者收進 base.css。
+**樣式**: 每個畫面只改自己的 `css/v-<id>.css`,class 用 `.v-<id>-*` 前綴。共用元件不夠用時,在自己的 css 裡擴充,不要改 base.css(避免互相覆蓋);確實需要共用的新元件,另外提出,收進 base.css。
 
 ## 3. 狀態與資料流
 
@@ -49,6 +49,15 @@
 **分析結果**: 一律 `const r = ctx.store.report()`。`r.error` 有值時顯示友善錯誤卡片而不是丟例外。文案一律用 `renderReport(r)`(`src/core/copy.js`)的 section/card,不要在 UI 硬寫風水結論。
 
 ## 4. 各畫面規格
+
+### 4.0 簡單模式 `views/easy.js`(樣式 `css/v-easy.css`,共用元件樣式 `css/c-easy.css`)
+
+完整規格與逐字文案見 `docs/EASY_SPEC.md`,這裡只列要點:
+- **預設開啟**。網址 `#/easy` 是簡單模式,`#/<分頁>` 是完整功能;網址空白時依上次模式(`ui.mode`)。規則在 `src/ui/route.js`,只有 `main.js` 的 `navigate()` 寫入 `ui.mode`。
+- 三個步驟:量方向(手機指北針或自己選 8 個方位)→ 選格局(4 個範本 + 大門在左/中/右,可跳過)→ 看財位。每步只有一個主按鈕;沒有底部分頁列與標題摘要(`<html data-mode="easy">`)。
+- 標題列「完整功能 / 簡單模式」按鈕(`#btn-mode`)與設定面板最上面的「介面」分組可以切換;兩種模式共用同一個 store。
+- 畫面文字只能來自 `src/ui/easy/text.js`、`src/ui/sensorText.js`、`src/core/copy.js` 與 `views/wealth.js` 的模型欄位;`views/easy.js` 不寫中文字串(`test/ui/easy_shell.test.js` 把關)。
+- 使用者自己畫或改過的平面圖絕不覆蓋;會覆蓋舊資料的動作都附「復原」。
 
 ### 4.1 羅盤 `views/compass.js`(+ `src/ui/canvas/luopanRenderer.js`、`gestures.js`,樣式 `css/v-compass.css`)
 
@@ -144,13 +153,15 @@
 
 ## 7. 檔案所有權(避免互相覆蓋)
 
-| 代理 | 可建立/修改 |
+| 模組 | 可建立/修改 |
 |---|---|
 | compass | `src/ui/views/compass.js`、`src/ui/canvas/luopanRenderer.js`、`src/ui/canvas/gestures.js`、`css/v-compass.css` |
 | house+settings | `src/ui/views/house.js`、`src/ui/views/settings.js`、`css/v-house.css`、`css/v-settings.css` |
 | plan | `src/ui/views/plan.js`、`src/ui/canvas/planRenderer.js`、`src/ui/plan/*`(`coords.js` 除外,它是地基)、`css/v-plan.css` |
 | wealth+report | `src/ui/views/wealth.js`、`src/ui/views/report.js`、`src/ui/canvas/miniPlan.js`、`src/ui/canvas/starGrid.js`、`css/v-wealth.css`、`css/v-report.css` |
+| 簡單模式的純邏輯與共用元件(EASY_SPEC 第 7 節) | `src/ui/route.js`、`src/ui/sensorText.js`、`src/ui/sensorSession.js`、`src/ui/easy/*`、`src/ui/components/dirDial.js`、`src/ui/components/compassHelp.js`、`css/c-easy.css`;`src/core/copy.js` 的簡單模式匯出 |
+| 簡單模式畫面(EASY_SPEC 第 7 節) | `src/ui/views/easy.js`、`css/v-easy.css`;外殼接線在 `index.html`、`src/ui/main.js`、`src/ui/store.js`、`src/ui/repair.js`、`src/ui/views/settings.js` |
 
-每個代理可另外新增自己的純邏輯測試 `test/ui/<view>*.test.js`(node:test,不可依賴 DOM)。
+每個模組可另外新增自己的純邏輯測試 `test/ui/<view>*.test.js`(node:test,不可依賴 DOM)。
 
-地基檔(`index.html`、`main.js`、`store.js`、`base.css`、`tokens.css`、`dom.js`、`components/*`、`canvasUtil.js`、`plan/coords.js`)只有整合階段可改;各代理發現地基問題請在回報列出。
+地基檔(`index.html`、`main.js`、`store.js`、`base.css`、`tokens.css`、`dom.js`、`components/*`、`canvasUtil.js`、`plan/coords.js`)改動時要一併檢查所有畫面;在畫面裡發現地基問題,另外提出,不要在畫面檔裡繞過。

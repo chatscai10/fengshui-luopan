@@ -3,6 +3,8 @@
 
 /* ── 讀數列 ── */
 .v-compass-read { display: grid; gap: 6px; justify-items: center; text-align: center; }
+/* 白話行: 一般字重、不用楷體,手機窄螢幕可換行 */
+.v-compass-plain { font-size: 17px; font-weight: 400; line-height: 1.45; color: var(--text); max-width: 100%; overflow-wrap: anywhere; min-height: 1.45em; }
 .v-compass-r1 { display: flex; align-items: baseline; justify-content: center; gap: 8px; font-family: var(--font-kai); font-size: 22px; line-height: 1.15; }
 .v-compass-r1 .big { min-width: 5.6ch; text-align: start; font-family: var(--font-mono); font-size: 36px; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
 .v-compass-r2 { font-size: 19px; letter-spacing: .03em; line-height: 1.35; }
@@ -59,6 +61,8 @@
 .v-compass-light[data-q="yellow"] { background: var(--gold); }
 .v-compass-light[data-q="red"] { background: var(--terracotta); }
 .v-compass-qtext { min-width: 4.5em; }
+.v-compass-qwhy { font-size: 13.5px; line-height: 1.5; color: var(--text-dim); margin-top: -4px; }
+.v-compass-acchelp { justify-self: start; }
 .v-compass-level { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
 .v-compass-level-label { color: var(--text-dim); }
 .v-compass-level-track {
@@ -88,6 +92,7 @@
 .v-compass-how strong { color: var(--gold-bright); font-weight: 600; }
 
 @media (min-width: 640px) {
+  .v-compass-plain { font-size: 18px; }
   .v-compass-r1 { font-size: 24px; }
   .v-compass-r2 { font-size: 20px; }
 }

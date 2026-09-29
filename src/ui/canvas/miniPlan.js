@@ -3,7 +3,7 @@
 // 版面計算(layoutMiniPlan 等)是純函式,可在 node 測試;Canvas 與 DOM 只在 mountMiniPlan 內碰。
 import { boundsOf, makeView, vectorOfBearing, guaCenterBearing, wedgePolygon } from '../plan/coords.js';
 import { openingCenter } from '../../core/plan.js';
-import { GUA } from '../../core/geo.js';
+import { GUA, DIR8 } from '../../core/geo.js';
 import { roomDisplayName } from '../plan/labels.js';
 import { fitCanvas, cssVar, KAI_STACK, UI_STACK } from './canvasUtil.js';
 
@@ -86,7 +86,9 @@ export function layoutMiniPlan(model, w, h, { pad = 26 } = {}) {
         const dy = end[1] - taijiPx[1];
         const len = Math.hypot(dx, dy) || 1;
         const inset = Math.min(11, len / 2);
-        return { gua, k, end, label: [end[0] - (dx / len) * inset, end[1] - (dy / len) * inset] };
+        // sectorLabels 'dir8':標「北、東北…」這種白話方位(簡單模式);預設標卦名(完整功能)
+        const text = model.sectorLabels === 'dir8' ? DIR8[k] : gua;
+        return { gua, k, text, end, label: [end[0] - (dx / len) * inset, end[1] - (dy / len) * inset] };
       });
       // 名稱不要被候選標記蓋住:沿邊緣左右挪開(邊緣方向 = 射線的垂直方向)
       for (const s of sectors) {
@@ -151,7 +153,8 @@ const ROOM_FILL = Object.freeze({ living: '--wealth-bg', bedroom: '--info-bg', k
 // ─────────────────────────── Canvas ───────────────────────────
 
 /**
- * 掛載縮圖。opts: { plan, taiji, up, markers:[{id, point, sector, order}], selectedId, onSelect(id), alt }
+ * 掛載縮圖。opts: { plan, taiji, up, markers:[{id, point, sector, order}], selectedId, onSelect(id), alt, sectorLabels?:'gua'|'dir8' }
+ * sectorLabels 預設 'gua'(八方位標卦名);簡單模式傳 'dir8' 改標「北、東北…」。
  * 回傳 { setSelected(id), update(opts), destroy() }。
  */
 export function mountMiniPlan(container, opts) {
@@ -290,7 +293,7 @@ export function mountMiniPlan(container, opts) {
     for (const s of lay.sectors) {
       ctx.fillStyle = sel && sel.sector === s.gua ? gold : dim;
       ctx.globalAlpha = sel && sel.sector === s.gua ? 1 : 0.9;
-      ctx.fillText(s.gua, s.label[0], s.label[1]);
+      ctx.fillText(s.text, s.label[0], s.label[1]);
     }
     ctx.globalAlpha = 1;
     // 候選標記:沒被選到的是空心圓+編號,選到的是金色「財」+脈動光圈

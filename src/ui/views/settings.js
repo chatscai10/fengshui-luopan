@@ -4,6 +4,8 @@ import { h, clear } from '../dom.js';
 import { DEFAULT_SETTINGS } from '../../core/settings.js';
 import { DISCLAIMERS } from '../../core/copy.js';
 import { segControl, switchRow, createNorthControls, nextDomId, repairDraft } from './house.js';
+import { proHomeOf } from '../route.js';
+import { EASY_TEXT } from '../easy/text.js';
 
 /** 目前版本(與 package.json 同步) */
 export const APP_VERSION = '0.1.0';
@@ -375,6 +377,7 @@ export function openSettings(ctx) {
   const controls = []; // { sync(state) }
   let blobUrl = null;
   let unsub = () => {};
+  let sheet = null;
 
   const syncAll = () => {
     const state = store.get();
@@ -432,6 +435,24 @@ export function openSettings(ctx) {
   const groupBlock = (g, level = 'h3') => h('section', { class: 'v-settings-sec' },
     h(level, { class: 'v-settings-h' }, g.title),
     Object.keys(SETTING_META).filter((k) => SETTING_META[k].group === g.id && !SETTING_META[k].custom).map(settingRow));
+
+  // 介面:簡單模式 / 完整功能。只改網址,ui.mode 由 main.js 依網址寫入;切換後關閉面板
+  const modeSeg = segControl({
+    options: [{ value: 'easy', label: EASY_TEXT['set.easy'] }, { value: 'pro', label: EASY_TEXT['set.pro'] }],
+    value: store.get().ui.mode === 'pro' ? 'pro' : 'easy',
+    label: EASY_TEXT['set.label'],
+    onChange: (mode) => {
+      const ui = store.get().ui;
+      const target = mode === 'easy' ? '#/easy' : `#/${proHomeOf(ui)}`;
+      if (sheet) sheet.close();
+      if (location.hash !== target) location.hash = target;
+    },
+  });
+  controls.push({ sync: (s) => modeSeg.set(s.ui.mode === 'pro' ? 'pro' : 'easy') });
+  const modeSec = h('section', { class: 'v-settings-sec' },
+    h('h3', { class: 'v-settings-h' }, EASY_TEXT['set.group']),
+    h('div', { class: 'v-settings-item field' }, h('span', { class: 'v-settings-label' }, EASY_TEXT['set.label']),
+      h('div', { class: 'hint' }, EASY_TEXT['set.help']), modeSeg.el));
 
   // 外觀
   const themeSeg = segControl({
@@ -554,17 +575,32 @@ export function openSettings(ctx) {
       h('summary', null, '免責聲明'),
       h('div', { class: 'stack' }, DISCLAIMERS.map((t) => h('p', null, t)))));
 
-  const content = h('div', { class: 'v-settings stack' },
-    appearance,
+  const proGroups = [
     northSec,
     groupBlock(SETTING_GROUPS.find((g) => g.id === 'measure')),
     groupBlock(SETTING_GROUPS.find((g) => g.id === 'wealth')),
     advanced,
-    dataSec,
-    aboutSec);
+  ];
+  // 簡單模式只直接顯示「介面、外觀、資料」;北基準、量測誤差、財位與流派選項收進一個摺疊區,免得一打開就是一堆專業名詞
+  const easy = store.get().ui.mode === 'easy';
+  const content = easy
+    ? h('div', { class: 'v-settings stack' },
+      modeSec,
+      appearance,
+      dataSec,
+      h('details', { class: 'v-settings-adv disclosure v-settings-pro' },
+        h('summary', null, '專業設定(完整功能用)'),
+        h('div', { class: 'stack' }, proGroups)),
+      aboutSec)
+    : h('div', { class: 'v-settings stack' },
+      modeSec,
+      appearance,
+      ...proGroups,
+      dataSec,
+      aboutSec);
 
   // 匯出的暫存網址與訂閱都在面板關閉時收乾淨
-  const sheet = openSheet({
+  sheet = openSheet({
     title: '設定',
     content,
     onClose: () => {

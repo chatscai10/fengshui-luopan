@@ -1,0 +1,189 @@
+/* 簡單模式畫面(docs/EASY_SPEC.md 第 9 節)。畫面 class 一律 .v-easy-*;顏色一律用 tokens。 */
+
+/* ── 外殼在簡單模式的變化(唯一允許寫在畫面 css 的全域規則) ── */
+html[data-mode="easy"] { --tabbar-h: 0px; }
+html[data-mode="easy"] .tabbar, html[data-mode="easy"] .app-sub { display: none; }
+@media (max-width: 359px) { .app-sub { display: none; } }
+/* 摘要藏起來時,由模式鈕接手把右側按鈕推到最右邊(原本靠 .app-sub 的 margin auto) */
+html[data-mode="easy"] #btn-mode { margin-inline-start: auto; }
+@media (max-width: 359px) { #btn-mode { margin-inline-start: auto; } }
+
+/* ── 版面 ── */
+.v-easy { max-width: 100%; }
+.v-easy-title { margin: 4px 0 0; font-family: var(--font-kai); font-size: 24px; line-height: 1.35; color: var(--text); }
+.v-easy-title:focus { outline: none; }
+.v-easy-title:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
+.v-easy-lead { margin: 0; font-size: 16px; line-height: 1.7; color: var(--text); }
+.v-easy-small { margin: 0; font-size: 13.5px; line-height: 1.6; }
+.v-easy-note { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+.v-easy-h3 { margin: 0 0 6px; font-size: 16px; font-weight: 700; color: var(--text); }
+.v-easy-h4 { font-size: 13px; letter-spacing: .08em; font-weight: 600; color: var(--text-dim); margin-bottom: 2px; }
+.v-easy-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.v-easy-row > .btn { flex: 1 1 auto; }
+.v-easy-btn { white-space: normal; text-align: center; line-height: 1.35; padding-block: 8px; }
+.v-easy-big { min-height: 56px; font-size: 18px; }
+.v-easy-alert { margin: 0; color: var(--warn-fg); font-size: 14.5px; line-height: 1.6; }
+.v-easy-alert[hidden] { display: none; }
+
+/* ── 步驟條 ── */
+.v-easy-steps ol { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.v-easy-step { position: relative; min-width: 0; }
+.v-easy-step + .v-easy-step::before {
+  content: ""; position: absolute; top: 22px; inset-inline-start: -6px; width: 6px; height: 1px; background: var(--line-strong);
+}
+.v-easy-stepbtn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; min-height: var(--tap); padding: 4px 6px;
+  border: 1px solid var(--line); border-radius: 999px; background: transparent;
+  color: var(--text-dim); font-size: 14px; cursor: pointer; white-space: nowrap;
+}
+.v-easy-stepbtn.is-disabled { cursor: default; opacity: .6; }
+.v-easy-stepdot {
+  display: inline-grid; place-items: center; flex: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1px solid var(--line-strong); font-size: 12px; font-weight: 700;
+}
+.v-easy-step.is-done .v-easy-stepdot { background: var(--surface-3); color: var(--text); }
+.v-easy-step.is-current .v-easy-stepbtn { border-color: var(--gold); color: var(--text); font-weight: 600; }
+.v-easy-step.is-current .v-easy-stepdot { background: var(--gold); border-color: var(--gold); color: var(--on-gold); }
+.v-easy-stepname { overflow: hidden; text-overflow: ellipsis; }
+.v-easy-stepcount { margin: 6px 0 0; font-size: 12.5px; color: var(--text-faint); text-align: center; }
+
+/* ── 步驟 1 ── */
+.v-easy-ill { display: flex; justify-content: center; }
+.v-easy-ill svg { width: min(100%, 220px); height: auto; overflow: visible; }
+.v-easy-ill-wall { stroke: var(--line-strong); stroke-width: 6; fill: none; stroke-linecap: round; }
+.v-easy-ill-door { stroke: var(--gold-bright); stroke-width: 6; fill: none; stroke-linecap: round; }
+.v-easy-ill-arrow { stroke: var(--gold); stroke-width: 3; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.v-easy-ill-body { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 2; }
+.v-easy-ill-phone { fill: var(--surface-2); stroke: var(--text-dim); stroke-width: 2; }
+.v-easy-ill-gap { stroke: var(--text-faint); stroke-width: 1.5; fill: none; stroke-dasharray: 3 3; stroke-linecap: round; }
+.v-easy-howto { margin: 0; padding-inline-start: 1.4em; display: grid; gap: 6px; font-size: 15px; line-height: 1.6; }
+
+.v-easy-help { color: var(--text-dim); }
+.v-easy-help-i {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
+  border: 1.5px solid currentColor; font-size: 12px; font-weight: 700; font-style: italic; font-family: Georgia, serif;
+}
+
+.v-easy-dial { padding-top: 6px; }
+.v-easy-readout { text-align: center; display: grid; gap: 2px; }
+.v-easy-headlabel { font-size: 13px; color: var(--text-dim); }
+.v-easy-dir { font-family: var(--font-kai); font-size: 40px; line-height: 1.2; color: var(--gold-bright); overflow-wrap: anywhere; }
+.v-easy-deg { margin: 0; font-size: 14px; color: var(--text-dim); }
+
+.v-easy-stab { padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.v-easy-stab-head { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.v-easy-bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 18px; }
+.v-easy-bar { width: 6px; border-radius: 2px; background: var(--line-strong); }
+.v-easy-bar:nth-child(1) { height: 8px; }
+.v-easy-bar:nth-child(2) { height: 13px; }
+.v-easy-bar:nth-child(3) { height: 18px; }
+.v-easy-stab[data-level="green"] .v-easy-bar.is-on { background: var(--good-fg); }
+.v-easy-stab[data-level="yellow"] .v-easy-bar.is-on { background: var(--gold); }
+.v-easy-stab[data-level="red"] .v-easy-bar.is-on { background: var(--warn-fg); }
+.v-easy-stab-reason { margin: 4px 0 0; font-size: 14px; line-height: 1.6; color: var(--text-dim); }
+
+.v-easy-progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.v-easy-progress[hidden] { display: none; }
+.v-easy-progress > span { display: block; height: 100%; width: calc(var(--p, 0) * 100%); background: var(--gold); transition: width 200ms linear; }
+@media (prefers-reduced-motion: reduce) { .v-easy-progress > span { transition: none; } }
+
+.v-easy-callout { display: flex; gap: 10px; align-items: flex-start; line-height: 1.6; }
+.v-easy-callout[hidden] { display: none; }
+.v-easy-icon { flex: none; width: 20px; text-align: center; font-weight: 700; }
+.v-easy-retest p { margin: 0 0 8px; }
+
+.v-easy-readings { margin: 0; padding-inline-start: 0; list-style: none; display: grid; gap: 4px; font-size: 15px; }
+.v-easy-readings li.is-dropped { color: var(--text-faint); text-decoration: line-through; }
+.v-easy-dropped { margin-inline-start: 8px; text-decoration: none; display: inline-block; }
+
+.v-easy-impact { display: grid; gap: 6px; }
+.v-easy-impact-list li { line-height: 1.6; font-size: 14.5px; }
+.v-easy-impact-list strong { color: var(--text); }
+
+/* 3×3 方位格:上北下南 */
+.v-easy-grid8 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.v-easy-cell {
+  min-height: 64px; display: grid; place-items: center;
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  background: var(--surface-2); color: var(--text); font-size: 22px; cursor: pointer;
+}
+.v-easy-cell[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--on-gold); font-weight: 700; }
+.v-easy-cell.is-center { cursor: default; background: transparent; border-style: dashed; color: var(--text-faint); font-size: 15px; font-family: var(--font-ui); }
+.v-easy-cell:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+@media (max-width: 359px) { .v-easy-cell { min-height: 56px; font-size: 20px; } }
+.v-easy-picked { margin: 0; min-height: 1.5em; font-weight: 600; color: var(--text); }
+.v-easy-degbox .field { margin-top: 6px; }
+
+/* ── 步驟 2 ── */
+.v-easy-tpls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.v-easy-tpl {
+  display: grid; gap: 4px; align-content: start; text-align: start;
+  min-height: var(--tap); padding: 10px;
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  background: var(--surface-2); color: var(--text); cursor: pointer;
+}
+.v-easy-tpl[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold) inset; background: var(--wealth-bg); }
+.v-easy-tpl:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.v-easy-tpl-thumb { display: block; height: 72px; }
+.v-easy-tpl-thumb svg { width: 100%; height: 100%; }
+.v-easy-tpl-name { font-weight: 700; font-size: 15.5px; }
+.v-easy-tpl-desc { font-size: 12.5px; line-height: 1.5; color: var(--text-dim); }
+.v-easy-door { display: grid; gap: 8px; }
+.v-easy-seg button { font-size: 15px; }
+.v-easy-preview { padding: 10px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+
+/* ── 步驟 3 ── */
+.v-easy-best .card-title { font-family: var(--font-ui); }
+.v-easy-pic { margin: 6px 0 4px; }
+.v-easy-pic.is-map { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); overflow: hidden; line-height: 0; }
+.v-easy-pic canvas { display: block; width: 100%; }
+.v-easy-caption { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 10px; min-height: 24px; font-size: 13px; margin-bottom: 6px; }
+.v-easy-caption .btn { flex: none; }
+.v-easy-place { margin: 4px 0 2px; font-size: 26px; line-height: 1.4; }
+.v-easy-where { margin: 4px 0 8px; font-size: 15px; color: var(--text-dim); }
+.v-easy-checks { margin: 10px 0; }
+.v-easy-remedy { margin: 10px 0; display: grid; gap: 4px; }
+.v-easy-remedy p { margin: 0; }
+.v-easy-tips { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 4px; }
+.v-easy-yearrow { display: flex; gap: 8px; align-items: stretch; }
+.v-easy-yearrow input { flex: 1 1 auto; min-width: 0; }
+.v-easy-yearrow .btn { flex: none; }
+.v-easy-yearmsg { margin: 4px 0 0; min-height: 1.4em; font-size: 14px; color: var(--text-dim); }
+.v-easy-yearmsg.v-easy-alert { color: var(--warn-fg); }
+.v-easy-otherlist { display: grid; gap: 8px; margin-top: 4px; }
+.v-easy-other {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: var(--tap); padding: 8px 12px; text-align: start;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--text); cursor: pointer;
+}
+.v-easy-other-name { min-width: 0; }
+.v-easy-other .badge { flex: none; }
+.v-easy-foot { font-size: 12.5px; line-height: 1.6; }
+.v-easy-foot p { margin: 0; }
+
+/* ── 方位大字旁的括號(偏向哪邊)、地圖小提示、影響區塊的說明記號 ── */
+.v-easy-paren { font-size: 16px; line-height: 1.4; color: var(--text-dim); min-height: 1.4em; }
+.v-easy-dir { text-wrap: balance; }
+.v-easy-maphelp { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 4px; font-size: 14.5px; line-height: 1.6; color: var(--text-dim); }
+.v-easy-p { margin: 0; }
+.v-easy-p + .v-easy-p { margin-top: 6px; }
+.v-easy-impact-list .mark.info { color: var(--text-dim); font-style: italic; font-family: Georgia, serif; }
+
+/* 矮螢幕(例如 320×568):方向圈與大字縮小,讓「記下這個方向」和方向圈同時在第一個畫面 */
+@media (max-height: 640px) {
+  .v-easy { gap: 8px; }
+  .v-easy-stepcount { display: none; }
+  .v-easy-title { font-size: 18px; line-height: 1.3; }
+  .v-easy-dial .c-dial { width: min(100%, 150px); }
+  .v-easy-dial { padding-top: 0; }
+  .v-easy-headlabel { display: none; }
+  .v-easy-dir { font-size: 30px; line-height: 1.15; }
+  .v-easy-paren { font-size: 14px; min-height: 0; }
+  .v-easy-stab { padding: 6px 10px; }
+  .v-easy-stab-reason { font-size: 13px; line-height: 1.45; }
+}
+
+/* 標題列的設定鈕:簡單模式在齒輪旁加「設定」字樣(字樣的顯示由 main.js 的 hidden 控制) */
+html[data-mode="easy"] #btn-settings { width: auto; gap: 4px; padding-inline: 8px 10px; border-radius: 999px; display: inline-flex; align-items: center; font-size: 14px; }
