@@ -1,0 +1,2415 @@
+{
+  "meta": {
+    "topic": "device_compass",
+    "title": "手機指北針取得方式:換算、平滑與事件解碼測試向量",
+    "generated": "2026-09-29",
+    "encoding": "UTF-8 (no BOM)",
+    "angleUnit": "degrees",
+    "headingConvention": "方位 = 由磁北起順時針 0..360(北0 東90 南180 西270);除非欄位名稱明確寫 true。",
+    "deviceFrame": "W3C device frame:x 朝螢幕右,y 朝螢幕上(頂端),z 垂直螢幕朝外;alpha/beta/gamma = 內旋 Z-X'-Y'' (R = Rz(alpha) Rx(beta) Ry(gamma))。世界座標 x=東 y=北 z=上。",
+    "tolerance": {
+      "headingDeg": 0.000001,
+      "note": "比較方位時使用圓周差(359.9999995 與 0 視為相等);null 表示退化(向量水平分量 < 1e-9)"
+    },
+    "functions": {
+      "eulerToHeadings": "輸入 alpha,beta,gamma;輸出 topEdgeHeading(手機頂端 +Y 軸投影到水平面的方位;平放時 = 360-alpha)、backHeading(手機背面 -Z 軸,即後鏡頭朝向的水平方位;W3C 附錄 A.1)、rightEdgeHeading(+X 軸)。水平分量趨近 0 時回傳 null。",
+      "screenUpHeading": "平放(螢幕朝上)時,螢幕畫面「上方」所對應的裝置軸的方位。deviceRotCCW = 裝置由自然直式姿態逆時針旋轉的實體角度(0/90/180/270),對應螢幕上方 = +Y/+X/-Y/-X。",
+      "pickPointingMode": "tilt = acos(|cos(beta)cos(gamma)|)。prevMode=top 時 tilt>enterBackDeg 切 back;prevMode=back 時 tilt<leaveBackDeg 切 top;其餘維持。heading 依模式取 topEdge 或 back。faceDown = cos(beta)cos(gamma)<0。 [D66 已由 pickHeadingBlend 取代;遲滯版只留作 group3 的歷史對照,正式解碼路徑不使用]",
+      "circularMean": "atan2(sum sin, sum cos);合成向量長度 R < minResultantLength 時回傳 null。circularStdDeg = sqrt(-2 ln R) 換成度。",
+      "circularDiff": "a - b 正規化到 (-180, 180];恰好 180 時正負皆可(取 +180)。",
+      "circularEma": "unit-vector EMA:x += k(cos t - x), y += k(sin t - y), 輸出 atan2(y,x);shortest-arc EMA:h += k * circularDiff(t,h)。",
+      "roundHalfDegree": "先 norm360 再以 0.5 度四捨五入,結果再 mod 360(359.8 -> 0)。",
+      "boundaryDistance": "7.5 - min(h mod 15, 15 - h mod 15):與最近 24 山分界(山中心在 15 度倍數,分界在 7.5+15k)的距離。",
+      "trueFromMagnetic": "true = (magnetic + declination) mod 360,declination 東為正。",
+      "decodeOrientationEvent": "見報告 §2.5;優先序:webkitCompassHeading(iOS) > deviceorientationabsolute / absolute===true 的 deviceorientation > 其他(不可用)。 補案(B.7)可用 inputSpecials 表示 JSON 無法寫的值:{\"webkitCompassHeading\":\"NaN\"}。",
+      "iosUprightOffset": "offset = webkitCompassHeading(平放取樣) - topEdgeHeading(alpha_ios);之後直立 heading = backHeading(alpha,beta,gamma) + offset。",
+      "lockAverage": "樣本不足 minSamples -> too-few;圓周標準差 > maxStdDeg -> unstable;否則 ok 並回傳圓周平均。",
+      "screenAngleToDeviceRot": "android/Chrome: deviceRotCCW = screen.orientation.angle;iOS Safari(依已知互通性回報): deviceRotCCW = (360 - angle) mod 360。需實機驗證。",
+      "pickHeadingBlend": "規格 2.9.2:tilt=acos(|cos(beta)cos(gamma)|);t=clamp((tilt-40)/10,0,1)、w=t*t*(3-2t);heading=atan2 of ((1-w)*unit(top)+w*unit(back));任一方位為 null 只用另一個。mode: w=0 top、w=1 back、其餘 blend。輸入 alpha/beta/gamma,輸出 headingDeg/tiltDeg/mode。"
+    },
+    "groups": {
+      "group1": "alpha/beta/gamma -> 羅盤方位(平放/直立/橫放)",
+      "group2": "螢幕方向補償(平放橫式)",
+      "group3": "指向模式選擇(頂端 vs 後鏡頭)與遲滯",
+      "group4": "圓周平均",
+      "group5": "最短角差",
+      "group6": "圓周低通(EMA)",
+      "group7": "0.5 度顯示進位與回捲",
+      "group8": "距 24 山分界距離",
+      "group9": "磁北 -> 真北",
+      "group10": "事件解碼決策表(iOS / Android / 無感測器)",
+      "group11": "iOS 直立讀數的偏移追蹤(進階)",
+      "group12": "鎖定讀數 N 秒平均",
+      "group13": "screen.orientation.angle -> 實體旋轉(平台相反)",
+      "group14": "smoothstep(40°,50°) 混合頂端/後鏡頭方位(D66;附錄 B.7 補案)"
+    },
+    "verification": {
+      "node": "v24.14.1:三種獨立旋轉實作(矩陣連乘 / W3C 附錄 A.1 閉式 / 四元數)彼此差 < 1e-6 度,且與手推字面值一致(全部通過)",
+      "python": "3.13.12:第 4 種實作(依 W3C 文字逐步以 Rodrigues 軸角旋轉機體座標軸)重算 group1-13,全部一致",
+      "decoder": "compass-core.mjs(報告 §2 的完整參考實作)對本檔全部 99 個案例通過(node test_core.mjs)",
+      "browser": "Chromium 152 (Windows, http://localhost 安全環境) 端到端:createCompassSource + 合成事件。無事件 300ms 後 watchdog 回報 no-events;deviceorientationabsolute(90,0,0)->270 top-edge;(270,90,0)->90 back-camera;relative 事件被忽略;debug 旗標可把 DevTools 式 relative 事件當 absolute;單一事件下計時器持續取樣(210ms 內 11 筆)。iOS 樣式 webkitCompassHeading 以 Object.defineProperties 模擬。"
+    },
+    "caveats": [
+      "所有 confidence=medium/low 的案例是「設計規則」或「文件推論」,不是實機量測;實機驗證清單見報告 §8。",
+      "group8 的「24 山每山 15 度、子山中心在 0 度」由其他主題負責驗證;此處僅借用其幾何(同專案 test/fixtures/luopan_rings.json 的 mountains24_geometry 也是 子 center 0、start 352.5、end 7.5,與此假設一致)。",
+      "group13 需要 iOS/Android 實機確認,目前來自 W3C 互通性回報(單一來源)。"
+    ]
+  },
+  "cases": [
+    {
+      "name": "flat_top_N",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 0,
+        "backHeading": null,
+        "rightEdgeHeading": 90
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "平放,螢幕朝上,手機頂端朝北",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_E",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 270,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 90,
+        "backHeading": null,
+        "rightEdgeHeading": 180
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "平放,頂端朝東",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_S",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 180,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 180,
+        "backHeading": null,
+        "rightEdgeHeading": 270
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "平放,頂端朝南",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_W_w3c_example",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 90,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 270,
+        "backHeading": null,
+        "rightEdgeHeading": 0
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "W3C 原文範例:平放且螢幕頂端朝西 => {alpha:90,beta:0,gamma:0}",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_352.5_zi_west_boundary",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 7.5,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 352.5,
+        "backHeading": null,
+        "rightEdgeHeading": 82.5
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "平放,頂端 352.5 度(子山西側分界)",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_7.5_zi_east_boundary",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 352.5,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 7.5,
+        "backHeading": null,
+        "rightEdgeHeading": 97.5
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "平放,頂端 7.5 度(子山東側分界)",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_wrap_0.1",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 359.9,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 0.1,
+        "backHeading": null,
+        "rightEdgeHeading": 90.1
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "alpha 接近 360 時 heading 接近 0",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_top_wrap_359.9",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 0.1,
+        "beta": 0,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 359.9,
+        "backHeading": null,
+        "rightEdgeHeading": 89.9
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "alpha 接近 0 時 heading 接近 360",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_tilted_beta8_gamma-6",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 200,
+        "beta": 8,
+        "gamma": -6
+      },
+      "expected": {
+        "topEdgeHeading": 160,
+        "backHeading": 197.060289,
+        "rightEdgeHeading": 250.838045
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "略微傾斜(beta=8,gamma=-6),頂端方位仍為 360-alpha=160",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_tilted_beta-15_gamma10",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 30,
+        "beta": -15,
+        "gamma": 10
+      },
+      "expected": {
+        "topEdgeHeading": 330,
+        "backHeading": 184.265632,
+        "rightEdgeHeading": 62.612982
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "略微傾斜(beta=-15,gamma=10),頂端方位 330",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "flat_rolled_gamma20",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 100,
+        "beta": 0,
+        "gamma": 20
+      },
+      "expected": {
+        "topEdgeHeading": 260,
+        "backHeading": 170,
+        "rightEdgeHeading": 350
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "側傾 gamma=20,頂端方位 260(與 gamma 無關)",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_back_N",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 0,
+        "beta": 90,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 0,
+        "rightEdgeHeading": 90
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "直立(beta=90),後鏡頭朝北;頂端指向天空故 top 未定義",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_back_E",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 270,
+        "beta": 90,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 90,
+        "rightEdgeHeading": 180
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "直立,後鏡頭朝東",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_back_S",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 180,
+        "beta": 90,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 180,
+        "rightEdgeHeading": 270
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "直立,後鏡頭朝南",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_back_W",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 90,
+        "beta": 90,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 270,
+        "rightEdgeHeading": 0
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "直立,後鏡頭朝西",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_leaning_back_beta80_facing45",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 315,
+        "beta": 80,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 45,
+        "backHeading": 45,
+        "rightEdgeHeading": 135
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "略後仰(beta=80)朝東北 45 度;純俯仰時頂端與後鏡頭同一鉛直面,兩者皆 45",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_beta60_facing45",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 315,
+        "beta": 60,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 45,
+        "backHeading": 45,
+        "rightEdgeHeading": 135
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "beta=60 朝 45 度",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_past_vertical_beta100",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 315,
+        "beta": 100,
+        "gamma": 0
+      },
+      "expected": {
+        "topEdgeHeading": 225,
+        "backHeading": 45,
+        "rightEdgeHeading": 135
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "過垂直(beta=100,鏡頭略朝天),後鏡頭水平分量仍朝 45",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_roll_gamma10",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 0,
+        "beta": 90,
+        "gamma": 10
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 350,
+        "rightEdgeHeading": 80
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "beta=90 時 theta=-(alpha+gamma)(W3C A.1 consistency check): gamma=10 => 350",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "upright_roll_gamma-10",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 0,
+        "beta": 90,
+        "gamma": -10
+      },
+      "expected": {
+        "topEdgeHeading": null,
+        "backHeading": 10,
+        "rightEdgeHeading": 100
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "beta=90,gamma=-10 => 10",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "landscape_upright_topRight_facing30_w3c",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 240,
+        "beta": 0,
+        "gamma": 90
+      },
+      "expected": {
+        "topEdgeHeading": 120,
+        "backHeading": 30,
+        "rightEdgeHeading": null
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "W3C 原文範例:使用者面向 30 度,螢幕頂端在其右手邊 => alpha=270-30=240,beta=0,gamma=90",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "landscape_upright_topRight_facing0",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 270,
+        "beta": 0,
+        "gamma": 90
+      },
+      "expected": {
+        "topEdgeHeading": 90,
+        "backHeading": 0,
+        "rightEdgeHeading": null
+      },
+      "source": "W3C Device Orientation and Motion, Introduction examples + Appendix A.1 (https://www.w3.org/TR/orientation-event/) | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "橫放直立(頂端朝右),面向北",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "landscape_upright_topRight_facing90",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 180,
+        "beta": 0,
+        "gamma": 90
+      },
+      "expected": {
+        "topEdgeHeading": 180,
+        "backHeading": 90,
+        "rightEdgeHeading": null
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "橫放直立(頂端朝右),面向東",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "landscape_upright_topLeft_facing30",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 60,
+        "beta": 0,
+        "gamma": -90
+      },
+      "expected": {
+        "topEdgeHeading": 300,
+        "backHeading": 30,
+        "rightEdgeHeading": null
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "橫放直立(頂端朝左,即 gamma=-90),面向 30 度 => alpha=90-30=60",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "landscape_upright_topLeft_facing180",
+      "group": "group1",
+      "fn": "eulerToHeadings",
+      "input": {
+        "alpha": 270,
+        "beta": 0,
+        "gamma": -90
+      },
+      "expected": {
+        "topEdgeHeading": 90,
+        "backHeading": 180,
+        "rightEdgeHeading": null
+      },
+      "source": "independent derivation: R=Rz(a)Rx(b)Ry(g) (W3C section 3.1); 3 implementations (matrix/closed-form/quaternion) agree | hand-derived literals asserted equal to implementation",
+      "confidence": "high",
+      "note": "橫放直立(頂端朝左),面向南 => alpha=90-180+360=270",
+      "verifiedBy": "node: matrix + closed-form(W3C A.1) + quaternion agree < 1e-6 deg"
+    },
+    {
+      "name": "screenup_portrait_rot0",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 90,
+        "beta": 0,
+        "gamma": 0,
+        "deviceRotCCW": 0
+      },
+      "expected": {
+        "screenUpHeading": 270
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "high",
+      "note": "直式 rot=0:螢幕上方 = 頂端",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "screenup_landscape_rotCCW90_topW",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 90,
+        "beta": 0,
+        "gamma": 0,
+        "deviceRotCCW": 90
+      },
+      "expected": {
+        "screenUpHeading": 0
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "high",
+      "note": "頂端朝西(270)、裝置逆時針轉 90 度:螢幕上方 = 裝置右緣 = 北(0)",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "screenup_landscape_rotCCW270_topW",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 90,
+        "beta": 0,
+        "gamma": 0,
+        "deviceRotCCW": 270
+      },
+      "expected": {
+        "screenUpHeading": 180
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "high",
+      "note": "頂端朝西(270)、裝置順時針轉 90 度(rot=270):螢幕上方 = 裝置左緣 = 南(180)",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "screenup_upside_down_rot180",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 270,
+        "beta": 0,
+        "gamma": 0,
+        "deviceRotCCW": 180
+      },
+      "expected": {
+        "screenUpHeading": 270
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "high",
+      "note": "頂端朝東(90)、手機倒置(rot=180):螢幕上方 = 裝置底緣 = 西(270)",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "screenup_landscape_rotCCW90_topN",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 0,
+        "beta": 0,
+        "gamma": 0,
+        "deviceRotCCW": 90
+      },
+      "expected": {
+        "screenUpHeading": 90
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "high",
+      "note": "頂端朝北、rot=90:螢幕上方 = 右緣 = 東(90)",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "screenup_landscape_rotCCW90_tilted",
+      "group": "group2",
+      "fn": "screenUpHeading",
+      "input": {
+        "alpha": 45,
+        "beta": 10,
+        "gamma": 20,
+        "deviceRotCCW": 90
+      },
+      "expected": {
+        "screenUpHeading": 41.383558
+      },
+      "source": "derivation: on-screen up = device axis +Y/+X/-Y/-X for physical CCW rotation 0/90/180/270 (Android Display.getRotation doc: ROTATION_90 = device rotated 90 deg CCW; https://developer.android.com/reference/android/view/Display#getRotation()) ; W3C section 3.1 device frame is fixed to the natural portrait screen",
+      "confidence": "medium",
+      "note": "帶傾斜(beta=10,gamma=20)的橫放:以右緣向量投影計算,僅有跨實作一致驗證",
+      "verifiedBy": "node: vector-axis projection (matrix) vs closed-form column"
+    },
+    {
+      "name": "pick_flat_stays_top",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 120,
+        "beta": 2,
+        "gamma": 1,
+        "prevMode": "top",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "top",
+        "heading": 240,
+        "tiltDeg": 2.235977,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_tilt45_prevTop_stays_top",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 315,
+        "beta": 45,
+        "gamma": 0,
+        "prevMode": "top",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "top",
+        "heading": 45,
+        "tiltDeg": 45,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_tilt45_prevBack_stays_back",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 315,
+        "beta": 45,
+        "gamma": 0,
+        "prevMode": "back",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "back",
+        "heading": 45,
+        "tiltDeg": 45,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_tilt55_prevTop_switches_back",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 315,
+        "beta": 55,
+        "gamma": 0,
+        "prevMode": "top",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "back",
+        "heading": 45,
+        "tiltDeg": 55,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_tilt35_prevBack_switches_top",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 315,
+        "beta": 35,
+        "gamma": 0,
+        "prevMode": "back",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "top",
+        "heading": 45,
+        "tiltDeg": 35,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_upright_back",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 270,
+        "beta": 90,
+        "gamma": 0,
+        "prevMode": "top",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "back",
+        "heading": 90,
+        "tiltDeg": 90,
+        "faceDown": false
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "pick_face_down_flat_flagged",
+      "group": "group3",
+      "fn": "pickPointingMode",
+      "input": {
+        "alpha": 30,
+        "beta": 180,
+        "gamma": 0,
+        "prevMode": "top",
+        "enterBackDeg": 50,
+        "leaveBackDeg": 40
+      },
+      "expected": {
+        "mode": "top",
+        "heading": 150,
+        "tiltDeg": 0,
+        "faceDown": true
+      },
+      "source": "design rule (this report); heading values from verified group-1 formulas",
+      "confidence": "medium",
+      "note": "tilt = acos(|cos(beta)cos(gamma)|);tilt>50 進入 back 模式,<40 回到 top 模式,之間維持前一模式(遲滯值為設計建議)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "circmean_359_and_1",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          359,
+          1
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 0,
+        "resultantLength": 0.999848,
+        "circularStdDeg": 1.000025
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "note": "任務指定:359 與 1 的圓周平均 = 0(算術平均會得 180)",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_350_10_0",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          350,
+          10,
+          0
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 0,
+        "resultantLength": 0.989872,
+        "circularStdDeg": 8.175368
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_355_5_15_wikipedia",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          355,
+          5,
+          15
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 5,
+        "resultantLength": 0.989872,
+        "circularStdDeg": 8.175368
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "note": "Wikipedia Circular mean 範例 => 5",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_10_20_30",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          10,
+          20,
+          30
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 20,
+        "resultantLength": 0.989872,
+        "circularStdDeg": 8.175368
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_0_90",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          0,
+          90
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 45,
+        "resultantLength": 0.707107,
+        "circularStdDeg": 47.701865
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_179_181",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          179,
+          181
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": 180,
+        "resultantLength": 0.999848,
+        "circularStdDeg": 1.000025
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_opposite_undefined_90_270",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          90,
+          270
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": null,
+        "resultantLength": 0,
+        "circularStdDeg": null
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "note": "相反方向 => 合成向量長度 0,平均未定義(回傳 null,UI 提示重測)",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "circmean_uniform_undefined",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          0,
+          90,
+          180,
+          270
+        ],
+        "minResultantLength": 0.000001
+      },
+      "expected": {
+        "meanDeg": null,
+        "resultantLength": 0,
+        "circularStdDeg": null
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean (atan2(sum sin, sum cos)); values recomputed in node and python",
+      "confidence": "high",
+      "verifiedBy": "node + python cross-check"
+    },
+    {
+      "name": "antipattern_arithmetic_mean_359_and_1",
+      "group": "group4",
+      "fn": "circularMean",
+      "input": {
+        "anglesDeg": [
+          359,
+          1
+        ]
+      },
+      "expected": {
+        "arithmeticMeanDeg": 180,
+        "correctCircularMeanDeg": 0
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean",
+      "confidence": "high",
+      "note": "反例:直接算術平均得 180(錯)",
+      "verifiedBy": "node"
+    },
+    {
+      "name": "circdiff_1_minus_359",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 1,
+        "b": 359
+      },
+      "expected": {
+        "diffDeg": 2,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_359_minus_1",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 359,
+        "b": 1
+      },
+      "expected": {
+        "diffDeg": -2,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_0_minus_180",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 0,
+        "b": 180
+      },
+      "expected": {
+        "diffDeg": 180,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_270_minus_90",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 270,
+        "b": 90
+      },
+      "expected": {
+        "diffDeg": 180,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_10_minus_350",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 10,
+        "b": 350
+      },
+      "expected": {
+        "diffDeg": 20,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_350_minus_10",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 350,
+        "b": 10
+      },
+      "expected": {
+        "diffDeg": -20,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_90_minus_0",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 90,
+        "b": 0
+      },
+      "expected": {
+        "diffDeg": 90,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "circdiff_0_minus_90",
+      "group": "group5",
+      "fn": "circularDiff",
+      "input": {
+        "a": 0,
+        "b": 90
+      },
+      "expected": {
+        "diffDeg": -90,
+        "note180": "±180 兩者皆可接受(平手)"
+      },
+      "source": "definition ((a-b+540) mod 360) - 180 ; verified in node + python",
+      "confidence": "high",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "ema_vector_cross_zero_350_to_10_k0.25",
+      "group": "group6",
+      "fn": "circularEma",
+      "input": {
+        "method": "unit-vector EMA",
+        "k": 0.25,
+        "init": 350,
+        "samples": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      },
+      "expected": {
+        "outputs": [
+          354.961631,
+          358.737355,
+          1.578162,
+          3.704448,
+          5.292805,
+          6.478876
+        ]
+      },
+      "source": "https://en.wikipedia.org/wiki/Circular_mean + exponential smoothing (https://en.wikipedia.org/wiki/Exponential_smoothing); recomputed in python",
+      "confidence": "high",
+      "note": "從 350 逼近 10:輸出應經過 0 而非繞到 180",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "ema_shortest_arc_cross_zero_350_to_10_k0.25",
+      "group": "group6",
+      "fn": "circularEma",
+      "input": {
+        "method": "shortest-arc EMA",
+        "k": 0.25,
+        "init": 350,
+        "samples": [
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ]
+      },
+      "expected": {
+        "outputs": [
+          355,
+          358.75,
+          1.5625,
+          3.671875,
+          5.253906,
+          6.44043
+        ]
+      },
+      "source": "same as above",
+      "confidence": "high",
+      "note": "角度差法:輸出為 350→355→358.75...(每步 + k*最短弧差)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "ema_vector_jitter_359_1_k0.5",
+      "group": "group6",
+      "fn": "circularEma",
+      "input": {
+        "method": "unit-vector EMA",
+        "k": 0.5,
+        "init": 0,
+        "samples": [
+          359,
+          1,
+          359,
+          1,
+          359,
+          1
+        ]
+      },
+      "expected": {
+        "outputs": [
+          359.5,
+          0.250014,
+          359.624974,
+          0.312526,
+          359.656221,
+          0.328154
+        ]
+      },
+      "source": "same as above",
+      "confidence": "high",
+      "note": "359/1 交替抖動,平滑後應圍繞 0 而非跳到 180",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_359.8",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 359.8
+      },
+      "expected": {
+        "roundedDeg": 0
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_359.74",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 359.74
+      },
+      "expected": {
+        "roundedDeg": 359.5
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_0.24",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 0.24
+      },
+      "expected": {
+        "roundedDeg": 0
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_0.25",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 0.25
+      },
+      "expected": {
+        "roundedDeg": 0.5
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_7.49",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 7.49
+      },
+      "expected": {
+        "roundedDeg": 7.5
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_7.24",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 7.24
+      },
+      "expected": {
+        "roundedDeg": 7
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_352.6",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": 352.6
+      },
+      "expected": {
+        "roundedDeg": 352.5
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "roundhalf_-0.1",
+      "group": "group7",
+      "fn": "roundHalfDegree",
+      "input": {
+        "headingDeg": -0.1
+      },
+      "expected": {
+        "roundedDeg": 0
+      },
+      "source": "definition; node + python",
+      "confidence": "high",
+      "note": "四捨五入到 0.5 度且需回捲(359.8 -> 0 而非 360)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_0",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 0,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 7.5
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_7.5",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 7.5,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 0
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_7.4",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 7.4,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 0.1
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_352.5",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 352.5,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 0
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_15",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 15,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 7.5
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_22.5",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 22.5,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 0
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_359.9",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 359.9,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 7.4
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "boundary_distance_3",
+      "group": "group8",
+      "fn": "boundaryDistance",
+      "input": {
+        "headingDeg": 3,
+        "sectorWidthDeg": 15,
+        "sectorCentersAtMultiplesOf": 15
+      },
+      "expected": {
+        "distanceToNearestBoundaryDeg": 4.5
+      },
+      "source": "cross-topic assumption (24 mountains = 15 deg each, centered on multiples of 15)",
+      "confidence": "medium",
+      "note": "24山每山 15 度、山中心在 15 度整數倍(子=0);此假設由「坐向判定」主題另行驗證,這裡只用來決定「接近分界」警示",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "true_from_magnetic_0_decl-5.03",
+      "group": "group9",
+      "fn": "trueFromMagnetic",
+      "input": {
+        "magneticHeadingDeg": 0,
+        "declinationDegEastPositive": -5.03
+      },
+      "expected": {
+        "trueHeadingDeg": 354.97
+      },
+      "source": "https://www.ngdc.noaa.gov/geomag/declination.shtml (sign convention + formula); https://www.magnetic-declination.com/Taiwan/Taipei/2654816.html (Taipei about -5.06 WMM2025)",
+      "confidence": "high",
+      "note": "true = magnetic + declination(東為正,西為負);台北 WMM2025 約 -5.0 度(magnetic-declination.com: -5.03/-5.06)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "true_from_magnetic_3_decl-5",
+      "group": "group9",
+      "fn": "trueFromMagnetic",
+      "input": {
+        "magneticHeadingDeg": 3,
+        "declinationDegEastPositive": -5
+      },
+      "expected": {
+        "trueHeadingDeg": 358
+      },
+      "source": "https://www.ngdc.noaa.gov/geomag/declination.shtml (sign convention + formula); https://www.magnetic-declination.com/Taiwan/Taipei/2654816.html (Taipei about -5.06 WMM2025)",
+      "confidence": "high",
+      "note": "true = magnetic + declination(東為正,西為負);台北 WMM2025 約 -5.0 度(magnetic-declination.com: -5.03/-5.06)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "true_from_magnetic_359_decl2",
+      "group": "group9",
+      "fn": "trueFromMagnetic",
+      "input": {
+        "magneticHeadingDeg": 359,
+        "declinationDegEastPositive": 2
+      },
+      "expected": {
+        "trueHeadingDeg": 1
+      },
+      "source": "https://www.ngdc.noaa.gov/geomag/declination.shtml (sign convention + formula); https://www.magnetic-declination.com/Taiwan/Taipei/2654816.html (Taipei about -5.06 WMM2025)",
+      "confidence": "high",
+      "note": "true = magnetic + declination(東為正,西為負);台北 WMM2025 約 -5.0 度(magnetic-declination.com: -5.03/-5.06)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "true_from_magnetic_90_decl-5.06",
+      "group": "group9",
+      "fn": "trueFromMagnetic",
+      "input": {
+        "magneticHeadingDeg": 90,
+        "declinationDegEastPositive": -5.06
+      },
+      "expected": {
+        "trueHeadingDeg": 84.94
+      },
+      "source": "https://www.ngdc.noaa.gov/geomag/declination.shtml (sign convention + formula); https://www.magnetic-declination.com/Taiwan/Taipei/2654816.html (Taipei about -5.06 WMM2025)",
+      "confidence": "high",
+      "note": "true = magnetic + declination(東為正,西為負);台北 WMM2025 約 -5.0 度(magnetic-declination.com: -5.03/-5.06)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "true_from_magnetic_4_decl-5",
+      "group": "group9",
+      "fn": "trueFromMagnetic",
+      "input": {
+        "magneticHeadingDeg": 4,
+        "declinationDegEastPositive": -5
+      },
+      "expected": {
+        "trueHeadingDeg": 359
+      },
+      "source": "https://www.ngdc.noaa.gov/geomag/declination.shtml (sign convention + formula); https://www.magnetic-declination.com/Taiwan/Taipei/2654816.html (Taipei about -5.06 WMM2025)",
+      "confidence": "high",
+      "note": "true = magnetic + declination(東為正,西為負);台北 WMM2025 約 -5.0 度(magnetic-declination.com: -5.03/-5.06)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "ios_ok",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 123,
+        "beta": 2,
+        "gamma": 1,
+        "absolute": null,
+        "webkitCompassHeading": 45.5,
+        "webkitCompassAccuracy": 10
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": 45.5,
+        "accuracyDeg": 10,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "Apple: webkitCompassHeading degrees clockwise from magnetic north; accuracy = +/- degrees (https://developer.apple.com/documentation/webkitjs/deviceorientationevent/1804769-webkitcompassaccuracy)",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "ios_wrap_359.9",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassHeading": 359.9,
+        "webkitCompassAccuracy": 5
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": 359.9,
+        "accuracyDeg": 5,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "Apple docs",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "ios_uncalibrated_accuracy_-1",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassHeading": 10,
+        "webkitCompassAccuracy": -1
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": null,
+        "accuracyDeg": -1,
+        "status": "uncalibrated",
+        "mode": "top-edge"
+      },
+      "source": "Apple: accuracy -1 = compass not calibrated and not giving usable readings",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "ios_negative_heading_invalid",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassHeading": -1,
+        "webkitCompassAccuracy": 15
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": null,
+        "accuracyDeg": 15,
+        "status": "invalid",
+        "mode": "top-edge"
+      },
+      "source": "Apple: a negative value indicates an invalid direction",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "android_absolute_flat",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientationabsolute",
+        "alpha": 90,
+        "beta": 0,
+        "gamma": 0,
+        "absolute": true
+      },
+      "expected": {
+        "source": "alpha-absolute",
+        "headingDeg": 270,
+        "accuracyDeg": null,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "W3C: heading = 360 - alpha (flat); Chromium maps deviceorientationabsolute to ABSOLUTE_ORIENTATION_EULER_ANGLES <- TYPE_ROTATION_VECTOR",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "android_absolute_upright",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientationabsolute",
+        "alpha": 270,
+        "beta": 90,
+        "gamma": 0,
+        "absolute": true
+      },
+      "expected": {
+        "source": "alpha-absolute",
+        "headingDeg": 90,
+        "accuracyDeg": null,
+        "status": "ok",
+        "mode": "back-camera"
+      },
+      "source": "W3C A.1",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "android_fallback_deviceorientation_absolute_true",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 180,
+        "beta": 1,
+        "gamma": 0,
+        "absolute": true
+      },
+      "expected": {
+        "source": "alpha-absolute",
+        "headingDeg": 180,
+        "accuracyDeg": null,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "Chromium DeviceOrientationEventPump: when the relative sensor cannot connect it falls back to the absolute sensor and reports absolute=true",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "android_relative_deviceorientation_unusable",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 33,
+        "beta": 0,
+        "gamma": 0,
+        "absolute": false
+      },
+      "expected": {
+        "source": "alpha-relative",
+        "headingDeg": null,
+        "accuracyDeg": null,
+        "status": "relative-not-north",
+        "mode": null
+      },
+      "source": "Chrome 50+: deviceorientation on Android is relative (arbitrary zero) https://developer.chrome.com/blog/device-orientation-changes",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "ios_tilted_upright_refuse_v1",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 147,
+        "beta": 85,
+        "gamma": 0,
+        "webkitCompassHeading": 200,
+        "webkitCompassAccuracy": 10
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": null,
+        "accuracyDeg": 10,
+        "status": "tilt-too-large",
+        "mode": null
+      },
+      "source": "policy: iOS heading follows the top edge only while roughly flat; past vertical it behaves like the camera direction (https://github.com/bergeronK/Twilight/pull/62); v1 refuses readings when tilt > 50 deg unless offset tracking is implemented",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "no_sensor_null_alpha",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": null,
+        "beta": null,
+        "gamma": null,
+        "absolute": false
+      },
+      "expected": {
+        "source": null,
+        "headingDeg": null,
+        "accuracyDeg": null,
+        "status": "no-sensor",
+        "mode": null
+      },
+      "source": "W3C: if the implementation can never provide orientation, fire with null values",
+      "confidence": "medium",
+      "verifiedBy": "hand-derived from cited docs (decision table); heading numbers re-derived in node"
+    },
+    {
+      "name": "ios_upright_via_offset_tracking",
+      "group": "group11",
+      "fn": "iosUprightOffset",
+      "input": {
+        "flatSample": {
+          "alpha": 297,
+          "beta": 0,
+          "gamma": 0,
+          "webkitCompassHeading": 100
+        },
+        "uprightSample": {
+          "alpha": 147,
+          "beta": 90,
+          "gamma": 0
+        }
+      },
+      "expected": {
+        "offsetDeg": 37,
+        "uprightBackHeadingDeg": 250
+      },
+      "source": "Dean Jackson (Apple) 2011: alpha not world accurate, based on possibly arbitrary reference (https://lists.w3.org/Archives/Public/public-geolocation/2011Jul/0014.html); workaround pattern similar to https://github.com/bergeronK/Twilight/pull/62 ; math verified in node",
+      "confidence": "medium",
+      "note": "iOS alpha 的零點任意(相對於開機/啟動姿態),不能直接當羅盤;先在平放時量出 offset = webkitCompassHeading - (360-alpha),之後直立時 heading = backHeading(alpha,beta,gamma) + offset。此為進階做法,v1 建議只支援平放讀數。",
+      "verifiedBy": "node (synthetic scenario; not yet validated on a real device)"
+    },
+    {
+      "name": "lock_average_ok_crossing_north",
+      "group": "group12",
+      "fn": "lockAverage",
+      "input": {
+        "samplesDeg": [
+          0.1,
+          0.8,
+          359,
+          358.7,
+          360,
+          0.8,
+          359,
+          358.2,
+          1,
+          0.5,
+          357.7,
+          359.6,
+          1.3,
+          358.9,
+          358.5,
+          0.3,
+          0.5,
+          359.1,
+          358.5,
+          0.4,
+          0.9,
+          358.1,
+          358.8,
+          1.6,
+          359.4,
+          357.9,
+          0.4,
+          0.6,
+          358.8,
+          358.8,
+          0.2,
+          0.6,
+          358.7,
+          358.5,
+          1.2,
+          0.1,
+          357.6,
+          0,
+          1.2,
+          358.6,
+          358.7,
+          0.4,
+          0.3,
+          358.9,
+          358.6,
+          0.6,
+          0.6,
+          357.9,
+          359.3,
+          1.6,
+          359,
+          358.1,
+          0.7,
+          0.4,
+          358.7,
+          359,
+          0.3,
+          0.5,
+          358.5,
+          358.8
+        ],
+        "minSamples": 20,
+        "maxStdDeg": 3
+      },
+      "expected": {
+        "status": "ok",
+        "n": 60,
+        "meanDeg": 359.596666,
+        "stdDeg": 1.085372
+      },
+      "source": "design rule (this report) + circular statistics (https://en.wikipedia.org/wiki/Circular_mean); samples generated deterministically: center + a1*sin(1.7 i) + a2*cos(4.1 i), rounded to 0.1 (W3C limits orientation precision to 0.1 deg)",
+      "confidence": "medium",
+      "note": "3 秒 x 20Hz=60 筆,中心 359.6,噪聲約 ±2:平均應約 359.6 而非 ~180",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "lock_average_unstable_noisy",
+      "group": "group12",
+      "fn": "lockAverage",
+      "input": {
+        "samplesDeg": [
+          126,
+          128.5,
+          114.9,
+          114.7,
+          121.3,
+          129.1,
+          116.8,
+          107.1,
+          131.4,
+          128.9,
+          102.5,
+          120.8,
+          134.9,
+          112.7,
+          112.3,
+          125.7,
+          125,
+          118,
+          111.1,
+          124.5,
+          132,
+          107.3,
+          112.8,
+          137.8,
+          117.3,
+          105.7,
+          128.5,
+          126.9,
+          113.7,
+          115.5,
+          122.7,
+          128.6,
+          114.4,
+          108.9,
+          133.7,
+          125.4,
+          102,
+          124.5,
+          133.5,
+          110.5,
+          114,
+          126.8,
+          124.1,
+          116.6,
+          111.8,
+          126.8,
+          130,
+          105.3,
+          116.4,
+          137.9,
+          113.7,
+          107.5,
+          130.5,
+          125,
+          112.8,
+          116.4,
+          124,
+          127.7,
+          112.2,
+          111.3
+        ],
+        "minSamples": 20,
+        "maxStdDeg": 3
+      },
+      "expected": {
+        "status": "unstable",
+        "n": 60,
+        "meanDeg": 119.978172,
+        "stdDeg": 9.185274
+      },
+      "source": "design rule (this report) + circular statistics (https://en.wikipedia.org/wiki/Circular_mean); samples generated deterministically: center + a1*sin(1.7 i) + a2*cos(4.1 i), rounded to 0.1 (W3C limits orientation precision to 0.1 deg)",
+      "confidence": "medium",
+      "note": "噪聲 ±18 度:標準差超過 3 度 => unstable(提示遠離磁性物體/重新校準)",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "lock_average_too_few",
+      "group": "group12",
+      "fn": "lockAverage",
+      "input": {
+        "samplesDeg": [
+          45.5,
+          45.7,
+          44.6,
+          44.6,
+          45.1,
+          45.8,
+          44.7,
+          43.9
+        ],
+        "minSamples": 20,
+        "maxStdDeg": 3
+      },
+      "expected": {
+        "status": "too-few",
+        "n": 8,
+        "meanDeg": null,
+        "stdDeg": null
+      },
+      "source": "design rule (this report) + circular statistics (https://en.wikipedia.org/wiki/Circular_mean); samples generated deterministically: center + a1*sin(1.7 i) + a2*cos(4.1 i), rounded to 0.1 (W3C limits orientation precision to 0.1 deg)",
+      "confidence": "medium",
+      "note": "樣本不足 20 筆",
+      "verifiedBy": "node + python"
+    },
+    {
+      "name": "screen_angle_android_270_means_device_turned_clockwise",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "android",
+        "screenOrientationAngle": 270
+      },
+      "expected": {
+        "deviceRotCCW": 270
+      },
+      "source": "W3C screen-orientation interop report: device turned clockwise -> Firefox/Chrome Android angle 270 (https://lists.w3.org/Archives/Public/public-webapps-github/2023Apr/0185.html); Android Display.getRotation doc",
+      "confidence": "medium",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "screen_angle_android_90_means_device_turned_ccw",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "android",
+        "screenOrientationAngle": 90
+      },
+      "expected": {
+        "deviceRotCCW": 90
+      },
+      "source": "Android Display.getRotation: ROTATION_90 = device rotated 90 deg counter-clockwise; Chrome Android angle follows it",
+      "confidence": "medium",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "screen_angle_ios_90_means_device_turned_clockwise",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "ios",
+        "screenOrientationAngle": 90
+      },
+      "expected": {
+        "deviceRotCCW": 270
+      },
+      "source": "same interop report: Safari 16.4 iOS reports angle 90 when the device is turned clockwise",
+      "confidence": "medium",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "screen_angle_ios_270_means_device_turned_ccw",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "ios",
+        "screenOrientationAngle": 270
+      },
+      "expected": {
+        "deviceRotCCW": 90
+      },
+      "source": "mirror of the previous case (inferred, not directly reported)",
+      "confidence": "low",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "screen_angle_180_same_everywhere",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "ios",
+        "screenOrientationAngle": 180
+      },
+      "expected": {
+        "deviceRotCCW": 180
+      },
+      "source": "symmetry",
+      "confidence": "medium",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "screen_angle_0",
+      "group": "group13",
+      "fn": "screenAngleToDeviceRot",
+      "input": {
+        "platform": "android",
+        "screenOrientationAngle": 0
+      },
+      "expected": {
+        "deviceRotCCW": 0
+      },
+      "source": "natural portrait",
+      "confidence": "medium",
+      "note": "iOS 與 Android 的 screen.orientation.angle 方向相反(已知互通性問題);首版建議直接鎖直式,避免依賴此映射",
+      "verifiedBy": "not verifiable offline; needs on-device test"
+    },
+    {
+      "name": "ios_wrap_360_to_0",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassHeading": 360,
+        "webkitCompassAccuracy": 5
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": 0,
+        "accuracyDeg": 5,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9)、2.9.3;iOS 360 視為 0(2.9.7 邊界情況)",
+      "confidence": "medium",
+      "note": "webkitCompassHeading=360 不可原樣輸出 360,要回捲成 0(hd % 360)。",
+      "verifiedBy": "sensor.test.js 決策表手推(360 % 360 = 0);與 2.9.3 表逐列一致"
+    },
+    {
+      "name": "ios_nan_heading_invalid",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassAccuracy": 10
+      },
+      "inputSpecials": {
+        "webkitCompassHeading": "NaN"
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": null,
+        "accuracyDeg": 10,
+        "status": "invalid",
+        "mode": "top-edge"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9)、2.9.3",
+      "confidence": "medium",
+      "note": "JSON 不能表示 NaN,inputSpecials.webkitCompassHeading=\"NaN\" 由 runner 換成 NaN;非有限值 => invalid。",
+      "verifiedBy": "sensor.test.js 決策表手推(非有限值 => invalid)"
+    },
+    {
+      "name": "ios_uncalibrated_heading_0_accuracy_-1",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 1,
+        "beta": 0,
+        "gamma": 0,
+        "webkitCompassHeading": 0,
+        "webkitCompassAccuracy": -1
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": null,
+        "accuracyDeg": -1,
+        "status": "uncalibrated",
+        "mode": "top-edge"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9)、2.9.3",
+      "confidence": "medium",
+      "note": "heading=0 是合法讀數,但 accuracy=-1 優先判未校準;不可因 heading 為 0 (falsy) 而漏判。",
+      "verifiedBy": "sensor.test.js 決策表手推(accuracy<0 排在最前)"
+    },
+    {
+      "name": "ios_no_accuracy_field_ok",
+      "group": "group10",
+      "fn": "decodeOrientationEvent",
+      "input": {
+        "type": "deviceorientation",
+        "alpha": 123,
+        "beta": 2,
+        "gamma": 1,
+        "webkitCompassHeading": 45.5
+      },
+      "expected": {
+        "source": "webkitCompassHeading",
+        "headingDeg": 45.5,
+        "accuracyDeg": null,
+        "status": "ok",
+        "mode": "top-edge"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9)、2.9.7(accuracy 欄位缺失視為未知,不判未校準)",
+      "confidence": "medium",
+      "note": "沒有 webkitCompassAccuracy 欄位 => accuracyDeg=null、status=ok。",
+      "verifiedBy": "sensor.test.js 決策表手推"
+    },
+    {
+      "name": "blend_alpha0_gamma10_tilt40",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 38.934771077711694,
+        "gamma": 10
+      },
+      "expected": {
+        "headingDeg": 0,
+        "tiltDeg": 40,
+        "mode": "top"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=10、tilt=40°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma10_tilt45",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 44.10915904865081,
+        "gamma": 10
+      },
+      "expected": {
+        "headingDeg": 352.892074,
+        "tiltDeg": 45,
+        "mode": "blend"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=10、tilt=45°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma10_tilt50",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 49.254243381676964,
+        "gamma": 10
+      },
+      "expected": {
+        "headingDeg": 346.898218,
+        "tiltDeg": 50,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=10、tilt=50°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma10_tilt55",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 54.37873008867047,
+        "gamma": 10
+      },
+      "expected": {
+        "headingDeg": 347.76128,
+        "tiltDeg": 55,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=10、tilt=55°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma20_tilt40",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 35.39211887120492,
+        "gamma": 20
+      },
+      "expected": {
+        "headingDeg": 0,
+        "tiltDeg": 40,
+        "mode": "top"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=20、tilt=40°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma20_tilt45",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 41.19370102048516,
+        "gamma": 20
+      },
+      "expected": {
+        "headingDeg": 345.536675,
+        "tiltDeg": 45,
+        "mode": "blend"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=20、tilt=45°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma20_tilt50",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 46.83982220018167,
+        "gamma": 20
+      },
+      "expected": {
+        "headingDeg": 333.482215,
+        "tiltDeg": 50,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=20、tilt=50°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma20_tilt55",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 52.382487859339335,
+        "gamma": 20
+      },
+      "expected": {
+        "headingDeg": 335.321288,
+        "tiltDeg": 55,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=20、tilt=55°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma30_tilt40",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 27.80356789566002,
+        "gamma": 30
+      },
+      "expected": {
+        "headingDeg": 0,
+        "tiltDeg": 40,
+        "mode": "top"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=30、tilt=40°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma30_tilt45",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 35.264389682754654,
+        "gamma": 30
+      },
+      "expected": {
+        "headingDeg": 337.5,
+        "tiltDeg": 45,
+        "mode": "blend"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=30、tilt=45°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma30_tilt50",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 42.078514066703065,
+        "gamma": 30
+      },
+      "expected": {
+        "headingDeg": 319.254243,
+        "tiltDeg": 50,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=30、tilt=50°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    },
+    {
+      "name": "blend_alpha0_gamma30_tilt55",
+      "group": "group14",
+      "fn": "pickHeadingBlend",
+      "input": {
+        "alpha": 0,
+        "beta": 48.52378957765347,
+        "gamma": 30
+      },
+      "expected": {
+        "headingDeg": 322.382488,
+        "tiltDeg": 55,
+        "mode": "back"
+      },
+      "source": "DOMAIN_SPEC 附錄 B.7(DC-9) 表;smoothstep(40°,50°)(D66)",
+      "confidence": "medium",
+      "note": "alpha=0、gamma=30、tilt=55°(beta 由 acos(cos(tilt)/cos(gamma)) 反解,存完整精度)。tilt ≤ 40 等於頂端方位 0;tilt ≥ 50 只用後鏡頭方位;之間為單位向量混合。",
+      "verifiedBy": "test/helpers/sensor.js 矩陣連乘 R=Rz·Rx·Ry 另算一份,與規格 B.7 三位小數表一致(差 ≤ 5e-4)"
+    }
+  ]
+}

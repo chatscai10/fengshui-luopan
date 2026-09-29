@@ -1,0 +1,2240 @@
+{
+ "meta": {
+  "topic": "wealth_position",
+  "schema": "wealth_position.fixtures/1",
+  "generated": "2026-09-29",
+  "coordinate_convention": {
+   "plan": "x 向右、y 向上;房間 [0,w]x[0,d];牆 bottom(y=0) top(y=d) left(x=0) right(x=w);角 BL BR TL TR;門 pos=沿牆座標(bottom/top 為 x,left/right 為 y)",
+   "compass": "plan_up_bearing_deg=平面圖「上」的羅盤方位角;方位=plan_up+atan2(dx,dy);8 宮各 45 度,坎=337.5~22.5,邊界歸順時針下一宮"
+  },
+  "tolerance": {
+   "score": 0.011,
+   "geometry": 1e-09
+  },
+  "defaults": {
+   "zone_m": 1.0,
+   "center_band": 0.1,
+   "opening_penalty_mingcai": 0.5,
+   "opening_bonus_xuankong": 1.05,
+   "beam": 0.9,
+   "dark": 0.95,
+   "sharp": 0.95,
+   "no_solid_wall": 0.7,
+   "toilet_adjacent": 0.8,
+   "stove_facing": 0.9,
+   "exclusion_flags": [
+    "toilet",
+    "stove",
+    "stairs",
+    "walkway",
+    "door_swing"
+   ]
+  },
+  "confidence_legend": "high=多個獨立來源一致且已用程式重算;medium=來源一致但幾何/數值有設計補充或單一實作驗證;low=設計決策、單一來源、或流派分歧",
+  "verification": "所有 cases 於產生時由獨立程式重算並斷言一致;expected 由手推或來源給定,程式僅用於交叉驗證",
+  "notes": [
+   "設計啟發式(score_*)之數值為設計選擇,非傳統數據;僅「順序關係」有來源依據",
+   "xk_* 為玄空模組輸入樣本,排盤細節(替卦、兼向)不在本主題範圍"
+  ]
+ },
+ "cases": [
+  {
+   "name": "geom_rect_door_bottom_left",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門在下牆偏左(進門者左手側),財位在遠端右角(對角)"
+  },
+  {
+   "name": "geom_rect_door_bottom_right",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 3.2,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TL"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門偏右,財位在遠端左角"
+  },
+  {
+   "name": "geom_rect_door_bottom_center_exact",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 2.0,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TL",
+     "TR"
+    ],
+    "ordered": false
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門正中:左右兩個對角皆為明財位(觀仁自在/中文百科/方格子/ETtoday 一致);MyGoNews 2010 僅取青龍邊一角(少數說法)"
+  },
+  {
+   "name": "geom_rect_door_bottom_near_center_within_band",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 2.1,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TL",
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "low",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "「門居中」容差帶=牆長 +-10% 為本設計決策(來源未給數值);帶內兩角並列,較遠者(TL)為 primary"
+  },
+  {
+   "name": "geom_rect_door_bottom_outside_band",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.4,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "low",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "偏離中心 0.6m > 0.4m 容差,視為門偏左,單一財位"
+  },
+  {
+   "name": "geom_rect_door_top_left",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "top",
+     "pos": 0.8,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "BR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門在上牆(進門者面向 -y),距離手推:BR=5.94 > BL=5.06"
+  },
+  {
+   "name": "geom_rect_door_left_lower",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "left",
+     "pos": 1.0,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門在左牆偏下,遠端牆為右牆:TR=5.66 > BR=4.12"
+  },
+  {
+   "name": "geom_rect_door_right_upper",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "right",
+     "pos": 4.0,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "BL"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "門在右牆偏上:BL=5.66 > TL=4.12"
+  },
+  {
+   "name": "geom_square_room",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 4
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.5,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=80102",
+    "https://guanrenzizai.com/prosperitycorner/",
+    "https://vocus.cc/article/630301f5fd89780001b71988",
+    "https://house.ettoday.net/news/1896356",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)"
+  },
+  {
+   "name": "geom_wide_room_corner_default",
+   "input": {
+    "room": {
+     "w": 8,
+     "d": 3
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.0,
+     "width": 0.9
+    }
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://tradiculture.com/gekongjiancaiwei/",
+    "https://www.100.com.tw/article/14077",
+    "https://www.searchome.net/article.aspx?id=77173"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "寬扁房間:預設取「遠端角」(易算數:對角線最遠的角落)。若採「45 度射線命中點」變體,命中點為 (4.0,3.0),位於遠牆中段而非牆角;來源(100 室內設計/設計家)只稱「進門 45 度」未定義幾何,故僅列為可選變體"
+  },
+  {
+   "name": "geom_variant_ray45_hit_point",
+   "input": {
+    "room": {
+     "w": 8,
+     "d": 3
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.0,
+     "width": 0.9
+    },
+    "variant": "ray45"
+   },
+   "expected": {
+    "hit": [
+     4.0,
+     3.0
+    ]
+   },
+   "source": [
+    "https://www.100.com.tw/article/14077",
+    "https://www.searchome.net/article.aspx?id=77173"
+   ],
+   "confidence": "low",
+   "verified_by": "幾何手推:由 (1,0) 朝 (1,1) 方向,y=3 時 x=4;程式 ray45_hit 一致",
+   "notes": "僅為顯示用變體;非預設"
+  },
+  {
+   "name": "geom_bedroom_door_rule",
+   "input": {
+    "room": {
+     "w": 3,
+     "d": 4
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.6,
+     "width": 0.9
+    },
+    "room_type": "bedroom"
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.searchome.net/article.aspx?id=77173",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "臥室/書房同邏輯,以該房間的門為基準(設計家 2024-03-12 房間財位;易算數)"
+  },
+  {
+   "name": "geom_balcony_slider_is_real_door",
+   "input": {
+    "room": {
+     "w": 5,
+     "d": 4
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 4.2,
+     "width": 0.9
+    },
+    "entrance_chain": [
+     "front_door",
+     "balcony",
+     "living_room_sliding_door"
+    ],
+    "door_used": "living_room_sliding_door"
+   },
+   "expected": {
+    "corners": [
+     "TL"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://www.mygonews.com/news/detail/news_id/2782",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + 兩種獨立實作(距離法 / 進門者左右手法)交叉一致(20 萬組隨機房間與門位置 0 筆不一致)",
+   "notes": "大門先進陽台、須開落地窗才入客廳時,以落地窗為客廳真正的門(MyGoNews 2010)。此處落地窗在下牆 x=4.2 偏右,財位=TL"
+  },
+  {
+   "name": "geom_two_openings_use_main_door",
+   "input": {
+    "room": {
+     "w": 5,
+     "d": 4
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8,
+     "width": 0.9,
+     "kind": "main_door"
+    },
+    "other_openings": [
+     {
+      "wall": "left",
+      "pos": 3.0,
+      "width": 0.9,
+      "kind": "corridor"
+     }
+    ]
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推:以大門為基準,走廊口屬內部動線不參與;大門 x=0.8 偏左 => TR",
+   "notes": "易算數:雙門格局以大門為主"
+  },
+  {
+   "name": "geom_open_plan_whole_space_default",
+   "input": {
+    "room": {
+     "w": 8,
+     "d": 4,
+     "note": "客餐廳無隔牆"
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.0,
+     "width": 0.9
+    },
+    "partition": null
+   },
+   "expected": {
+    "corners": [
+     "TR"
+    ],
+    "ordered": true
+   },
+   "source": [
+    "https://tradiculture.com/gekongjiancaiwei/",
+    "https://www.100.com.tw/article/14077",
+    "https://artarthome.com/%E5%AE%A2%E5%BB%B3%E8%B2%A1%E4%BD%8D%E6%80%8E%E9%BA%BC%E6%89%BE/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推:預設整個開放空間以大門為基準取遠端角(易算數、100 室內設計);藝術家推好康一篇主張以家具/屏風虛擬分區後再找(可選 partition 參數)",
+   "notes": "開放式:整體 vs 虛擬分區有分歧"
+  },
+  {
+   "name": "geom_L_shape_geodesic_far_convex90_corner",
+   "input": {
+    "polygon": [
+     [
+      0,
+      0
+     ],
+     [
+      5,
+      0
+     ],
+     [
+      5,
+      3
+     ],
+     [
+      2,
+      3
+     ],
+     [
+      2,
+      6
+     ],
+     [
+      0,
+      6
+     ]
+    ],
+    "door": {
+     "edge_index": 0,
+     "t": 0.84,
+     "note": "下牆 x=4.2"
+    },
+    "rule": "candidates=內角恰為 90 度的頂點(排除門所在牆兩端點與 270 度凹角);取室內步行距離最遠者"
+   },
+   "expected": {
+    "corner": [
+     0,
+     6
+    ],
+    "walk_dist": 7.33
+   },
+   "source": [
+    "https://artarthome.com/%E5%AE%A2%E5%BB%B3%E8%B2%A1%E4%BD%8D%E6%80%8E%E9%BA%BC%E6%89%BE/",
+    "https://tradiculture.com/gekongjiancaiwei/",
+    "https://www.100.com.tw/article/14077"
+   ],
+   "confidence": "low",
+   "verified_by": "手推:凹角 (2,3) 阻擋直線,步行距離 (0,6)=3.72+3.61=7.33, (2,6)=6.72, (5,3)=3.10;程式 geodesic 一致",
+   "notes": "來源僅說「L 型拆成兩個矩形各自定位、取較有利者/以常用活動區為基準」,未給精確幾何;此為本設計的可計算化"
+  },
+  {
+   "name": "zone_window_in_corner_mingcai",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "right",
+      "start": 3.6,
+      "end": 4.6,
+      "type": "window"
+     }
+    ],
+    "profile": "mingcai"
+   },
+   "expected": {
+    "status": "void_window"
+   },
+   "source": [
+    "https://tw.stock.yahoo.com/news/%E3%80%90%E5%9C%96%E8%A7%A3%E9%A2%A8%E6%B0%B4%E7%85%9E%E3%80%91%E8%B2%A1%E4%BD%8D%E9%84%B0%E5%A4%A7%E9%9D%A2%E7%AA%97-%E3%80%8C%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E3%80%8D%E8%B2%A1%E6%B0%A3%E9%9B%A3%E8%81%9A-074840765.html",
+    "https://www.ailan.idv.tw/2026/08/25/%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E6%98%AF%E4%BB%80%E9%BA%BC%E5%A4%A7%E9%96%80%E6%96%9C%E5%B0%8D%E8%A7%92%E9%96%8B%E7%AA%97/",
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "財位見空:窗落在角區,明財位派視為漏財,建議實牆/矮櫃/窗簾/屏風化解"
+  },
+  {
+   "name": "zone_window_in_corner_xuankong_intake",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "right",
+      "start": 3.6,
+      "end": 4.6,
+      "type": "window"
+     }
+    ],
+    "profile": "xuankong"
+   },
+   "expected": {
+    "status": "qi_intake_ok"
+   },
+   "source": [
+    "https://hhh.com.tw/columns/detail/7793",
+    "https://hhh.com.tw/columns/detail/7913"
+   ],
+   "confidence": "low",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "玄空派(吳尚易)主張旺星位需開門窗納氣,不視為缺陷"
+  },
+  {
+   "name": "zone_window_far_from_corner",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "right",
+      "start": 1.0,
+      "end": 2.0,
+      "type": "window"
+     }
+    ],
+    "profile": "mingcai"
+   },
+   "expected": {
+    "status": "ok"
+   },
+   "source": [
+    "https://tw.stock.yahoo.com/news/%E3%80%90%E5%9C%96%E8%A7%A3%E9%A2%A8%E6%B0%B4%E7%85%9E%E3%80%91%E8%B2%A1%E4%BD%8D%E9%84%B0%E5%A4%A7%E9%9D%A2%E7%AA%97-%E3%80%8C%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E3%80%8D%E8%B2%A1%E6%B0%A3%E9%9B%A3%E8%81%9A-074840765.html",
+    "https://www.ailan.idv.tw/2026/08/25/%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E6%98%AF%E4%BB%80%E9%BA%BC%E5%A4%A7%E9%96%80%E6%96%9C%E5%B0%8D%E8%A7%92%E9%96%8B%E7%AA%97/",
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "窗離角區 >1m,不影響"
+  },
+  {
+   "name": "zone_window_touching_boundary_only",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "right",
+      "start": 2.0,
+      "end": 4.0,
+      "type": "window"
+     }
+    ],
+    "profile": "mingcai"
+   },
+   "expected": {
+    "status": "ok"
+   },
+   "source": [
+    "https://tw.stock.yahoo.com/news/%E3%80%90%E5%9C%96%E8%A7%A3%E9%A2%A8%E6%B0%B4%E7%85%9E%E3%80%91%E8%B2%A1%E4%BD%8D%E9%84%B0%E5%A4%A7%E9%9D%A2%E7%AA%97-%E3%80%8C%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E3%80%8D%E8%B2%A1%E6%B0%A3%E9%9B%A3%E8%81%9A-074840765.html",
+    "https://www.ailan.idv.tw/2026/08/25/%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E6%98%AF%E4%BB%80%E9%BA%BC%E5%A4%A7%E9%96%80%E6%96%9C%E5%B0%8D%E8%A7%92%E9%96%8B%E7%AA%97/",
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "low",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "窗止於角區邊界(重疊 0),視為僅相鄰"
+  },
+  {
+   "name": "zone_floor_window_in_corner",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "top",
+      "start": 2.6,
+      "end": 3.8,
+      "type": "floor_window"
+     }
+    ],
+    "profile": "mingcai"
+   },
+   "expected": {
+    "status": "void_floor_window"
+   },
+   "source": [
+    "https://tw.stock.yahoo.com/news/%E3%80%90%E5%9C%96%E8%A7%A3%E9%A2%A8%E6%B0%B4%E7%85%9E%E3%80%91%E8%B2%A1%E4%BD%8D%E9%84%B0%E5%A4%A7%E9%9D%A2%E7%AA%97-%E3%80%8C%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E3%80%8D%E8%B2%A1%E6%B0%A3%E9%9B%A3%E8%81%9A-074840765.html",
+    "https://www.ailan.idv.tw/2026/08/25/%E8%B2%A1%E4%BD%8D%E8%A6%8B%E7%A9%BA%E6%98%AF%E4%BB%80%E9%BA%BC%E5%A4%A7%E9%96%80%E6%96%9C%E5%B0%8D%E8%A7%92%E9%96%8B%E7%AA%97/",
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "落地窗佔據財位:易算數建議在窗前做高至窗台的矮櫃/書架造「人工實角」+不透光窗簾;楊登嵙:可透光不可透氣"
+  },
+  {
+   "name": "zone_door_in_corner_blocked",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [
+     {
+      "wall": "top",
+      "start": 3.1,
+      "end": 3.9,
+      "type": "door"
+     }
+    ],
+    "profile": "mingcai"
+   },
+   "expected": {
+    "status": "blocked_opening"
+   },
+   "source": [
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://www.mygonews.com/news/detail/news_id/2782",
+    "https://tradiculture.com/gekongjiancaiwei/",
+    "https://ziwei.tw/%E5%BA%97%E9%9D%A2%E8%B2%A1%E4%BD%8D/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "財位有門/走道屬硬條件不成立(中文百科:財位處不宜是走道或開門),此角不得作為明財位,改走暗財位(潮紫微/易算數)"
+  },
+  {
+   "name": "zone_corner_on_walkway_blocked",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8
+    },
+    "corner": "TR",
+    "zone_m": 1.0,
+    "openings": [],
+    "profile": "mingcai",
+    "on_walkway": true
+   },
+   "expected": {
+    "status": "blocked_walkway"
+   },
+   "source": [
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://www.mygonews.com/news/detail/news_id/2782",
+    "https://tradiculture.com/gekongjiancaiwei/"
+   ],
+   "confidence": "high",
+   "verified_by": "手推:TR 角區=右牆 y∈[4,5] 與上牆 x∈[3,4];重疊 >5cm 才算;程式 corner_zone_status 一致",
+   "notes": "動線穿過角區(on_walkway=true)=> 硬條件不成立"
+  },
+  {
+   "name": "bazhai_house_坎",
+   "input": {
+    "house_gua": "坎",
+    "sit_face": "坐北朝南"
+   },
+   "expected": {
+    "生氣": "東南",
+    "延年": "南",
+    "天醫": "東",
+    "伏位": "北",
+    "五鬼": "東北",
+    "六煞": "西北",
+    "禍害": "西",
+    "絕命": "西南"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_艮",
+   "input": {
+    "house_gua": "艮",
+    "sit_face": "坐東北朝西南"
+   },
+   "expected": {
+    "生氣": "西南",
+    "延年": "西",
+    "天醫": "西北",
+    "伏位": "東北",
+    "五鬼": "北",
+    "六煞": "東",
+    "禍害": "南",
+    "絕命": "東南"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_震",
+   "input": {
+    "house_gua": "震",
+    "sit_face": "坐東朝西"
+   },
+   "expected": {
+    "生氣": "南",
+    "延年": "東南",
+    "天醫": "北",
+    "伏位": "東",
+    "五鬼": "西北",
+    "六煞": "東北",
+    "禍害": "西南",
+    "絕命": "西"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_巽",
+   "input": {
+    "house_gua": "巽",
+    "sit_face": "坐東南朝西北"
+   },
+   "expected": {
+    "生氣": "北",
+    "延年": "東",
+    "天醫": "南",
+    "伏位": "東南",
+    "五鬼": "西南",
+    "六煞": "西",
+    "禍害": "西北",
+    "絕命": "東北"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_離",
+   "input": {
+    "house_gua": "離",
+    "sit_face": "坐南朝北"
+   },
+   "expected": {
+    "生氣": "東",
+    "延年": "北",
+    "天醫": "東南",
+    "伏位": "南",
+    "五鬼": "西",
+    "六煞": "西南",
+    "禍害": "東北",
+    "絕命": "西北"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_坤",
+   "input": {
+    "house_gua": "坤",
+    "sit_face": "坐西南朝東北"
+   },
+   "expected": {
+    "生氣": "東北",
+    "延年": "西北",
+    "天醫": "西",
+    "伏位": "西南",
+    "五鬼": "東南",
+    "六煞": "南",
+    "禍害": "東",
+    "絕命": "北"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_兌",
+   "input": {
+    "house_gua": "兌",
+    "sit_face": "坐西朝東"
+   },
+   "expected": {
+    "生氣": "西北",
+    "延年": "東北",
+    "天醫": "西南",
+    "伏位": "西",
+    "五鬼": "南",
+    "六煞": "東南",
+    "禍害": "北",
+    "絕命": "東"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_house_乾",
+   "input": {
+    "house_gua": "乾",
+    "sit_face": "坐西北朝東南"
+   },
+   "expected": {
+    "生氣": "西",
+    "延年": "西南",
+    "天醫": "東北",
+    "伏位": "西北",
+    "五鬼": "東",
+    "六煞": "北",
+    "禍害": "東南",
+    "絕命": "南"
+   },
+   "source": [
+    "https://zhuanlan.zhihu.com/p/7744114040",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://m.sohu.com/n/483022681/",
+    "https://www.secretchina.com/news/b5/2022/03/20/1000910.html",
+    "https://wuyoushan.org/document.php?id=192"
+   ],
+   "confidence": "high",
+   "verified_by": "變爻法推得 -> 與游年歌八句一致 -> 與網易延年表 8/8、搜狐天醫表 8/8、看中國東四命表(3 處來源筆誤除外: 離命延年與伏位對調、巽命延年與絕命互換)、無有山巽宅表一致",
+   "notes": "八宅以「坐山」定宅名(坐北朝南=坎宅);財位相關:生氣(主)、延年(次)、天醫(第三)"
+  },
+  {
+   "name": "bazhai_facing_180_to_house",
+   "input": {
+    "facing_deg": 180
+   },
+   "expected": {
+    "sit_deg": 0,
+    "house_gua": "坎"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_facing_210_to_house",
+   "input": {
+    "facing_deg": 210
+   },
+   "expected": {
+    "sit_deg": 30,
+    "house_gua": "艮"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_facing_90_to_house",
+   "input": {
+    "facing_deg": 90
+   },
+   "expected": {
+    "sit_deg": 270,
+    "house_gua": "兌"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_facing_45_to_house",
+   "input": {
+    "facing_deg": 45
+   },
+   "expected": {
+    "sit_deg": 225,
+    "house_gua": "坤"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_facing_0_to_house",
+   "input": {
+    "facing_deg": 0
+   },
+   "expected": {
+    "sit_deg": 180,
+    "house_gua": "離"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_facing_135_to_house",
+   "input": {
+    "facing_deg": 135
+   },
+   "expected": {
+    "sit_deg": 315,
+    "house_gua": "乾"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/",
+    "https://guanrenzizai.com/prosperitycorner/"
+   ],
+   "confidence": "high",
+   "verified_by": "8 宮各 45 度,以宮中心為軸(坎=337.5~22.5);邊界歸順時針下一宮 [lo,hi)",
+   "notes": "大門朝向(向)=進屋後面對大門的方向;坐=其背後"
+  },
+  {
+   "name": "bazhai_door_wealth_position_by_door_facing",
+   "input": {
+    "door_faces": "南"
+   },
+   "expected": {
+    "house_gua": "坎",
+    "生氣位": "東南",
+    "延年位": "南"
+   },
+   "source": [
+    "https://fengshui.studio/%E8%B2%A1%E4%BD%8D%E6%97%BA%E6%96%B9/",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html"
+   ],
+   "confidence": "medium",
+   "verified_by": "風水工作室:大門開南財位在東南=坎宅生氣;網易:大門在南延年在南;與變爻表一致",
+   "notes": "「大門財位」=依大門朝向定宅後取生氣位"
+  },
+  {
+   "name": "bazhai_sector_boundary_rule",
+   "input": {
+    "bearing_deg": 22.5
+   },
+   "expected": {
+    "sector": "艮"
+   },
+   "source": [
+    "https://m.sohu.com/n/483022681/"
+   ],
+   "confidence": "low",
+   "verified_by": "本設計規則:邊界歸順時針下一宮;24 山「兼向/空亡」細節由玄空模組處理"
+  },
+  {
+   "name": "liunian_2016_flying_stars",
+   "input": {
+    "year": 2016,
+    "boundary": "立春"
+   },
+   "expected": {
+    "center": 2,
+    "grid": {
+     "中": 2,
+     "西北": 3,
+     "西": 4,
+     "東北": 5,
+     "南": 6,
+     "北": 7,
+     "西南": 8,
+     "東": 9,
+     "東南": 1
+    }
+   },
+   "source": [
+    "https://m.sohu.com/n/465066324/"
+   ],
+   "confidence": "high",
+   "verified_by": "兩公式交叉(三元甲子表遞減 vs 尾數和)1900-2099 逐年一致;並與該來源描述一致:搜狐:2016 八白在西南坤",
+   "notes": "順飛宮序 中,西北,西,東北,南,北,西南,東,東南"
+  },
+  {
+   "name": "liunian_2024_flying_stars",
+   "input": {
+    "year": 2024,
+    "boundary": "立春"
+   },
+   "expected": {
+    "center": 3,
+    "grid": {
+     "中": 3,
+     "西北": 4,
+     "西": 5,
+     "東北": 6,
+     "南": 7,
+     "北": 8,
+     "西南": 9,
+     "東": 1,
+     "東南": 2
+    }
+   },
+   "source": [
+    "https://fengshui.studio/%E8%B2%A1%E4%BD%8D%E6%97%BA%E6%96%B9/"
+   ],
+   "confidence": "high",
+   "verified_by": "兩公式交叉(三元甲子表遞減 vs 尾數和)1900-2099 逐年一致;並與該來源描述一致:風水工作室:2024 八白正北、六白東北",
+   "notes": "順飛宮序 中,西北,西,東北,南,北,西南,東,東南"
+  },
+  {
+   "name": "liunian_2025_flying_stars",
+   "input": {
+    "year": 2025,
+    "boundary": "立春"
+   },
+   "expected": {
+    "center": 2,
+    "grid": {
+     "中": 2,
+     "西北": 3,
+     "西": 4,
+     "東北": 5,
+     "南": 6,
+     "北": 7,
+     "西南": 8,
+     "東": 9,
+     "東南": 1
+    }
+   },
+   "source": [
+    "https://www.cosmart.hk/explore/2025-home-wealth-corner-directions-setup-and-decoration-tips"
+   ],
+   "confidence": "high",
+   "verified_by": "兩公式交叉(三元甲子表遞減 vs 尾數和)1900-2099 逐年一致;並與該來源描述一致:Cosmart:2025 八白西南(主財)、六白正南(偏財)",
+   "notes": "順飛宮序 中,西北,西,東北,南,北,西南,東,東南"
+  },
+  {
+   "name": "liunian_2026_flying_stars",
+   "input": {
+    "year": 2026,
+    "boundary": "立春"
+   },
+   "expected": {
+    "center": 1,
+    "grid": {
+     "中": 1,
+     "西北": 2,
+     "西": 3,
+     "東北": 4,
+     "南": 5,
+     "北": 6,
+     "西南": 7,
+     "東": 8,
+     "東南": 9
+    }
+   },
+   "source": [
+    "https://designhousehk.com/en/blogs/blog/jiugong-fly-stars-2026"
+   ],
+   "confidence": "high",
+   "verified_by": "兩公式交叉(三元甲子表遞減 vs 尾數和)1900-2099 逐年一致;並與該來源描述一致:DesignHouse:2026 中宮一白,八白東、九紫東南、六白北、四綠東北",
+   "notes": "順飛宮序 中,西北,西,東北,南,北,西南,東,東南"
+  },
+  {
+   "name": "liunian_lichun_boundary_before",
+   "input": {
+    "datetime": "2026-02-03T12:00:00+08:00"
+   },
+   "expected": {
+    "fengshui_year": 2025,
+    "center": 2
+   },
+   "source": [
+    "https://designhousehk.com/en/blogs/blog/jiugong-fly-stars-2026",
+    "https://fengshui.studio/%E8%B2%A1%E4%BD%8D%E6%97%BA%E6%96%B9/",
+    "https://health.tvbs.com.tw/life/352613",
+    "https://www.hko.gov.hk/tc/gts/time/calendar/pdf/files/2026.pdf"
+   ],
+   "confidence": "high",
+   "verified_by": "2026 立春 = 2026-02-04 04:01:51 (+8)(TVBS、知乎、香港天文台曆表的搜尋結果一致);自製低精度太陽黃經估算 03:55,差約 6 分鐘。測試時刻刻意取中午 12:00 避開估算誤差",
+   "notes": "流年以立春換,非元旦;分鐘級節氣時刻須由曆法模組提供"
+  },
+  {
+   "name": "liunian_lichun_boundary_after",
+   "input": {
+    "datetime": "2026-02-04T12:00:00+08:00"
+   },
+   "expected": {
+    "fengshui_year": 2026,
+    "center": 1
+   },
+   "source": [
+    "https://designhousehk.com/en/blogs/blog/jiugong-fly-stars-2026",
+    "https://fengshui.studio/%E8%B2%A1%E4%BD%8D%E6%97%BA%E6%96%B9/",
+    "https://health.tvbs.com.tw/life/352613",
+    "https://www.hko.gov.hk/tc/gts/time/calendar/pdf/files/2026.pdf"
+   ],
+   "confidence": "high",
+   "verified_by": "同上"
+  },
+  {
+   "name": "liunian_lichun_boundary_minute_level",
+   "input": {
+    "datetime": "2026-02-04T04:01:00+08:00",
+    "note": "立春前約 1 分鐘(依曆法庫 2026-02-04 04:02:08 立春,為 68 秒前)"
+   },
+   "expected": {
+    "fengshui_year": 2025,
+    "center": 2
+   },
+   "source": [
+    "https://health.tvbs.com.tw/life/352613",
+    "https://www.hko.gov.hk/tc/gts/time/calendar/pdf/files/2026.pdf"
+   ],
+   "confidence": "medium",
+   "verified_by": "立春(曆法庫 2026-02-04 04:02:08,到分為 04:02)之前約一分鐘仍屬 2025 年(僅在曆法模組提供分秒級節氣時才可測);交節時刻一律交給曆法模組,不新增 04:01:30-04:02:30 之間的測資;香港天文台 2026 曆表只有日期,沒有時分秒,不再宣稱與曆表一致",
+   "notes": "本模組不自行計算節氣分鐘"
+  },
+  {
+   "name": "liunian_center_table_9yun",
+   "input": {
+    "years": "2024-2043"
+   },
+   "expected": {
+    "centers": {
+     "2024": 3,
+     "2025": 2,
+     "2026": 1,
+     "2027": 9,
+     "2028": 8,
+     "2029": 7,
+     "2030": 6,
+     "2031": 5,
+     "2032": 4,
+     "2033": 3,
+     "2034": 2,
+     "2035": 1,
+     "2036": 9,
+     "2037": 8,
+     "2038": 7,
+     "2039": 6,
+     "2040": 5,
+     "2041": 4,
+     "2042": 3,
+     "2043": 2
+    }
+   },
+   "source": [
+    "https://mastersimayi.com/%E3%80%8A%E8%BF%91%E4%BB%A3%E4%B8%89%E5%85%83%E4%B9%9D%E9%81%8B-%E4%B8%8B%E5%85%83%E4%B9%9D%E9%81%8B%EF%BC%882024-2043%EF%BC%89%E3%80%8B/",
+    "https://designhousehk.com/en/blogs/blog/jiugong-fly-stars-2026",
+    "https://www.cosmart.hk/explore/2025-home-wealth-corner-directions-setup-and-decoration-tips"
+   ],
+   "confidence": "high",
+   "verified_by": "兩公式交叉一致;錨點 2024=3、2025=2、2026=1 與三個網頁來源一致",
+   "notes": "2044 起進上元一運(以立春換),表僅至 2043"
+  },
+  {
+   "name": "liunian_occupation_layer_2024",
+   "input": {
+    "year": 2024,
+    "office_worker": "文職",
+    "field_worker": "外勤",
+    "business": "經商"
+   },
+   "expected": {
+    "文職": "東",
+    "外勤": "東北",
+    "經商": "北"
+   },
+   "source": [
+    "https://tw.stock.yahoo.com/news/%E3%80%90%E9%BE%8D%E5%B9%B4%E7%94%9F%E8%82%96%E9%81%8B%E5%8B%A2%E3%80%91%E8%BE%A6%E5%85%AC%E5%AE%A4%E8%B2%A1%E4%BD%8D%E5%9C%A8%E5%93%AA%EF%BC%9F-%E8%AC%9D%E6%B2%85%E7%91%BE%EF%BC%9A%E6%96%87%E8%81%B7%E5%9C%A8%E6%9D%B1%E6%96%B9%E3%80%81%E5%A4%96%E5%8B%A4%E5%9C%A8%E6%9D%B1%E5%8C%97-041508522.html"
+   ],
+   "confidence": "low",
+   "verified_by": "謝沅瑾(Yahoo 龍年):文職東、外勤東北、經商北;程式核對 2024 飛星:東=一白、東北=六白、北=八白,與「文職-一白、外勤-六白、經商-八白」吻合。僅單一來源,選用層",
+   "notes": "Yahoo 原文只列方位(東、東北、北),沒有寫星數;文職-一白、外勤-六白、經商-八白是本專案由 2024 飛星推得的對應(複查驗證與飛星一致),confidence low 正確"
+  },
+  {
+   "name": "xk_9yun_base_disc",
+   "input": {
+    "yun": 9
+   },
+   "expected": {
+    "disc": {
+     "中": 9,
+     "西北": 1,
+     "西": 2,
+     "東北": 3,
+     "南": 4,
+     "北": 5,
+     "西南": 6,
+     "東": 7,
+     "東南": 8
+    }
+   },
+   "source": [
+    "https://fengshui.studio/%E8%B2%A1%E4%BD%8D%E6%97%BA%E6%96%B9/",
+    "http://www.cafengshuinet.com/m/show_detail.php?id=3343",
+    "https://mastersimayi.com/%E3%80%8A%E8%BF%91%E4%BB%A3%E4%B8%89%E5%85%83%E4%B9%9D%E9%81%8B-%E4%B8%8B%E5%85%83%E4%B9%9D%E9%81%8B%EF%BC%882024-2043%EF%BC%89%E3%80%8B/"
+   ],
+   "confidence": "high",
+   "verified_by": "運盤 9 入中順飛;東南=8 與風水工作室「九運財位在東南」一致"
+  },
+  {
+   "name": "xk_9yun_chou_shan_wei_xiang_chart",
+   "input": {
+    "yun": 9,
+    "sit": "丑",
+    "face": "未",
+    "tigua": false
+   },
+   "expected": {
+    "shan": {
+     "中": 3,
+     "西北": 4,
+     "西": 5,
+     "東北": 6,
+     "南": 7,
+     "北": 8,
+     "西南": 9,
+     "東": 1,
+     "東南": 2
+    },
+    "xiang": {
+     "中": 6,
+     "西北": 5,
+     "西": 4,
+     "東北": 3,
+     "南": 2,
+     "北": 1,
+     "西南": 9,
+     "東": 8,
+     "東南": 7
+    }
+   },
+   "source": [
+    "http://www.cafengshuinet.com/m/show_detail.php?id=3343"
+   ],
+   "confidence": "high",
+   "verified_by": "獨立實作(依山陰陽定順逆,不含替卦)重算;與來源三項描述吻合:未方(西南)山向皆 9;東方向星八白/山星一白;北方坎宮向星一白宜水旺財。整張盤其餘格子僅單一實作驗證",
+   "notes": "玄空盤的完整排法歸玄空模組;此處只作為財位規則的輸入樣本。信心升 high 僅限「不含替卦與兼向」(複查另以 cafengshuinet 187/815 與八運 6 組交叉)"
+  },
+  {
+   "name": "xk_wealth_cells_chou_wei",
+   "input": {
+    "xiang": {
+     "中": 6,
+     "西北": 5,
+     "西": 4,
+     "東北": 3,
+     "南": 2,
+     "北": 1,
+     "西南": 9,
+     "東": 8,
+     "東南": 7
+    },
+    "shan": {
+     "中": 3,
+     "西北": 4,
+     "西": 5,
+     "東北": 6,
+     "南": 7,
+     "北": 8,
+     "西南": 9,
+     "東": 1,
+     "東南": 2
+    },
+    "yun": 9
+   },
+   "expected": {
+    "primary": {
+     "sector": "坤",
+     "dir": "西南",
+     "xiang": 9,
+     "shan": 9
+    },
+    "secondary": {
+     "sector": "坎",
+     "dir": "北",
+     "xiang": 1
+    },
+    "tertiary": {
+     "sector": "震",
+     "dir": "東",
+     "xiang": 8,
+     "note": "退氣財星,忌大水"
+    }
+   },
+   "source": [
+    "http://www.cafengshuinet.com/m/show_detail.php?id=3343",
+    "https://hhh.com.tw/columns/detail/7793",
+    "https://www.108s.tw/article/info/297",
+    "https://www.36fengshui.com/zhishi/zs9.asp"
+   ],
+   "confidence": "medium",
+   "verified_by": "規則:向盤當運星(9)=旺財位、生氣星(1)次之、八白為退氣財星再次;與 cafengshuinet 對丑山未向之描述一致(未方 99 雙星、北方宜水旺財、東方八白退氣不宜大水)",
+   "notes": "山管人丁、向(水)管財"
+  },
+  {
+   "name": "xk_8yun_double_star_facing_set",
+   "input": {
+    "yun": 8
+   },
+   "expected": {
+    "sets": [
+     "丙山壬向",
+     "乙山辛向",
+     "卯山酉向",
+     "子山午向",
+     "庚山甲向",
+     "癸山丁向"
+    ]
+   },
+   "source": [
+    "https://www.108s.tw/article/info/297"
+   ],
+   "confidence": "medium",
+   "verified_by": "來源稱八運共六組雙星到向並列出 癸山丁向/子山午向/丙山壬向;獨立實作全 24 山掃描得恰六組且包含此三組,用以驗證排盤實作",
+   "notes": "用於驗證玄空模組,不直接參與財位判定"
+  },
+  {
+   "name": "zibai_zuoxiang_table_equals_zuoshan_ru_zhong",
+   "input": {
+    "source_table": "住展 2016 盧尚 河圖洛書/紫白 坐向財位"
+   },
+   "expected": {
+    "equivalent_rule": "坐山卦數入中順飛後,取表列財星(三碧/六白/八白)之宮位",
+    "table": {
+     "坎": {
+      "star": 6,
+      "dir": "北"
+     },
+     "離": {
+      "star": 3,
+      "dir": "東北"
+     },
+     "兌": {
+      "star": 8,
+      "dir": "西北"
+     },
+     "震": {
+      "star": 3,
+      "dir": "中宮"
+     },
+     "乾": {
+      "star": 8,
+      "dir": "西"
+     },
+     "巽": {
+      "star": 3,
+      "dir": "東南"
+     },
+     "艮": {
+      "star": 8,
+      "dir": "中宮"
+     },
+     "坤": {
+      "star": 8,
+      "dir": "西南"
+     }
+    },
+    "verified": true
+   },
+   "source": [
+    "https://www.myhousing.com.tw/housing-column/102882/"
+   ],
+   "confidence": "medium",
+   "verified_by": "8 宅逐一以坐山卦數入中順飛重算,表列宮位與星數 8/8 相符;表中「每宅取哪一顆財星」的選取原則來源未說明(未解決),故不列入預設",
+   "notes": "採用度低:屬傳統少數派,預設關閉"
+  },
+  {
+   "name": "score_components_S1",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ]
+   },
+   "expected": {
+    "components": {
+     "坎": {
+      "XK": 0.775,
+      "H": -0.5,
+      "P": 0.25,
+      "Y": 0.6
+     },
+     "艮": {
+      "XK": -0.15,
+      "H": 0.25,
+      "P": -0.5,
+      "Y": 0.2
+     },
+     "震": {
+      "XK": 0.725,
+      "H": -0.3,
+      "P": 0.55,
+      "Y": 1.0
+     },
+     "巽": {
+      "XK": -0.2,
+      "H": -0.6,
+      "P": 1.0,
+      "Y": 0.8
+     },
+     "離": {
+      "XK": -0.2,
+      "H": -0.3,
+      "P": 0.75,
+      "Y": -1.0
+     },
+     "坤": {
+      "XK": 1.0,
+      "H": 1.0,
+      "P": -0.6,
+      "Y": -0.4
+     },
+     "兌": {
+      "XK": -0.175,
+      "H": 0.75,
+      "P": -0.3,
+      "Y": -0.4
+     },
+     "乾": {
+      "XK": -0.525,
+      "H": 0.55,
+      "P": -0.3,
+      "Y": -0.7
+     }
+    }
+   },
+   "source": [
+    "design:heuristic-v0.1",
+    "http://www.cafengshuinet.com/m/show_detail.php?id=3343"
+   ],
+   "confidence": "low",
+   "verified_by": "手算 震: XK=0.75*0.7+0.25*0.8=0.725,H(艮宅震=六煞)=-0.3,P(坎命震=天醫)=0.55,Y(2026 震=八白)=1.0;坤: XK=1.0,H=1.0(生氣),P=-0.6(絕命),Y=-0.4(七赤);程式一致",
+   "notes": "數值為設計選擇(權重理由見報告 G 節),非傳統數字;僅順序關係有來源依據"
+  },
+  {
+   "name": "score_sector_energy_mingcai_S1",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "profile": "mingcai",
+    "G": 0
+   },
+   "expected": {
+    "scores": {
+     "坎": 24.63,
+     "艮": 0.0,
+     "震": 36.88,
+     "巽": 13.0,
+     "離": 0.0,
+     "坤": 25.0,
+     "兌": 0.0,
+     "乾": 0.0
+    },
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1"
+   ],
+   "confidence": "low",
+   "verified_by": "profile weights: {\"G\": 0.3, \"XK\": 0.25, \"H\": 0.15, \"P\": 0.15, \"Y\": 0.15, \"xk_shan\": 0.25, \"opening\": \"penalty\"};手算 震(mingcai)= .25*.725+.15*(-.3)+.15*.55+.15*1.0 = 0.36875 -> 36.88"
+  },
+  {
+   "name": "score_sector_energy_xuankong_S1",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "profile": "xuankong",
+    "G": 0
+   },
+   "expected": {
+    "scores": {
+     "坎": 38.75,
+     "艮": 0.0,
+     "震": 49.25,
+     "巽": 13.0,
+     "離": 0.0,
+     "坤": 35.0,
+     "兌": 0.0,
+     "乾": 0.0
+    },
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1"
+   ],
+   "confidence": "low",
+   "verified_by": "profile weights: {\"G\": 0.1, \"XK\": 0.4, \"H\": 0.1, \"P\": 0.15, \"Y\": 0.15, \"xk_shan\": 0.25, \"opening\": \"reward\"};手算 震(mingcai)= .25*.725+.15*(-.3)+.15*.55+.15*1.0 = 0.36875 -> 36.88"
+  },
+  {
+   "name": "score_location_ming_corner_S1",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "living_room": {
+     "origin": [
+      0,
+      0
+     ],
+     "w": 6,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.0
+    },
+    "corner": [
+     6,
+     5
+    ],
+    "flags": {}
+   },
+   "expected": {
+    "corner_name": "TR",
+    "bearing_deg": 75.0,
+    "sector": "震",
+    "G": 1.0,
+    "score_mingcai": 66.88,
+    "score_xuankong": 59.25,
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1"
+   ],
+   "confidence": "low",
+   "verified_by": "手算 mingcai: .30*1+.25*.725+.15*(-.3)+.15*.55+.15*1 = 0.66875 -> 66.88;xuankong: .10+.40*.725+.10*(-.3)+.15*.55+.15 = 0.5925 -> 59.25",
+   "notes": "明財位角落 TR=(6,5) 相對房屋中心 (5,4) 方位 30+45=75 度 => 震宮(東)"
+  },
+  {
+   "name": "score_env_toilet_in_corner_zeroes_candidate",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "corner_sector": "震",
+    "G": 1.0,
+    "flags": {
+     "toilet": true
+    }
+   },
+   "expected": {
+    "score_mingcai": 0.0
+   },
+   "source": [
+    "design:heuristic-v0.1",
+    "https://www.newton.com.tw/wiki/%E8%B2%A1%E4%BD%8D",
+    "https://www.100.com.tw/article/12845"
+   ],
+   "confidence": "medium",
+   "verified_by": "排除級:角落本身是廁所/爐灶位/樓梯/走道/門扇掃過範圍 => 不得推薦(乘數 0)",
+   "notes": "硬條件依據:中文百科、100 室內設計、搜狐(財位不能在樓梯與廁所)"
+  },
+  {
+   "name": "score_env_toilet_adjacent_penalty",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "corner_sector": "震",
+    "G": 1.0,
+    "flags": {
+     "toilet_adjacent": true
+    }
+   },
+   "expected": {
+    "score_mingcai": 53.5,
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1",
+    "https://www.ctwant.com/article/324502/",
+    "https://www.100.com.tw/article/12845"
+   ],
+   "confidence": "low",
+   "verified_by": "手算:66.875*0.8=53.50;鄰廁所(共牆或正對廁所門)為強烈建議級扣分,非排除",
+   "notes": "扣分幅度 0.8 為設計值"
+  },
+  {
+   "name": "score_env_opening_profile_switch",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "corner_sector": "震",
+    "G": 1.0,
+    "flags": {
+     "opening": true
+    }
+   },
+   "expected": {
+    "score_mingcai": 33.44,
+    "score_xuankong": 62.21,
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1"
+   ],
+   "confidence": "low",
+   "verified_by": "手算:66.875*0.5=33.44;59.25*1.05=62.21",
+   "notes": "窗/開口:明財位派乘 0.5、玄空派乘 1.05(可調)"
+  },
+  {
+   "name": "score_wall_backed_corner_vs_ming_corner_S1",
+   "input": {
+    "facing_deg": 210,
+    "sit": "丑",
+    "face": "未",
+    "yun": 9,
+    "year": 2026,
+    "ming_gua": "坎",
+    "plan_up_bearing_deg": 30,
+    "house_center": [
+     5,
+     4
+    ],
+    "candidates": [
+     {
+      "sector": "震",
+      "G": 1.0,
+      "label": "明財位角"
+     },
+     {
+      "sector": "坤",
+      "G": 0.5,
+      "label": "西南牆角"
+     },
+     {
+      "sector": "坎",
+      "G": 0.5,
+      "label": "北牆角"
+     }
+    ]
+   },
+   "expected": {
+    "ranking": [
+     "震",
+     "坤",
+     "坎"
+    ],
+    "scores": {
+     "震": 66.88,
+     "坤": 40.0,
+     "坎": 39.62
+    },
+    "tolerance": 0.011
+   },
+   "source": [
+    "design:heuristic-v0.1"
+   ],
+   "confidence": "low",
+   "verified_by": "手算 坤(G=.5): .15+.25*1+.15*1+.15*(-.6)+.15*(-.4)=0.40 -> 40.00;坎(G=.5): .15+.25*.775+.15*(-.5)+.15*.25+.15*.6=0.39625 -> 39.625(浮點四捨五入為 39.62,容差內)",
+   "notes": "命卦與流年的凶星會把玄空/八宅看好的西南壓到第二"
+  },
+  {
+   "name": "score_star_value_tables",
+   "input": {},
+   "expected": {
+    "xk_9yun": {
+     "9": 1.0,
+     "1": 0.8,
+     "8": 0.7,
+     "6": 0.3,
+     "4": 0.0,
+     "7": -0.2,
+     "3": -0.3,
+     "2": -0.2,
+     "5": -0.7
+    },
+    "liunian": {
+     "8": 1.0,
+     "9": 0.8,
+     "1": 0.6,
+     "6": 0.6,
+     "4": 0.2,
+     "7": -0.4,
+     "3": -0.4,
+     "2": -0.7,
+     "5": -1.0
+    },
+    "bazhai": {
+     "生氣": 1.0,
+     "延年": 0.75,
+     "天醫": 0.55,
+     "伏位": 0.25,
+     "禍害": -0.3,
+     "六煞": -0.3,
+     "五鬼": -0.5,
+     "絕命": -0.6
+    }
+   },
+   "source": [
+    "design:heuristic-v0.1",
+    "https://www.36fengshui.com/zhishi/zs9.asp",
+    "https://www.108s.tw/article/info/297",
+    "https://www.163.com/dy/article/GAIKCBDT0548OATH.html",
+    "https://www.cosmart.hk/explore/2025-home-wealth-corner-directions-setup-and-decoration-tips"
+   ],
+   "confidence": "low",
+   "verified_by": "排序依據:九運 9(當旺)>1(生氣)>8(退氣財星)>6(偏財);流年 8(正財)>9,1,6;八宅財運 生氣>延年>天醫>伏位(網易:延年旺財不如生氣)",
+   "notes": "數字大小為設計;可由設定檔覆寫。XK9_VAL[2]=-0.2 與 108s 稱九運二黑為「遠生氣」衝突: 運序屬生氣、星性為病符,兩種屬性混用(複查 R16)"
+  },
+  {
+   "name": "element_boost_for_star",
+   "input": {
+    "star": 8
+   },
+   "expected": {
+    "elements": [
+     "土",
+     "火"
+    ],
+    "note": "民俗/象徵性質"
+   },
+   "source": [
+    "https://www.36fengshui.com/zhishi/zs9.asp",
+    "https://designhousehk.com/en/blogs/blog/jiugong-fly-stars-2026"
+   ],
+   "confidence": "low",
+   "verified_by": "三六風水:八白屬土,於八白位擺土屬性物品生財;DesignHouse:火生土助強(黃水晶等)。其他星的五行「生我者」為本設計依五行相生外推,無獨立來源",
+   "notes": "屬民俗象徵,不宜宣稱有科學效果"
+  },
+  {
+   "name": "shop_counter_ideal",
+   "input": {
+    "shop": {
+     "w": 6,
+     "d": 8
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.5,
+     "width": 1.2
+    },
+    "counter": {
+     "x": 4.8,
+     "y": 6.6,
+     "w": 1.6,
+     "facing": "down",
+     "back_wall": "top"
+    }
+   },
+   "expected": {
+    "hard_ok": true,
+    "aligned_with_door": false,
+    "dragon_side": true,
+    "left_side_against_wall": false
+   },
+   "source": [
+    "https://ziwei.tw/counter-feng-shui/",
+    "https://www.518.com.tw/article/1525",
+    "https://house.ettoday.net/news/1874368"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致(龍邊=站在店內面向店門時的左手邊;門在下牆時即 x>W/2)",
+   "notes": "靠實牆(背牆)、迎向入口、不正對大門、位於龍邊"
+  },
+  {
+   "name": "shop_counter_aligned_with_door_and_tiger_side",
+   "input": {
+    "shop": {
+     "w": 6,
+     "d": 8
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.5,
+     "width": 1.2
+    },
+    "counter": {
+     "x": 1.5,
+     "y": 7.0,
+     "w": 1.6,
+     "facing": "down",
+     "back_wall": "top"
+    }
+   },
+   "expected": {
+    "hard_ok": true,
+    "aligned_with_door": true,
+    "dragon_side": false,
+    "left_side_against_wall": false
+   },
+   "source": [
+    "https://ziwei.tw/counter-feng-shui/",
+    "https://www.518.com.tw/article/1525"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致(龍邊=站在店內面向店門時的左手邊;門在下牆時即 x>W/2)",
+   "notes": "收銀台正對大門(潮紫微:忌正對大門)且落在虎邊:仍過硬條件,但軟條件扣分"
+  },
+  {
+   "name": "shop_counter_back_to_entrance",
+   "input": {
+    "shop": {
+     "w": 6,
+     "d": 8
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 1.5,
+     "width": 1.2
+    },
+    "counter": {
+     "x": 4.8,
+     "y": 6.6,
+     "w": 1.6,
+     "facing": "up",
+     "back_wall": null
+    }
+   },
+   "expected": {
+    "hard_ok": false,
+    "aligned_with_door": false,
+    "dragon_side": true,
+    "left_side_against_wall": false
+   },
+   "source": [
+    "https://ziwei.tw/counter-feng-shui/",
+    "https://www.518.com.tw/article/1525"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致(龍邊=站在店內面向店門時的左手邊;門在下牆時即 x>W/2)",
+   "notes": "收銀台背對大門/無靠山:硬條件不成立(櫃檯背對大門代表財來財去;需靠牆)"
+  },
+  {
+   "name": "office_boss_seat_command_position",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8,
+     "width": 0.9
+    },
+    "seat": {
+     "x": 3.2,
+     "y": 4.2,
+     "desk_w": 1.6,
+     "facing": "down",
+     "back_wall": "top"
+    }
+   },
+   "expected": {
+    "back_solid_wall": true,
+    "faces_or_sees_door": true,
+    "aligned_with_door": false,
+    "in_rear_half": true
+   },
+   "source": [
+    "https://www.518.com.tw/article/2006",
+    "https://www.100.com.tw/article/9432",
+    "https://chisun-design.com/how-to-identify-the-wealth-position-in-an-office/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致",
+   "notes": "權位:位於空間後半、背靠實牆、面向入口但不與門成一直線"
+  },
+  {
+   "name": "office_desk_facing_door_directly",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8,
+     "width": 0.9
+    },
+    "seat": {
+     "x": 0.8,
+     "y": 3.0,
+     "desk_w": 1.6,
+     "facing": "down",
+     "back_wall": "top"
+    }
+   },
+   "expected": {
+    "back_solid_wall": true,
+    "faces_or_sees_door": true,
+    "aligned_with_door": true,
+    "in_rear_half": true
+   },
+   "source": [
+    "https://www.518.com.tw/article/2006",
+    "https://www.100.com.tw/article/9432",
+    "https://chisun-design.com/how-to-identify-the-wealth-position-in-an-office/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致",
+   "notes": "辦公桌正對大門(門沖):忌"
+  },
+  {
+   "name": "office_seat_back_to_door",
+   "input": {
+    "room": {
+     "w": 4,
+     "d": 5
+    },
+    "door": {
+     "wall": "bottom",
+     "pos": 0.8,
+     "width": 0.9
+    },
+    "seat": {
+     "x": 3.2,
+     "y": 1.5,
+     "desk_w": 1.6,
+     "facing": "up",
+     "back_wall": null
+    }
+   },
+   "expected": {
+    "back_solid_wall": false,
+    "faces_or_sees_door": false,
+    "aligned_with_door": false,
+    "in_rear_half": false
+   },
+   "source": [
+    "https://www.518.com.tw/article/2006",
+    "https://www.100.com.tw/article/9432",
+    "https://chisun-design.com/how-to-identify-the-wealth-position-in-an-office/"
+   ],
+   "confidence": "medium",
+   "verified_by": "手推 + rules.py 一致",
+   "notes": "背對門且背後無靠:忌"
+  },
+  {
+   "name": "door_chong_aligned",
+   "input": {
+    "front": {
+     "pos": 1.0,
+     "width": 0.9
+    },
+    "opposite": {
+     "pos": 1.2,
+     "width": 0.8
+    }
+   },
+   "expected": {
+    "chong": true
+   },
+   "source": [
+    "https://www.ailan.idv.tw/2026/09/03/%E5%A4%A7%E9%96%80%E6%AD%A3%E5%B0%8D%E6%88%BF%E9%96%80%E5%A5%BD%E5%97%8E/",
+    "https://www.518.com.tw/article/2006"
+   ],
+   "confidence": "low",
+   "verified_by": "重疊 0.65m / 較窄者 0.8m = 0.8125 >= 80% => 門沖(D49 兩級門檻,80% 為設計值;來源只說「幾乎完全成一直線」,舊 50% 門檻過寬);兩門之間無遮擋物"
+  },
+  {
+   "name": "door_chong_offset",
+   "input": {
+    "front": {
+     "pos": 1.0,
+     "width": 0.9
+    },
+    "opposite": {
+     "pos": 3.0,
+     "width": 0.8
+    }
+   },
+   "expected": {
+    "chong": false
+   },
+   "source": [
+    "https://www.ailan.idv.tw/2026/09/03/%E5%A4%A7%E9%96%80%E6%AD%A3%E5%B0%8D%E6%88%BF%E9%96%80%E5%A5%BD%E5%97%8E/"
+   ],
+   "confidence": "low",
+   "verified_by": "無重疊"
+  },
+  {
+   "name": "door_chong_slight_offset",
+   "input": {
+    "front": {
+     "pos": 1.0,
+     "width": 0.9
+    },
+    "opposite": {
+     "pos": 1.35,
+     "width": 0.8
+    }
+   },
+   "expected": {
+    "chong": false,
+    "level": "slight"
+   },
+   "source": [
+    "https://www.ailan.idv.tw/2026/09/03/%E5%A4%A7%E9%96%80%E6%AD%A3%E5%B0%8D%E6%88%BF%E9%96%80%E5%A5%BD%E5%97%8E/",
+    "https://www.518.com.tw/article/2006"
+   ],
+   "confidence": "low",
+   "verified_by": "前門 [0.55,1.45]、對門 [0.95,1.75],重疊 0.50m / 較窄者 0.8m = 0.625,落在 50%-80%(D49 輕微偏移),不判門沖;門檻為設計值"
+  }
+ ]
+}

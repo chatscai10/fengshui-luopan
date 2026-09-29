@@ -1,0 +1,118 @@
+/* 平面圖畫面。只用 .v-plan-* 前綴,共用元件(.card .btn .chip .seg…)沿用 base.css。 */
+
+.v-plan { align-content: start; }
+.v-plan .hidden { display: none !important; }
+
+/* ── 選範本 ── */
+.v-plan-templates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+.v-plan-tpl {
+  display: grid; gap: 4px; justify-items: center; align-content: start;
+  padding: 12px 10px 14px; text-align: center; cursor: pointer;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card); color: var(--text); min-height: var(--tap);
+}
+.v-plan-tpl:hover { border-color: var(--gold); }
+.v-plan-tpl:active { transform: translateY(1px); }
+.v-plan-thumb { display: block; width: 100%; height: 96px; margin-bottom: 4px; }
+.v-plan-thumb svg { width: 100%; height: 100%; display: block; }
+.v-plan-thumb rect { stroke: var(--text-dim); stroke-width: .07; }
+.v-plan-thumb .t-living { fill: var(--plan-living); fill-opacity: .5; }
+.v-plan-thumb .t-bedroom { fill: var(--plan-bedroom); fill-opacity: .5; }
+.v-plan-thumb .t-kitchen { fill: var(--plan-kitchen); fill-opacity: .5; }
+.v-plan-thumb .t-toilet { fill: var(--plan-toilet); fill-opacity: .5; }
+.v-plan-thumb .t-study { fill: var(--plan-study); fill-opacity: .5; }
+.v-plan-thumb .t-entry { fill: var(--plan-entry); fill-opacity: .4; }
+.v-plan-thumb .t-balcony { fill: var(--plan-balcony); fill-opacity: .5; }
+.v-plan-thumb .t-stair { fill: var(--plan-stair); fill-opacity: .5; }
+.v-plan-thumb .t-other { fill: var(--plan-other); fill-opacity: .45; }
+.v-plan-thumb .t-door { fill: var(--gold-bright); stroke: none; }
+.v-plan-tpl-name { font-weight: 600; font-size: 16px; }
+.v-plan-tpl-desc { font-size: 13px; color: var(--text-dim); line-height: 1.4; }
+.v-plan-tpl-size { font-size: 12.5px; }
+.v-plan-custom { align-items: end; margin: 10px 0 4px; }
+.v-plan-err { min-height: 1.2em; margin: 6px 0; color: var(--warn-fg); font-size: 14px; }
+.v-plan-foot { font-size: 13px; text-align: center; padding: 0 4px; }
+
+/* ── 編輯畫面 ── */
+.v-plan-callout-btn { margin-top: 8px; }
+.v-plan-stage { padding: 12px; }
+.v-plan-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.v-plan-modeseg { width: 172px; flex: none; }
+.v-plan-ibtn { border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); }
+.v-plan-ibtn[disabled] { opacity: .35; cursor: not-allowed; }
+.v-plan-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.v-plan-canvas {
+  border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden;
+  background: var(--surface); touch-action: none; cursor: crosshair;
+}
+.v-plan-under { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; }
+.v-plan-zoom { display: flex; gap: 6px; flex: none; }
+.v-plan-zoom .icon-btn { background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); }
+.v-plan-banner {
+  position: absolute; left: 8px; right: 8px; top: 8px; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 8px 6px 12px; border-radius: 999px; font-size: 14px;
+  background: var(--gold); color: var(--on-gold);
+}
+.v-plan-banner .btn { background: var(--on-gold); color: var(--gold-bright); border-color: transparent; min-height: var(--tap); }
+.v-plan-hint { font-size: 13px; line-height: 1.5; flex: 1; min-width: 0; }
+
+/* 八個方位一覽 */
+.v-plan-secgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.v-plan-sec {
+  display: grid; gap: 2px; justify-items: center; align-content: center;
+  min-height: 56px; padding: 6px 4px; cursor: pointer;
+  border: 1px solid var(--line-strong); border-radius: var(--r-md);
+  background: var(--surface-2); color: var(--text);
+}
+.v-plan-sec-name { font-size: 16px; letter-spacing: .04em; }
+.v-plan-sec-label { font-size: 12.5px; color: var(--text-dim); }
+.v-plan-sec.tone-good { background: var(--good-bg); border-color: color-mix(in srgb, var(--jade) 55%, transparent); }
+.v-plan-sec.tone-good .v-plan-sec-label { color: var(--good-fg); }
+.v-plan-sec.tone-warn { background: var(--warn-bg); border-color: color-mix(in srgb, var(--terracotta) 55%, transparent); }
+.v-plan-sec.tone-warn .v-plan-sec-label { color: var(--warn-fg); }
+.v-plan-sec[aria-pressed="true"] { outline: 2px solid var(--gold-bright); outline-offset: 1px; }
+.v-plan-note { margin-top: 8px; }
+
+/* 編輯面板 */
+.v-plan-addrow { margin-bottom: 10px; }
+.v-plan-sel { display: grid; gap: 10px; }
+.v-plan-sel .card-title { margin-bottom: 0; }
+.v-plan-menu { display: grid; gap: 8px; }
+.v-plan-upval { min-width: 3.4em; text-align: end; font-size: 14px; flex: none; }
+.v-plan-uprow { display: flex; align-items: center; gap: 8px; }
+.v-plan-uprow input[type="range"] { flex: 1; min-width: 0; }
+.v-plan-uprow .btn { flex: none; }
+.v-plan-uptext { margin: 6px 0; }
+.v-plan-orient .seg { margin-top: 8px; }
+.v-plan-orient .field { margin-top: 8px; }
+.v-plan-photo .field { margin-top: 6px; }
+.v-plan-photo .row { margin-top: 8px; }
+
+/* 底部摘要:固定在畫面下緣 */
+.v-plan-summary {
+  position: sticky; bottom: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px;
+  margin-top: 4px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, .18);
+  font-size: 14.5px; line-height: 1.5;
+}
+.v-plan-summary.warn { border-color: rgba(201, 112, 90, .6); background: linear-gradient(var(--warn-bg), var(--warn-bg)), var(--surface); }
+.v-plan-summary-note { color: var(--warn-fg); }
+
+/* 方位解讀面板 */
+.v-plan-sheet { gap: 16px; }
+.v-plan-lines > li { padding: 8px 10px; border-radius: var(--r-md); background: var(--surface-2); display: block; }
+.v-plan-lines > li.on { outline: 1px solid var(--gold); }
+.v-plan-card { border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 12px; background: var(--surface-2); }
+.v-plan-card summary { cursor: pointer; font-weight: 600; min-height: var(--tap); display: flex; align-items: center; }
+.v-plan-card p { margin-top: 8px; font-size: 14.5px; }
+.v-plan-badges { margin-top: 6px; }
+
+@media (min-width: 640px) {
+  .v-plan-templates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-plan-tpl:active { transform: none; }
+}

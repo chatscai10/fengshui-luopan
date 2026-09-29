@@ -1,0 +1,93 @@
+/* 羅盤畫面。盤面本身(Canvas)永遠是漆黑金字,不隨主題;其餘元件一律用 tokens。 */
+.v-compass { padding-bottom: 4px; }
+
+/* ── 讀數列 ── */
+.v-compass-read { display: grid; gap: 6px; justify-items: center; text-align: center; }
+.v-compass-r1 { display: flex; align-items: baseline; justify-content: center; gap: 8px; font-family: var(--font-kai); font-size: 22px; line-height: 1.15; }
+.v-compass-r1 .big { min-width: 5.6ch; text-align: start; font-family: var(--font-mono); font-size: 36px; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+.v-compass-r2 { font-size: 19px; letter-spacing: .03em; line-height: 1.35; }
+.v-compass-mount { color: var(--text); }
+.v-compass-sit { color: var(--text-dim); }
+.v-compass-conv { font-size: 13.5px; }
+.v-compass-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; min-height: 36px; align-items: center; }
+.v-compass-north { min-height: var(--tap); font-family: var(--font-kai); }
+.v-compass-alt { font-size: 13.5px; color: var(--info-fg); }
+.v-compass-note { font-size: 12.5px; line-height: 1.5; color: var(--text-faint); max-width: 34em; }
+.v-compass-legend { text-align: center; font-size: 12.5px; margin-top: -4px; }
+
+/* ── 盤面 ── */
+.v-compass-stage {
+  width: min(100%, 420px);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  outline-offset: 4px;
+  cursor: grab;
+}
+.v-compass-stage:active { cursor: grabbing; }
+/* 盤下柔陰影: 圓形底板,不會跟著轉 */
+.v-compass-stage::before {
+  content: "";
+  position: absolute;
+  inset: 15px;
+  border-radius: 50%;
+  box-shadow: 0 14px 26px rgba(0, 0, 0, .5), 0 3px 6px rgba(0, 0, 0, .4);
+  pointer-events: none;
+}
+:root[data-theme="light"] .v-compass-stage::before { box-shadow: 0 12px 22px rgba(60, 44, 20, .38), 0 3px 6px rgba(60, 44, 20, .3); }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .v-compass-stage::before { box-shadow: 0 12px 22px rgba(60, 44, 20, .38), 0 3px 6px rgba(60, 44, 20, .3); }
+}
+.v-compass-rotator, .v-compass-layer { position: absolute; inset: 0; transform-origin: 50% 50%; }
+.v-compass-rotator { will-change: transform; }
+.v-compass-layer { pointer-events: none; }
+.v-compass-layer svg { display: block; width: 100%; height: 100%; }
+@media (prefers-reduced-motion: reduce) { .v-compass-rotator { transition: none !important; } }
+
+/* ── 感測器區 ── */
+.v-compass-sensor { display: grid; gap: 10px; }
+.v-compass-sensor .card-title { margin-bottom: 0; }
+.v-compass-msg { font-size: 14px; color: var(--text-dim); line-height: 1.5; }
+.v-compass-msg--warn { color: var(--warn-fg); }
+.v-compass-locknote { font-size: 14px; line-height: 1.5; color: var(--good-fg); }
+.v-compass-qual { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; }
+.v-compass-light {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text-faint);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--line-strong);
+}
+.v-compass-light[data-q="green"] { background: var(--jade); }
+.v-compass-light[data-q="yellow"] { background: var(--gold); }
+.v-compass-light[data-q="red"] { background: var(--terracotta); }
+.v-compass-qtext { min-width: 4.5em; }
+.v-compass-level { display: flex; align-items: center; gap: 8px; margin-inline-start: auto; }
+.v-compass-level-label { color: var(--text-dim); }
+.v-compass-level-track {
+  position: relative; display: block; width: 84px; height: 10px;
+  border-radius: 999px; background: var(--surface-3); overflow: hidden;
+}
+.v-compass-level-fill { display: block; height: 100%; width: 0; background: var(--jade); border-radius: inherit; transition: width .12s linear; }
+.v-compass-level[data-ok="0"] .v-compass-level-fill { background: var(--terracotta); }
+.v-compass-level-mark { position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; background: var(--text-dim); opacity: .7; }
+.v-compass-level-text { min-width: 6.2em; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .v-compass-level-fill { transition: none; } }
+.v-compass-ring { width: 22px; height: 22px; transform: rotate(-90deg); flex: none; }
+.v-compass-ring-track { stroke: var(--line-strong); }
+.v-compass-ring-bar { stroke: var(--gold-bright); }
+.btn[disabled] .v-compass-ring-bar { stroke: var(--text-faint); }
+
+/* ── 手動微調 ── */
+.v-compass-manual { display: grid; gap: 10px; }
+.v-compass-manual .card-title { margin-bottom: 0; }
+.v-compass-steprow { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.v-compass-input { text-align: center; font-family: var(--font-mono); font-size: 20px; letter-spacing: .04em; }
+.v-compass-inputmsg { color: var(--warn-fg) !important; }
+
+/* ── 已存與主動作 ── */
+.v-compass-saved { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.v-compass-howlist { margin: 0; padding-inline-start: 1.4em; display: grid; gap: 10px; line-height: 1.6; }
+.v-compass-how strong { color: var(--gold-bright); font-weight: 600; }
+
+@media (min-width: 640px) {
+  .v-compass-r1 { font-size: 24px; }
+  .v-compass-r2 { font-size: 20px; }
+}

@@ -1,0 +1,88 @@
+/* 財位畫面。共用的「報告卡片」樣式(.v-card-*)也放在這裡,報告畫面重用。 */
+
+/* ── 財位畫面 ── */
+.v-wealth { max-width: 100%; }
+.v-wealth .card-lead { margin: 2px 0 2px; }
+
+.v-wealth-guidelist { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.v-wealth-guidelist li { display: grid; justify-items: start; gap: 8px; font-size: 14.5px; padding-top: 10px; border-top: 1px solid var(--line); }
+.v-wealth-guidelist li:first-child { padding-top: 0; border-top: 0; }
+
+.v-wealth-miniplan {
+  margin: 6px 0 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  overflow: hidden;
+  line-height: 0;
+}
+.v-wealth-miniplan-canvas { display: block; width: 100%; cursor: pointer; }
+.v-wealth-mapcap {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: 24px; margin-bottom: 8px;
+  font-size: 13px; color: var(--text-dim);
+}
+.v-wealth-mapcap .btn { flex: none; white-space: nowrap; min-height: var(--tap); }
+
+.v-wealth-legend { margin: 0 0 10px; font-size: 12.5px; line-height: 1.5; color: var(--text-dim); }
+.v-wealth .row.tight { margin: 6px 0 10px; }
+.v-wealth-where { margin: 8px 0 10px; font-size: 16px; line-height: 1.6; }
+.v-wealth-h4 { margin: 16px 0 6px; font-size: 13px; letter-spacing: .1em; font-weight: 600; color: var(--text-dim); }
+.v-wealth-tiernote { font-size: 12.5px; margin-top: 12px; }
+
+.v-wealth-why, .v-wealth-checks { gap: 10px; }
+.v-wealth-why .mark, .v-wealth-checks .mark { font-weight: 700; }
+.v-wealth-why li.is-good .mark { color: var(--good-fg); }
+.v-wealth-why li.is-watch .mark { color: var(--warn-fg); }
+.v-wealth-why li.is-neutral .mark { color: var(--text-dim); }
+.v-wealth-why-t { font-size: 15px; font-weight: 500; }
+.v-wealth-why-w { color: var(--text-dim); font-weight: 400; font-size: 13.5px; }
+.v-wealth-why li.is-watch .v-wealth-why-w { color: var(--warn-fg); }
+.v-wealth-why li.is-good .v-wealth-why-w { color: var(--good-fg); }
+.v-wealth-why .sub { font-size: 14px; line-height: 1.5; }
+.v-wealth-checks li { font-size: 14.5px; line-height: 1.5; }
+.v-wealth-remedy { padding: 6px 0 6px 12px; border-inline-start: 3px solid var(--line-strong); margin: 6px 0; }
+.v-wealth-remedy.is-caution { border-color: var(--terracotta); background: var(--warn-bg); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.v-wealth-remedy-t { font-weight: 600; font-size: 14.5px; }
+.v-wealth-remedy p { font-size: 14.5px; line-height: 1.6; }
+
+/* 其他候選:可展開的小卡片 */
+.v-wealth-other { padding: 0; overflow: hidden; }
+.v-wealth-other.is-selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset, var(--shadow-card); }
+.v-wealth-otherhead {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; min-height: 60px; padding: 10px 14px;
+  border: 0; background: transparent; color: var(--text);
+  text-align: start; cursor: pointer;
+}
+.v-wealth-order {
+  flex: none; display: inline-grid; place-items: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--gold); color: var(--gold-bright);
+  font-size: 13px; font-weight: 700;
+}
+.v-wealth-otitle { flex: 1; font-size: 15.5px; font-weight: 500; line-height: 1.4; min-width: 0; overflow-wrap: anywhere; }
+.v-wealth-chev { flex: none; display: inline-grid; color: var(--text-dim); transition: transform .15s; }
+.v-wealth-chev svg { width: 20px; height: 20px; }
+.v-wealth-otherhead[aria-expanded="true"] .v-wealth-chev { transform: rotate(90deg); }
+.v-wealth-otherbody { padding: 0 14px 16px; border-top: 1px solid var(--line); }
+.v-wealth-otherbody[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .v-wealth-chev { transition: none; } }
+
+/* 今年要留意 */
+.v-wealth-abox { padding: 12px 0; border-top: 1px solid var(--line); }
+.v-wealth-abox:first-of-type { border-top: 0; }
+.v-wealth-abox-t { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.v-wealth-alist { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 4px; }
+.v-wealth-alist li { font-size: 15px; padding-inline-start: 14px; position: relative; }
+.v-wealth-alist li::before { content: ""; position: absolute; inset-inline-start: 2px; top: .7em; width: 5px; height: 5px; border-radius: 50%; background: var(--gold); }
+.v-wealth-house { margin-top: 10px; }
+.v-wealth-house p { margin-top: 4px; }
+
+.v-wealth-tip > summary { flex-wrap: wrap; }
+.v-wealth-more { margin-top: 4px; }
+.v-wealth-foot { font-size: 13px; line-height: 1.6; padding: 4px 4px 12px; }
+.v-wealth-foot summary { font-size: 13px; }
+.v-wealth-empty .empty { padding: 20px 6px; }
+.v-wealth-empty .empty p { margin-top: 8px; }
+.v-wealth-empty .btn { margin-top: 16px; }

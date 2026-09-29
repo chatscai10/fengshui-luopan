@@ -1,0 +1,4632 @@
+{
+ "meta": {
+  "topic": "luopan_rings",
+  "key": "luopan_rings",
+  "generated": "2026-09-29",
+  "conventions": {
+   "bearing": "degrees clockwise from north (0..360), 子 centre = 0",
+   "intervals": "half-open [start,end)",
+   "canvas_angle": "canvasRad = (bearing-90)*PI/180",
+   "note": "Every numeric table in cases[] was re-computed by build_fixture.py; failing assertions abort the build."
+  },
+  "sources": {
+   "S01": "https://zh.wikipedia.org/wiki/羅庚 (24山 range table, via action=raw)",
+   "S02": "http://www.wawlhld.com/m/lpzs/213.html (万安吴鲁衡罗经老店 罗盘解构: 三合盘16层, 中針/縫針/120分金)",
+   "S03": "http://www.wawlhld.com/m/lpzs/220.html (論三合盤與卦盤之運用: 兩套陰陽)",
+   "S04": "http://www.fushantang.com/1012/1012a/j0110.html (人盤逆時針7.5 / 天盤順時針7.5)",
+   "S05": "https://www.sohu.com/a/455508170_120828853 (三盤順序; 左右移文字與S04相反)",
+   "S06": "https://www.sohu.com/a/346292839_435999 (紅字陽黑字陰 vs 三元龍陰陽; 甲午分金174度)",
+   "S07": "http://www.cafengshuinet.com/m/show_detail.php?id=2781 (三元龍歸屬與陰陽記憶法)",
+   "S08": "https://www.36fengshui.com/zhishi/zs26.asp (24山陰陽五行)",
+   "S09": "https://www.yixiansheng.com/article/4796.html (三合/三元 陰陽 兩派)",
+   "S10": "https://salongie.com/2019/09/10/fengshui-settingfacing/ (納甲陰陽龍)",
+   "S11": "https://www.yixiansheng.com/article/4538.html (二十八宿與二十四山 圓周度)",
+   "S12": "https://www.163.com/dy/article/DRK38TTS0528KPTC.html (開禧二十八宿宿度表, 太少半)",
+   "S13": "https://blog.sina.com.cn/s/blog_5bc171940102vezn.html (開禧 vs 時憲宿度)",
+   "S14": "https://zh.wikipedia.org/wiki/十二次 (十二次×二十八宿×十二辰)",
+   "S15": "https://www.163.com/dy/article/HJT97HRR0553X9QG.html (一百二十分金排法)",
+   "S16": "https://groups.google.com/g/FengShuiPro/c/45z0nNAsEkM (綜合盤層次, 子山/丑山分金)",
+   "S17": "https://www.bookcard.net/wordpress/geomantic_compass_saam_jyun_dish/ (三元盤層次)",
+   "S18": "https://www.bigpeak.net/portal/article/index.html?id=15 (三元盤22層, 含正兼向度數指標)",
+   "S19": "http://www.taijizhidian.net/zhuanzaisuibi/215.html (三合盤20層; 先天卦爻居後天位; 立春始艮)",
+   "S20": "https://zh.wikipedia.org/wiki/八卦 (八卦符號, 後天方位, 洛書九宮, 五行)",
+   "S21": "https://www.163.com/dy/article/EOLTHF2R05418RAL.html (先天圓圖六十四卦歌訣)",
+   "S22": "https://zh.wikipedia.org/wiki/Template:六十四卦構成表 (方圖 上下卦與文王序號)",
+   "S23": "https://www.hokming.com/fengshui-simplewaystodifferentiateSYandSHfengshuicompass-part2-fengshui.htm (三元盤三陽三陰連續排列)",
+   "S24": "https://blog.csdn.net/qq_42971998/article/details/137604537 (中間9度為正向; 大小空亡)",
+   "S25": "derived-by-script (rule + assertion in build_fixture.py)",
+   "S26": "https://zh.wikipedia.org/wiki/二十八宿 (四象分組, 十二次分星度數)",
+   "S27": "https://zh.wikipedia.org/wiki/五行 (五色)",
+   "S28": "https://en.wikipedia.org/wiki/Luopan (san he / san yuan / zong he, red cross line)",
+   "S29": "http://www.wawlhld.com/m/lpzs/212.html (徽盤各盤型特徵)",
+   "S30": "https://www.88s1.com/mobile_ReadNews.asp?id=1819 (三元明師羅盤21層, 海底線/天心十道)",
+   "S31": "https://www.sohu.com/a/470437996_121138760 (分金背景)",
+   "S32": "https://vocus.cc/article/64318488fd89780001a57e07 (三盤成因說, 背景)",
+   "S33": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Luopan.jpg (實物羅盤照片與18層圖例, CC BY-SA 3.0, Pcae18)",
+   "note": "case.source ids refer to this map; MDN/font/canvas-limit URLs are listed in the report only"
+  },
+  "verified_checks": [
+   {
+    "name": "24 distinct",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "wikipedia table parsed 8 rows",
+    "passed": true,
+    "detail": "8"
+   },
+   {
+    "name": "wikipedia has 24 山",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "derived ranges == wikipedia 羅庚 table (all 24)",
+    "passed": true,
+    "detail": "[]"
+   },
+   {
+    "name": "palace 坎 = 壬子癸",
+    "passed": true,
+    "detail": "壬子癸"
+   },
+   {
+    "name": "palace 艮 = 丑艮寅",
+    "passed": true,
+    "detail": "丑艮寅"
+   },
+   {
+    "name": "palace 震 = 甲卯乙",
+    "passed": true,
+    "detail": "甲卯乙"
+   },
+   {
+    "name": "palace 巽 = 辰巽巳",
+    "passed": true,
+    "detail": "辰巽巳"
+   },
+   {
+    "name": "palace 離 = 丙午丁",
+    "passed": true,
+    "detail": "丙午丁"
+   },
+   {
+    "name": "palace 坤 = 未坤申",
+    "passed": true,
+    "detail": "未坤申"
+   },
+   {
+    "name": "palace 兌 = 庚酉辛",
+    "passed": true,
+    "detail": "庚酉辛"
+   },
+   {
+    "name": "palace 乾 = 戌乾亥",
+    "passed": true,
+    "detail": "戌乾亥"
+   },
+   {
+    "name": "palace 坎 clockwise 壬子癸",
+    "passed": true,
+    "detail": "壬子癸"
+   },
+   {
+    "name": "palace 艮 clockwise 丑艮寅",
+    "passed": true,
+    "detail": "丑艮寅"
+   },
+   {
+    "name": "palace 震 clockwise 甲卯乙",
+    "passed": true,
+    "detail": "甲卯乙"
+   },
+   {
+    "name": "palace 巽 clockwise 辰巽巳",
+    "passed": true,
+    "detail": "辰巽巳"
+   },
+   {
+    "name": "palace 離 clockwise 丙午丁",
+    "passed": true,
+    "detail": "丙午丁"
+   },
+   {
+    "name": "palace 坤 clockwise 未坤申",
+    "passed": true,
+    "detail": "未坤申"
+   },
+   {
+    "name": "palace 兌 clockwise 庚酉辛",
+    "passed": true,
+    "detail": "庚酉辛"
+   },
+   {
+    "name": "palace 乾 clockwise 戌乾亥",
+    "passed": true,
+    "detail": "戌乾亥"
+   },
+   {
+    "name": "地元龍 list",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "天元龍 list",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "人元龍 list",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "地元 clockwise order 壬丑甲辰丙未庚戌",
+    "passed": true,
+    "detail": "壬丑甲辰丙未庚戌"
+   },
+   {
+    "name": "天元 clockwise order 子艮卯巽午坤酉乾",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "人元 clockwise order 癸寅乙巳丁申辛亥",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "三元陽 set == 36fengshui list",
+    "passed": true,
+    "detail": "丙乾亥坤壬寅巳巽庚甲申艮"
+   },
+   {
+    "name": "三元陰 set == 36fengshui list",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "palace 坎 pattern",
+    "passed": true,
+    "detail": "陽陰陰"
+   },
+   {
+    "name": "palace 艮 pattern",
+    "passed": true,
+    "detail": "陰陽陽"
+   },
+   {
+    "name": "palace 震 pattern",
+    "passed": true,
+    "detail": "陽陰陰"
+   },
+   {
+    "name": "palace 巽 pattern",
+    "passed": true,
+    "detail": "陰陽陽"
+   },
+   {
+    "name": "palace 離 pattern",
+    "passed": true,
+    "detail": "陽陰陰"
+   },
+   {
+    "name": "palace 坤 pattern",
+    "passed": true,
+    "detail": "陰陽陽"
+   },
+   {
+    "name": "palace 兌 pattern",
+    "passed": true,
+    "detail": "陽陰陰"
+   },
+   {
+    "name": "palace 乾 pattern",
+    "passed": true,
+    "detail": "陰陽陽"
+   },
+   {
+    "name": "三元 24 山 forms 3-陽/3-陰 runs starting at 艮",
+    "passed": true,
+    "detail": "陽陰陽陰陽陰陽陰"
+   },
+   {
+    "name": "三合陽 = 12",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "三合陽 == 紅字 list (sohu / wawlhld)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "三合陰 (納甲) == 黑字 list",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "五行 covers 24",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "unicode U+2630 乾",
+    "passed": true,
+    "detail": "TRIGRAM FOR HEAVEN"
+   },
+   {
+    "name": "unicode U+2631 兌",
+    "passed": true,
+    "detail": "TRIGRAM FOR LAKE"
+   },
+   {
+    "name": "unicode U+2632 離",
+    "passed": true,
+    "detail": "TRIGRAM FOR FIRE"
+   },
+   {
+    "name": "unicode U+2633 震",
+    "passed": true,
+    "detail": "TRIGRAM FOR THUNDER"
+   },
+   {
+    "name": "unicode U+2634 巽",
+    "passed": true,
+    "detail": "TRIGRAM FOR WIND"
+   },
+   {
+    "name": "unicode U+2635 坎",
+    "passed": true,
+    "detail": "TRIGRAM FOR WATER"
+   },
+   {
+    "name": "unicode U+2636 艮",
+    "passed": true,
+    "detail": "TRIGRAM FOR MOUNTAIN"
+   },
+   {
+    "name": "unicode U+2637 坤",
+    "passed": true,
+    "detail": "TRIGRAM FOR EARTH"
+   },
+   {
+    "name": "trigram unicode names match order",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "乾三連 坤六斷",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "震仰盂 (bottom yang)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "艮覆碗 (top yang)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "離中虛",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "坎中滿",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "兌上缺",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "巽下斷",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "後天 bearings",
+    "passed": true,
+    "detail": "{'坎': 0, '艮': 45, '震': 90, '巽': 135, '離': 180, '坤': 225, '兌': 270, '乾': 315}"
+   },
+   {
+    "name": "先天 乾坤 antipodal + complementary",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "先天 兌艮 antipodal + complementary",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "先天 離坎 antipodal + complementary",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "先天 震巽 antipodal + complementary",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "先天爻 slot = 後天 name at same bearing",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "洛書 8 lines sum 15",
+    "passed": true,
+    "detail": "[15, 15, 15, 15, 15, 15, 15, 15]"
+   },
+   {
+    "name": "洛書 numbers == 後天 bearings",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "opposite 洛書 pairs sum to 10",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "人盤: 子|癸 seam at 0",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "人盤: 午|丁 seam at 180",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "天盤: 壬|子 seam at 0",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "天盤: 丙|午 seam at 180",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "地盤 sanity",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "28 animals aligned",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "七曜 pattern 木金土日月火水 x4",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "太少半 notation == 163.com numeric table (all 28)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "宿度 total = 365.25",
+    "passed": true,
+    "detail": "365.25"
+   },
+   {
+    "name": "ring closes at 360",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "28宿 boundaries within 1 deg of 易先生 article (typos 翼start 142->144.6, 井end 244->234 corrected)",
+    "passed": true,
+    "detail": "worst=0.71"
+   },
+   {
+    "name": "午 centre in 3rd degree of 張",
+    "passed": true,
+    "detail": "2.125 gu-degrees from 張 start"
+   },
+   {
+    "name": "子 centre = 虛|危 seam",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "四象 span centred within 6 deg of N/E/S/W",
+    "passed": true,
+    "detail": "{'東方青龍': 87.7208, '北方玄武': 2.9569, '西方白虎': 275.4825, '南方朱雀': 180.2464}"
+   },
+   {
+    "name": "十二次 covers 28 once",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "120 entries",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "each of 60 甲子 appears exactly twice",
+    "passed": true,
+    "detail": "60 distinct"
+   },
+   {
+    "name": "旺相 (丙丁庚辛) = 48",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "子山 = 甲子 丙子 戊子 庚子 壬子 (wawlhld/googlegroups/163)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "丑山 = 乙丑 丁丑 己丑 辛丑 癸丑",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "午山 = 甲午 丙午 戊午 庚午 壬午",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "卯山 = 乙卯 丁卯 己卯 辛卯 癸卯",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "癸山 == 子山, 艮山 == 丑山, 甲山 == 寅山, 庚山 == 申山",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "bearing 174 -> 甲午 (sohu: 午向174度是甲午分金)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "bearing 352.5 -> 甲子 (start of ring per 163.com)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "template has 64 entries",
+    "passed": true,
+    "detail": "64"
+   },
+   {
+    "name": "KingWen 1..64 all present",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "KW 1 乾 / 2 坤 / 63 既濟 / 64 未濟",
+    "passed": true,
+    "detail": "[('乾為天', '乾', '乾'), ('坤為地', '坤', '坤'), ('水火既濟', '坎', '離'), ('火水未濟', '離', '坎')]"
+   },
+   {
+    "name": "64 (upper,lower) unique",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "圓圖 order computed == 歌訣 in 163.com (杜啟明) [64]",
+    "passed": true,
+    "detail": "64"
+   },
+   {
+    "name": "U+4DC0 hexagram 1",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "U+4DFE/4DFF = 既濟 / 未濟",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "64 卦 ring 5.625 each",
+    "passed": true,
+    "detail": "({'index': 0, 'name': '乾', 'start': 174.375, 'end': 180.0}, {'index': 31, 'name': '復', 'start': 0.0, 'end': 5.625}, {'index': 32, 'name': '姤', 'start': 180.0, 'end': 185.625}, {'index': 63, 'name': '坤', 'start': 354.375, 'end': 0.0})"
+   },
+   {
+    "name": "立春 at 艮 (taijizhidian: 立春始艮), 大寒 at 丑 (終丑)",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "二分二至 on 子午卯酉",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "8 大空亡 + 16 小空亡 = 24 seams",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "dakong seams are palace borders",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "glyph pairs >= 4.5:1 (限 lacquer_800/900 底;新五行色則 lacquer_800/700/600 三種底皆過)",
+    "passed": true,
+    "detail": "{'gold_500 on lacquer_800 (陰 cell glyph)': 9.19, 'gold_300 on lacquer_800': 11.74, 'cinnabar_300 on lacquer_800 (陽 glyph on dark)': 5.98, 'cinnabar_800 on gold_500 (陽 plate: red glyph on gold)': 5.39, 'lacquer_900 on gold_500': 9.69, 'ivory on lacquer_800 (small numerals)': 15.66, 'wx_wood on lacquer_800': 6.58, 'wx_fire on lacquer_800': 4.77, 'wx_earth on lacquer_800': 8.05, 'wx_metal on lacquer_800': 14.07, 'wx_water on lacquer_800': 4.91}"
+   },
+   {
+    "name": "layout mode A rings<=9 (excluding bezel)",
+    "passed": true,
+    "detail": "8 rings incl. 天池"
+   },
+   {
+    "name": "layout mode A contiguous",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "layout mode B rings<=9 (excluding bezel)",
+    "passed": true,
+    "detail": "9 rings incl. 天池"
+   },
+   {
+    "name": "layout mode B contiguous",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "layout mode None rings<=9 (excluding bezel)",
+    "passed": true,
+    "detail": "7 rings incl. 天池"
+   },
+   {
+    "name": "layout mode None contiguous",
+    "passed": true,
+    "detail": ""
+   },
+   {
+    "name": "narrow 宿 for 13px glyph @360px dial include 觜 and 鬼",
+    "passed": true,
+    "detail": "r=149.4px minθ=4.99deg narrow=['觜', '鬼']"
+   },
+   {
+    "name": "xiu lookup 0.0 -> 虛",
+    "passed": true,
+    "detail": "虛"
+   },
+   {
+    "name": "xiu lookup 359.99 -> 危",
+    "passed": true,
+    "detail": "危"
+   },
+   {
+    "name": "xiu lookup 10 -> 女",
+    "passed": true,
+    "detail": "女"
+   },
+   {
+    "name": "xiu lookup 180 -> 張",
+    "passed": true,
+    "detail": "張"
+   },
+   {
+    "name": "xiu lookup 90 -> 氐",
+    "passed": true,
+    "detail": "氐"
+   },
+   {
+    "name": "xiu lookup 270 -> 昴",
+    "passed": true,
+    "detail": "昴"
+   },
+   {
+    "name": "xiu lookup 45 -> 斗",
+    "passed": true,
+    "detail": "斗"
+   },
+   {
+    "name": "xiu lookup 315 -> 奎",
+    "passed": true,
+    "detail": "奎"
+   },
+   {
+    "name": "fenjin lookup 174",
+    "passed": true,
+    "detail": "甲午"
+   },
+   {
+    "name": "fenjin lookup 352.5",
+    "passed": true,
+    "detail": "甲子"
+   },
+   {
+    "name": "fenjin lookup 359.9",
+    "passed": true,
+    "detail": "戊子"
+   },
+   {
+    "name": "fenjin lookup 0.0",
+    "passed": true,
+    "detail": "戊子"
+   },
+   {
+    "name": "fenjin lookup 337.5",
+    "passed": true,
+    "detail": "乙亥"
+   },
+   {
+    "name": "fenjin lookup 178.5",
+    "passed": true,
+    "detail": "戊午"
+   },
+   {
+    "name": "fenjin lookup 7.4",
+    "passed": true,
+    "detail": "壬子"
+   },
+   {
+    "name": "fenjin lookup 7.5",
+    "passed": true,
+    "detail": "甲子"
+   }
+  ],
+  "total_checks": 127
+ },
+ "cases": [
+  {
+   "name": "mountains24_geometry",
+   "input": {
+    "convention": "bearing clockwise from north; 子 centre = 0; ring rotates 15deg per mountain"
+   },
+   "expected": [
+    {
+     "index": 0,
+     "name": "子",
+     "center": 0,
+     "start": 352.5,
+     "end": 7.5,
+     "kind": "地支",
+     "palace": "坎",
+     "yuan": "天元"
+    },
+    {
+     "index": 1,
+     "name": "癸",
+     "center": 15,
+     "start": 7.5,
+     "end": 22.5,
+     "kind": "天干",
+     "palace": "坎",
+     "yuan": "人元"
+    },
+    {
+     "index": 2,
+     "name": "丑",
+     "center": 30,
+     "start": 22.5,
+     "end": 37.5,
+     "kind": "地支",
+     "palace": "艮",
+     "yuan": "地元"
+    },
+    {
+     "index": 3,
+     "name": "艮",
+     "center": 45,
+     "start": 37.5,
+     "end": 52.5,
+     "kind": "四維卦",
+     "palace": "艮",
+     "yuan": "天元"
+    },
+    {
+     "index": 4,
+     "name": "寅",
+     "center": 60,
+     "start": 52.5,
+     "end": 67.5,
+     "kind": "地支",
+     "palace": "艮",
+     "yuan": "人元"
+    },
+    {
+     "index": 5,
+     "name": "甲",
+     "center": 75,
+     "start": 67.5,
+     "end": 82.5,
+     "kind": "天干",
+     "palace": "震",
+     "yuan": "地元"
+    },
+    {
+     "index": 6,
+     "name": "卯",
+     "center": 90,
+     "start": 82.5,
+     "end": 97.5,
+     "kind": "地支",
+     "palace": "震",
+     "yuan": "天元"
+    },
+    {
+     "index": 7,
+     "name": "乙",
+     "center": 105,
+     "start": 97.5,
+     "end": 112.5,
+     "kind": "天干",
+     "palace": "震",
+     "yuan": "人元"
+    },
+    {
+     "index": 8,
+     "name": "辰",
+     "center": 120,
+     "start": 112.5,
+     "end": 127.5,
+     "kind": "地支",
+     "palace": "巽",
+     "yuan": "地元"
+    },
+    {
+     "index": 9,
+     "name": "巽",
+     "center": 135,
+     "start": 127.5,
+     "end": 142.5,
+     "kind": "四維卦",
+     "palace": "巽",
+     "yuan": "天元"
+    },
+    {
+     "index": 10,
+     "name": "巳",
+     "center": 150,
+     "start": 142.5,
+     "end": 157.5,
+     "kind": "地支",
+     "palace": "巽",
+     "yuan": "人元"
+    },
+    {
+     "index": 11,
+     "name": "丙",
+     "center": 165,
+     "start": 157.5,
+     "end": 172.5,
+     "kind": "天干",
+     "palace": "離",
+     "yuan": "地元"
+    },
+    {
+     "index": 12,
+     "name": "午",
+     "center": 180,
+     "start": 172.5,
+     "end": 187.5,
+     "kind": "地支",
+     "palace": "離",
+     "yuan": "天元"
+    },
+    {
+     "index": 13,
+     "name": "丁",
+     "center": 195,
+     "start": 187.5,
+     "end": 202.5,
+     "kind": "天干",
+     "palace": "離",
+     "yuan": "人元"
+    },
+    {
+     "index": 14,
+     "name": "未",
+     "center": 210,
+     "start": 202.5,
+     "end": 217.5,
+     "kind": "地支",
+     "palace": "坤",
+     "yuan": "地元"
+    },
+    {
+     "index": 15,
+     "name": "坤",
+     "center": 225,
+     "start": 217.5,
+     "end": 232.5,
+     "kind": "四維卦",
+     "palace": "坤",
+     "yuan": "天元"
+    },
+    {
+     "index": 16,
+     "name": "申",
+     "center": 240,
+     "start": 232.5,
+     "end": 247.5,
+     "kind": "地支",
+     "palace": "坤",
+     "yuan": "人元"
+    },
+    {
+     "index": 17,
+     "name": "庚",
+     "center": 255,
+     "start": 247.5,
+     "end": 262.5,
+     "kind": "天干",
+     "palace": "兌",
+     "yuan": "地元"
+    },
+    {
+     "index": 18,
+     "name": "酉",
+     "center": 270,
+     "start": 262.5,
+     "end": 277.5,
+     "kind": "地支",
+     "palace": "兌",
+     "yuan": "天元"
+    },
+    {
+     "index": 19,
+     "name": "辛",
+     "center": 285,
+     "start": 277.5,
+     "end": 292.5,
+     "kind": "天干",
+     "palace": "兌",
+     "yuan": "人元"
+    },
+    {
+     "index": 20,
+     "name": "戌",
+     "center": 300,
+     "start": 292.5,
+     "end": 307.5,
+     "kind": "地支",
+     "palace": "乾",
+     "yuan": "地元"
+    },
+    {
+     "index": 21,
+     "name": "乾",
+     "center": 315,
+     "start": 307.5,
+     "end": 322.5,
+     "kind": "四維卦",
+     "palace": "乾",
+     "yuan": "天元"
+    },
+    {
+     "index": 22,
+     "name": "亥",
+     "center": 330,
+     "start": 322.5,
+     "end": 337.5,
+     "kind": "地支",
+     "palace": "乾",
+     "yuan": "人元"
+    },
+    {
+     "index": 23,
+     "name": "壬",
+     "center": 345,
+     "start": 337.5,
+     "end": 352.5,
+     "kind": "天干",
+     "palace": "坎",
+     "yuan": "地元"
+    }
+   ],
+   "source": "S01 (ranges parsed by script and equal for all 24) + S02 + S06 + S07 (palaces / yuan)",
+   "confidence": "high"
+  },
+  {
+   "name": "mountains24_sanyuan_yinyang",
+   "input": {
+    "system": "三元龍陰陽 (玄空/三元盤)"
+   },
+   "expected": {
+    "yang": [
+     "艮",
+     "寅",
+     "甲",
+     "巽",
+     "巳",
+     "丙",
+     "坤",
+     "申",
+     "庚",
+     "乾",
+     "亥",
+     "壬"
+    ],
+    "yin": [
+     "子",
+     "癸",
+     "丑",
+     "卯",
+     "乙",
+     "辰",
+     "午",
+     "丁",
+     "未",
+     "酉",
+     "辛",
+     "戌"
+    ],
+    "by_mountain": {
+     "子": "陰",
+     "癸": "陰",
+     "丑": "陰",
+     "艮": "陽",
+     "寅": "陽",
+     "甲": "陽",
+     "卯": "陰",
+     "乙": "陰",
+     "辰": "陰",
+     "巽": "陽",
+     "巳": "陽",
+     "丙": "陽",
+     "午": "陰",
+     "丁": "陰",
+     "未": "陰",
+     "坤": "陽",
+     "申": "陽",
+     "庚": "陽",
+     "酉": "陰",
+     "辛": "陰",
+     "戌": "陰",
+     "乾": "陽",
+     "亥": "陽",
+     "壬": "陽"
+    }
+   },
+   "source": "S06, S07, S08, S09, S03 (four independent lists agree; script re-derives from yuan rule)",
+   "confidence": "high"
+  },
+  {
+   "name": "mountains24_sanhe_red_black",
+   "input": {
+    "system": "三合盤紅黑字 (納甲淨陰淨陽)"
+   },
+   "expected": {
+    "red_yang": [
+     "子",
+     "癸",
+     "寅",
+     "甲",
+     "乙",
+     "辰",
+     "午",
+     "坤",
+     "申",
+     "戌",
+     "乾",
+     "壬"
+    ],
+    "black_yin": [
+     "丑",
+     "艮",
+     "卯",
+     "巽",
+     "巳",
+     "丙",
+     "丁",
+     "未",
+     "庚",
+     "酉",
+     "辛",
+     "亥"
+    ]
+   },
+   "source": "S06 (紅字/黑字 lists) + S02 + S03 + S10 (納甲 derivation) ; script re-derives 12/12",
+   "confidence": "high"
+  },
+  {
+   "name": "mountains24_wuxing",
+   "input": {
+    "system": "24山本五行 (干支本五行+乾金坤土艮土巽木)",
+    "alt": "八卦五行 by palace"
+   },
+   "expected": {
+    "own": {
+     "子": "水",
+     "癸": "水",
+     "丑": "土",
+     "艮": "土",
+     "寅": "木",
+     "甲": "木",
+     "卯": "木",
+     "乙": "木",
+     "辰": "土",
+     "巽": "木",
+     "巳": "火",
+     "丙": "火",
+     "午": "火",
+     "丁": "火",
+     "未": "土",
+     "坤": "土",
+     "申": "金",
+     "庚": "金",
+     "酉": "金",
+     "辛": "金",
+     "戌": "土",
+     "乾": "金",
+     "亥": "水",
+     "壬": "水"
+    },
+    "by_palace": {
+     "子": "水",
+     "癸": "水",
+     "丑": "土",
+     "艮": "土",
+     "寅": "土",
+     "甲": "木",
+     "卯": "木",
+     "乙": "木",
+     "辰": "木",
+     "巽": "木",
+     "巳": "木",
+     "丙": "火",
+     "午": "火",
+     "丁": "火",
+     "未": "土",
+     "坤": "土",
+     "申": "土",
+     "庚": "金",
+     "酉": "金",
+     "辛": "金",
+     "戌": "金",
+     "乾": "金",
+     "亥": "金",
+     "壬": "水"
+    }
+   },
+   "source": "S08 (own) ; S20 (palace wuxing: 震巽木 離火 坤艮土 兌乾金 坎水)",
+   "confidence": "medium"
+  },
+  {
+   "name": "bagua_houtian_ring",
+   "input": {
+    "convention": "bearing clockwise from north"
+   },
+   "expected": [
+    {
+     "name": "坎",
+     "bearing": 0,
+     "luoshu": 1,
+     "wuxing": "水",
+     "houtian_lines_bottom_to_top": [
+      0,
+      1,
+      0
+     ],
+     "unicode": "U+2635",
+     "mountains": [
+      "子",
+      "癸",
+      "壬"
+     ],
+     "nine_star_color": "白"
+    },
+    {
+     "name": "艮",
+     "bearing": 45,
+     "luoshu": 8,
+     "wuxing": "土",
+     "houtian_lines_bottom_to_top": [
+      0,
+      0,
+      1
+     ],
+     "unicode": "U+2636",
+     "mountains": [
+      "丑",
+      "艮",
+      "寅"
+     ],
+     "nine_star_color": "白"
+    },
+    {
+     "name": "震",
+     "bearing": 90,
+     "luoshu": 3,
+     "wuxing": "木",
+     "houtian_lines_bottom_to_top": [
+      1,
+      0,
+      0
+     ],
+     "unicode": "U+2633",
+     "mountains": [
+      "甲",
+      "卯",
+      "乙"
+     ],
+     "nine_star_color": "碧"
+    },
+    {
+     "name": "巽",
+     "bearing": 135,
+     "luoshu": 4,
+     "wuxing": "木",
+     "houtian_lines_bottom_to_top": [
+      0,
+      1,
+      1
+     ],
+     "unicode": "U+2634",
+     "mountains": [
+      "辰",
+      "巽",
+      "巳"
+     ],
+     "nine_star_color": "綠"
+    },
+    {
+     "name": "離",
+     "bearing": 180,
+     "luoshu": 9,
+     "wuxing": "火",
+     "houtian_lines_bottom_to_top": [
+      1,
+      0,
+      1
+     ],
+     "unicode": "U+2632",
+     "mountains": [
+      "丙",
+      "午",
+      "丁"
+     ],
+     "nine_star_color": "紫"
+    },
+    {
+     "name": "坤",
+     "bearing": 225,
+     "luoshu": 2,
+     "wuxing": "土",
+     "houtian_lines_bottom_to_top": [
+      0,
+      0,
+      0
+     ],
+     "unicode": "U+2637",
+     "mountains": [
+      "未",
+      "坤",
+      "申"
+     ],
+     "nine_star_color": "黑"
+    },
+    {
+     "name": "兌",
+     "bearing": 270,
+     "luoshu": 7,
+     "wuxing": "金",
+     "houtian_lines_bottom_to_top": [
+      1,
+      1,
+      0
+     ],
+     "unicode": "U+2631",
+     "mountains": [
+      "庚",
+      "酉",
+      "辛"
+     ],
+     "nine_star_color": "赤"
+    },
+    {
+     "name": "乾",
+     "bearing": 315,
+     "luoshu": 6,
+     "wuxing": "金",
+     "houtian_lines_bottom_to_top": [
+      1,
+      1,
+      1
+     ],
+     "unicode": "U+2630",
+     "mountains": [
+      "戌",
+      "乾",
+      "亥"
+     ],
+     "nine_star_color": "白"
+    }
+   ],
+   "source": "S20 (說卦傳 方位, 洛書 一坎二坤三震四巽六乾七兌八艮九離, 五行) ; script: magic-square sums 15, Unicode names",
+   "confidence": "high"
+  },
+  {
+   "name": "bagua_xiantian_bearings",
+   "input": {
+    "note": "先天卦: 乾南 坤北 離東 坎西 兌東南 震東北 巽西南 艮西北; 傳統盤把先天卦爻畫在對應的後天卦名位置(先天為體後天為用)"
+   },
+   "expected": [
+    {
+     "name": "坤",
+     "bearing": 0,
+     "lines_bottom_to_top": [
+      0,
+      0,
+      0
+     ],
+     "drawn_in_houtian_slot": "坎"
+    },
+    {
+     "name": "震",
+     "bearing": 45,
+     "lines_bottom_to_top": [
+      1,
+      0,
+      0
+     ],
+     "drawn_in_houtian_slot": "艮"
+    },
+    {
+     "name": "離",
+     "bearing": 90,
+     "lines_bottom_to_top": [
+      1,
+      0,
+      1
+     ],
+     "drawn_in_houtian_slot": "震"
+    },
+    {
+     "name": "兌",
+     "bearing": 135,
+     "lines_bottom_to_top": [
+      1,
+      1,
+      0
+     ],
+     "drawn_in_houtian_slot": "巽"
+    },
+    {
+     "name": "乾",
+     "bearing": 180,
+     "lines_bottom_to_top": [
+      1,
+      1,
+      1
+     ],
+     "drawn_in_houtian_slot": "離"
+    },
+    {
+     "name": "巽",
+     "bearing": 225,
+     "lines_bottom_to_top": [
+      0,
+      1,
+      1
+     ],
+     "drawn_in_houtian_slot": "坤"
+    },
+    {
+     "name": "坎",
+     "bearing": 270,
+     "lines_bottom_to_top": [
+      0,
+      1,
+      0
+     ],
+     "drawn_in_houtian_slot": "兌"
+    },
+    {
+     "name": "艮",
+     "bearing": 315,
+     "lines_bottom_to_top": [
+      0,
+      0,
+      1
+     ],
+     "drawn_in_houtian_slot": "乾"
+    }
+   ],
+   "source": "S19 (先天卦爻居後天位) + S18 (第1層 先天八卦象、後天八卦名) ; S20 (對宮互補) ; script: antipodal+complement",
+   "confidence": "high"
+  },
+  {
+   "name": "luoshu_magic_square_south_up",
+   "input": {
+    "orientation": "traditional south-at-top grid"
+   },
+   "expected": {
+    "grid": [
+     [
+      4,
+      9,
+      2
+     ],
+     [
+      3,
+      5,
+      7
+     ],
+     [
+      8,
+      1,
+      6
+     ]
+    ],
+    "line_sums": [
+     15
+    ]
+   },
+   "source": "S20 + script recompute",
+   "confidence": "high"
+  },
+  {
+   "name": "plates_offsets",
+   "input": {
+    "zi_centre_bearing": {
+     "地盤正針": 0.0,
+     "人盤中針": -7.5,
+     "天盤縫針": 7.5
+    }
+   },
+   "expected": {
+    "地盤正針": 0.0,
+    "人盤中針": -7.5,
+    "天盤縫針": 7.5,
+    "note": "人盤 = 地盤逆時針轉半格(子|癸縫對正針子午); 天盤 = 順時針轉半格(壬|子縫對正針子午)"
+   },
+   "source": "S02 (原文: 中針逆時針轉半格, 縫針順時針轉半格) + S04 + S11(人盤位置與圓周度吻合); S05 用相反的左右措辭 -> see disputes",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_地盤正針_0",
+   "input": {
+    "bearing": 0,
+    "plate": "地盤正針"
+   },
+   "expected": "子",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "high"
+  },
+  {
+   "name": "lookup_地盤正針_7.5",
+   "input": {
+    "bearing": 7.5,
+    "plate": "地盤正針"
+   },
+   "expected": "癸",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "high"
+  },
+  {
+   "name": "lookup_地盤正針_352.49",
+   "input": {
+    "bearing": 352.49,
+    "plate": "地盤正針"
+   },
+   "expected": "壬",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "high"
+  },
+  {
+   "name": "lookup_人盤中針_3",
+   "input": {
+    "bearing": 3,
+    "plate": "人盤中針"
+   },
+   "expected": "癸",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_人盤中針_357",
+   "input": {
+    "bearing": 357,
+    "plate": "人盤中針"
+   },
+   "expected": "子",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_天盤縫針_3",
+   "input": {
+    "bearing": 3,
+    "plate": "天盤縫針"
+   },
+   "expected": "子",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_天盤縫針_357",
+   "input": {
+    "bearing": 357,
+    "plate": "天盤縫針"
+   },
+   "expected": "壬",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_人盤中針_180",
+   "input": {
+    "bearing": 180,
+    "plate": "人盤中針"
+   },
+   "expected": "丁",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "lookup_天盤縫針_180",
+   "input": {
+    "bearing": 180,
+    "plate": "天盤縫針"
+   },
+   "expected": "午",
+   "source": "S25 (half-open [start,end) intervals) built on plate shift above",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_kaixi_widths",
+   "input": {
+    "unit": "古度 (sum 365.25)",
+    "notation": "太=+0.75 少=+0.25 半=+0.5"
+   },
+   "expected": {
+    "order_astronomical": [
+     "角",
+     "亢",
+     "氐",
+     "房",
+     "心",
+     "尾",
+     "箕",
+     "斗",
+     "牛",
+     "女",
+     "虛",
+     "危",
+     "室",
+     "壁",
+     "奎",
+     "婁",
+     "胃",
+     "昴",
+     "畢",
+     "觜",
+     "參",
+     "井",
+     "鬼",
+     "柳",
+     "星",
+     "張",
+     "翼",
+     "軫"
+    ],
+    "widths_gu": [
+     12.75,
+     9.75,
+     16.25,
+     5.75,
+     6.0,
+     18.0,
+     9.5,
+     22.75,
+     7.0,
+     11.0,
+     9.25,
+     16.0,
+     18.25,
+     9.75,
+     18.0,
+     12.75,
+     15.25,
+     11.0,
+     16.5,
+     0.5,
+     9.5,
+     30.25,
+     2.5,
+     13.5,
+     6.75,
+     17.75,
+     20.25,
+     18.75
+    ],
+    "total": 365.25,
+    "scale_to_360": 0.9856262833675564,
+    "animals": [
+     "角木蛟",
+     "亢金龍",
+     "氐土貉",
+     "房日兔",
+     "心月狐",
+     "尾火虎",
+     "箕水豹",
+     "斗木獬",
+     "牛金牛",
+     "女土蝠",
+     "虛日鼠",
+     "危月燕",
+     "室火豬",
+     "壁水貐",
+     "奎木狼",
+     "婁金狗",
+     "胃土雉",
+     "昴日雞",
+     "畢月烏",
+     "觜火猴",
+     "參水猿",
+     "井木犴",
+     "鬼金羊",
+     "柳土獐",
+     "星日馬",
+     "張月鹿",
+     "翼火蛇",
+     "軫水蚓"
+    ]
+   },
+   "source": "S12 (numeric table) + S11 (太少半 list) + S13; script: both spellings equal, total = 365.25 exactly",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_bearing_layout_kaixi",
+   "input": {
+    "anchor": "子 centre (bearing 0) = 虛|危 seam; 虛 starts at 0 and mansions run in REVERSE astronomical order as bearing increases; widths scaled by 360/365.25"
+   },
+   "expected": [
+    {
+     "name": "虛",
+     "animal": "虛日鼠",
+     "qiyao": "日",
+     "start": 0.0,
+     "end": 9.117,
+     "width": 9.117,
+     "center": 4.5585,
+     "contains_24shan_at_center": "子"
+    },
+    {
+     "name": "女",
+     "animal": "女土蝠",
+     "qiyao": "土",
+     "start": 9.117,
+     "end": 19.9589,
+     "width": 10.8419,
+     "center": 14.538,
+     "contains_24shan_at_center": "癸"
+    },
+    {
+     "name": "牛",
+     "animal": "牛金牛",
+     "qiyao": "金",
+     "start": 19.9589,
+     "end": 26.8583,
+     "width": 6.8994,
+     "center": 23.4086,
+     "contains_24shan_at_center": "丑"
+    },
+    {
+     "name": "斗",
+     "animal": "斗木獬",
+     "qiyao": "木",
+     "start": 26.8583,
+     "end": 49.2813,
+     "width": 22.423,
+     "center": 38.0698,
+     "contains_24shan_at_center": "艮"
+    },
+    {
+     "name": "箕",
+     "animal": "箕水豹",
+     "qiyao": "水",
+     "start": 49.2813,
+     "end": 58.6448,
+     "width": 9.3634,
+     "center": 53.963,
+     "contains_24shan_at_center": "寅"
+    },
+    {
+     "name": "尾",
+     "animal": "尾火虎",
+     "qiyao": "火",
+     "start": 58.6448,
+     "end": 76.386,
+     "width": 17.7413,
+     "center": 67.5154,
+     "contains_24shan_at_center": "甲"
+    },
+    {
+     "name": "心",
+     "animal": "心月狐",
+     "qiyao": "月",
+     "start": 76.386,
+     "end": 82.2998,
+     "width": 5.9138,
+     "center": 79.3429,
+     "contains_24shan_at_center": "甲"
+    },
+    {
+     "name": "房",
+     "animal": "房日兔",
+     "qiyao": "日",
+     "start": 82.2998,
+     "end": 87.9671,
+     "width": 5.6674,
+     "center": 85.1335,
+     "contains_24shan_at_center": "卯"
+    },
+    {
+     "name": "氐",
+     "animal": "氐土貉",
+     "qiyao": "土",
+     "start": 87.9671,
+     "end": 103.9836,
+     "width": 16.0164,
+     "center": 95.9754,
+     "contains_24shan_at_center": "卯"
+    },
+    {
+     "name": "亢",
+     "animal": "亢金龍",
+     "qiyao": "金",
+     "start": 103.9836,
+     "end": 113.5934,
+     "width": 9.6099,
+     "center": 108.7885,
+     "contains_24shan_at_center": "乙"
+    },
+    {
+     "name": "角",
+     "animal": "角木蛟",
+     "qiyao": "木",
+     "start": 113.5934,
+     "end": 126.1602,
+     "width": 12.5667,
+     "center": 119.8768,
+     "contains_24shan_at_center": "辰"
+    },
+    {
+     "name": "軫",
+     "animal": "軫水蚓",
+     "qiyao": "水",
+     "start": 126.1602,
+     "end": 144.6407,
+     "width": 18.4805,
+     "center": 135.4004,
+     "contains_24shan_at_center": "巽"
+    },
+    {
+     "name": "翼",
+     "animal": "翼火蛇",
+     "qiyao": "火",
+     "start": 144.6407,
+     "end": 164.5996,
+     "width": 19.9589,
+     "center": 154.6201,
+     "contains_24shan_at_center": "巳"
+    },
+    {
+     "name": "張",
+     "animal": "張月鹿",
+     "qiyao": "月",
+     "start": 164.5996,
+     "end": 182.0945,
+     "width": 17.4949,
+     "center": 173.347,
+     "contains_24shan_at_center": "午"
+    },
+    {
+     "name": "星",
+     "animal": "星日馬",
+     "qiyao": "日",
+     "start": 182.0945,
+     "end": 188.7474,
+     "width": 6.653,
+     "center": 185.4209,
+     "contains_24shan_at_center": "午"
+    },
+    {
+     "name": "柳",
+     "animal": "柳土獐",
+     "qiyao": "土",
+     "start": 188.7474,
+     "end": 202.0534,
+     "width": 13.306,
+     "center": 195.4004,
+     "contains_24shan_at_center": "丁"
+    },
+    {
+     "name": "鬼",
+     "animal": "鬼金羊",
+     "qiyao": "金",
+     "start": 202.0534,
+     "end": 204.5175,
+     "width": 2.4641,
+     "center": 203.2854,
+     "contains_24shan_at_center": "未"
+    },
+    {
+     "name": "井",
+     "animal": "井木犴",
+     "qiyao": "木",
+     "start": 204.5175,
+     "end": 234.3326,
+     "width": 29.8152,
+     "center": 219.4251,
+     "contains_24shan_at_center": "坤"
+    },
+    {
+     "name": "參",
+     "animal": "參水猿",
+     "qiyao": "水",
+     "start": 234.3326,
+     "end": 243.6961,
+     "width": 9.3634,
+     "center": 239.0144,
+     "contains_24shan_at_center": "申"
+    },
+    {
+     "name": "觜",
+     "animal": "觜火猴",
+     "qiyao": "火",
+     "start": 243.6961,
+     "end": 244.1889,
+     "width": 0.4928,
+     "center": 243.9425,
+     "contains_24shan_at_center": "申"
+    },
+    {
+     "name": "畢",
+     "animal": "畢月烏",
+     "qiyao": "月",
+     "start": 244.1889,
+     "end": 260.4517,
+     "width": 16.2628,
+     "center": 252.3203,
+     "contains_24shan_at_center": "庚"
+    },
+    {
+     "name": "昴",
+     "animal": "昴日雞",
+     "qiyao": "日",
+     "start": 260.4517,
+     "end": 271.2936,
+     "width": 10.8419,
+     "center": 265.8727,
+     "contains_24shan_at_center": "酉"
+    },
+    {
+     "name": "胃",
+     "animal": "胃土雉",
+     "qiyao": "土",
+     "start": 271.2936,
+     "end": 286.3244,
+     "width": 15.0308,
+     "center": 278.809,
+     "contains_24shan_at_center": "辛"
+    },
+    {
+     "name": "婁",
+     "animal": "婁金狗",
+     "qiyao": "金",
+     "start": 286.3244,
+     "end": 298.8912,
+     "width": 12.5667,
+     "center": 292.6078,
+     "contains_24shan_at_center": "戌"
+    },
+    {
+     "name": "奎",
+     "animal": "奎木狼",
+     "qiyao": "木",
+     "start": 298.8912,
+     "end": 316.6324,
+     "width": 17.7413,
+     "center": 307.7618,
+     "contains_24shan_at_center": "乾"
+    },
+    {
+     "name": "壁",
+     "animal": "壁水貐",
+     "qiyao": "水",
+     "start": 316.6324,
+     "end": 326.2423,
+     "width": 9.6099,
+     "center": 321.4374,
+     "contains_24shan_at_center": "乾"
+    },
+    {
+     "name": "室",
+     "animal": "室火豬",
+     "qiyao": "火",
+     "start": 326.2423,
+     "end": 344.23,
+     "width": 17.9877,
+     "center": 335.2361,
+     "contains_24shan_at_center": "亥"
+    },
+    {
+     "name": "危",
+     "animal": "危月燕",
+     "qiyao": "月",
+     "start": 344.23,
+     "end": 360.0,
+     "width": 15.77,
+     "center": 352.115,
+     "contains_24shan_at_center": "壬"
+    }
+   ],
+   "source": "S13 (開禧: 子中 在 虛危之間; 逆時針排 危室壁) + S12 + S11 (independent integer ranges agree within 1 deg) + script; 午中落張第3度 (S12 quoting 賴太素 口訣) verified",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_0.0",
+   "input": {
+    "bearing": 0.0
+   },
+   "expected": "虛",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_359.99",
+   "input": {
+    "bearing": 359.99
+   },
+   "expected": "危",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_10",
+   "input": {
+    "bearing": 10
+   },
+   "expected": "女",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_180",
+   "input": {
+    "bearing": 180
+   },
+   "expected": "張",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_90",
+   "input": {
+    "bearing": 90
+   },
+   "expected": "氐",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_270",
+   "input": {
+    "bearing": 270
+   },
+   "expected": "昴",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_45",
+   "input": {
+    "bearing": 45
+   },
+   "expected": "斗",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_lookup_315",
+   "input": {
+    "bearing": 315
+   },
+   "expected": "奎",
+   "source": "S25 on top of xiu28_bearing_layout_kaixi",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_group_centres",
+   "input": {
+    "groups": {
+     "東方青龍": "角亢氐房心尾箕",
+     "北方玄武": "斗牛女虛危室壁",
+     "西方白虎": "奎婁胃昴畢觜參",
+     "南方朱雀": "井鬼柳星張翼軫"
+    }
+   },
+   "expected": {
+    "東方青龍": 87.7208,
+    "北方玄武": 2.9569,
+    "西方白虎": 275.4825,
+    "南方朱雀": 180.2464
+   },
+   "source": "S25 sanity: 四象 centred near N/E/S/W (東方青龍≈東 etc.)",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_to_branch_coarse_12ci",
+   "input": {
+    "source_table": {
+     "丑": "斗牛",
+     "子": "女虛危",
+     "亥": "室壁",
+     "戌": "奎婁",
+     "酉": "胃昴畢",
+     "申": "觜參",
+     "未": "井鬼",
+     "午": "柳星張",
+     "巳": "翼軫",
+     "辰": "角亢",
+     "卯": "氐房心",
+     "寅": "尾箕"
+    }
+   },
+   "expected": {
+    "斗": "丑",
+    "牛": "丑",
+    "女": "子",
+    "虛": "子",
+    "危": "子",
+    "室": "亥",
+    "壁": "亥",
+    "奎": "戌",
+    "婁": "戌",
+    "胃": "酉",
+    "昴": "酉",
+    "畢": "酉",
+    "觜": "申",
+    "參": "申",
+    "井": "未",
+    "鬼": "未",
+    "柳": "午",
+    "星": "午",
+    "張": "午",
+    "翼": "巳",
+    "軫": "巳",
+    "角": "辰",
+    "亢": "辰",
+    "氐": "卯",
+    "房": "卯",
+    "心": "卯",
+    "尾": "寅",
+    "箕": "寅"
+   },
+   "source": "S14 (十二次/十二辰/二十八宿 table) + S13 (東方辰乙卯甲寅 北方丑癸子壬亥 西方戌辛酉庚申 南方未丁午丙巳)",
+   "confidence": "high"
+  },
+  {
+   "name": "xiu28_narrow_labels_360px",
+   "input": {
+    "dial_px": 360,
+    "glyph_px": 13,
+    "ring": "r6",
+    "mid_radius_px": 151.1,
+    "min_deg": 4.93
+   },
+   "expected": [
+    "觜",
+    "鬼"
+   ],
+   "source": "S25 geometry: arc length = r*theta",
+   "confidence": "high",
+   "note": "B.6 / spec 2.8.6: 所有像素數字統一以 R=180 計算,r6 中徑 151.1px(舊 149.4 用 0.83R),13px 字最小角寬 4.93 度;窄宿集合 [觜,鬼] 不變。"
+  },
+  {
+   "name": "fenjin120_table",
+   "input": {
+    "rule": "陽支(子寅辰午申戌)=甲丙戊庚壬+支 ; 陰支(丑卯巳未酉亥)=乙丁己辛癸+支 ; 八干四維山 = 前一位地支的五個分金 ; 環從壬|子縫(352.5)起於子山,每格3度順時針; 註: 每山內的順序為 slot0..slot4, 環起點為壬山起點 337.5"
+   },
+   "expected": {
+    "per_mountain": {
+     "子": [
+      "甲子",
+      "丙子",
+      "戊子",
+      "庚子",
+      "壬子"
+     ],
+     "丑": [
+      "乙丑",
+      "丁丑",
+      "己丑",
+      "辛丑",
+      "癸丑"
+     ],
+     "寅": [
+      "甲寅",
+      "丙寅",
+      "戊寅",
+      "庚寅",
+      "壬寅"
+     ],
+     "卯": [
+      "乙卯",
+      "丁卯",
+      "己卯",
+      "辛卯",
+      "癸卯"
+     ],
+     "辰": [
+      "甲辰",
+      "丙辰",
+      "戊辰",
+      "庚辰",
+      "壬辰"
+     ],
+     "巳": [
+      "乙巳",
+      "丁巳",
+      "己巳",
+      "辛巳",
+      "癸巳"
+     ],
+     "午": [
+      "甲午",
+      "丙午",
+      "戊午",
+      "庚午",
+      "壬午"
+     ],
+     "未": [
+      "乙未",
+      "丁未",
+      "己未",
+      "辛未",
+      "癸未"
+     ],
+     "申": [
+      "甲申",
+      "丙申",
+      "戊申",
+      "庚申",
+      "壬申"
+     ],
+     "酉": [
+      "乙酉",
+      "丁酉",
+      "己酉",
+      "辛酉",
+      "癸酉"
+     ],
+     "戌": [
+      "甲戌",
+      "丙戌",
+      "戊戌",
+      "庚戌",
+      "壬戌"
+     ],
+     "亥": [
+      "乙亥",
+      "丁亥",
+      "己亥",
+      "辛亥",
+      "癸亥"
+     ],
+     "癸": [
+      "甲子",
+      "丙子",
+      "戊子",
+      "庚子",
+      "壬子"
+     ],
+     "艮": [
+      "乙丑",
+      "丁丑",
+      "己丑",
+      "辛丑",
+      "癸丑"
+     ],
+     "甲": [
+      "甲寅",
+      "丙寅",
+      "戊寅",
+      "庚寅",
+      "壬寅"
+     ],
+     "乙": [
+      "乙卯",
+      "丁卯",
+      "己卯",
+      "辛卯",
+      "癸卯"
+     ],
+     "巽": [
+      "甲辰",
+      "丙辰",
+      "戊辰",
+      "庚辰",
+      "壬辰"
+     ],
+     "丙": [
+      "乙巳",
+      "丁巳",
+      "己巳",
+      "辛巳",
+      "癸巳"
+     ],
+     "丁": [
+      "甲午",
+      "丙午",
+      "戊午",
+      "庚午",
+      "壬午"
+     ],
+     "坤": [
+      "乙未",
+      "丁未",
+      "己未",
+      "辛未",
+      "癸未"
+     ],
+     "庚": [
+      "甲申",
+      "丙申",
+      "戊申",
+      "庚申",
+      "壬申"
+     ],
+     "辛": [
+      "乙酉",
+      "丁酉",
+      "己酉",
+      "辛酉",
+      "癸酉"
+     ],
+     "乾": [
+      "甲戌",
+      "丙戌",
+      "戊戌",
+      "庚戌",
+      "壬戌"
+     ],
+     "壬": [
+      "乙亥",
+      "丁亥",
+      "己亥",
+      "辛亥",
+      "癸亥"
+     ]
+    },
+    "ring": [
+     {
+      "name": "甲子",
+      "mountain": "子",
+      "start": 352.5,
+      "end": 355.5
+     },
+     {
+      "name": "丙子",
+      "mountain": "子",
+      "start": 355.5,
+      "end": 358.5
+     },
+     {
+      "name": "戊子",
+      "mountain": "子",
+      "start": 358.5,
+      "end": 1.5
+     },
+     {
+      "name": "庚子",
+      "mountain": "子",
+      "start": 1.5,
+      "end": 4.5
+     },
+     {
+      "name": "壬子",
+      "mountain": "子",
+      "start": 4.5,
+      "end": 7.5
+     },
+     {
+      "name": "甲子",
+      "mountain": "癸",
+      "start": 7.5,
+      "end": 10.5
+     },
+     {
+      "name": "丙子",
+      "mountain": "癸",
+      "start": 10.5,
+      "end": 13.5
+     },
+     {
+      "name": "戊子",
+      "mountain": "癸",
+      "start": 13.5,
+      "end": 16.5
+     },
+     {
+      "name": "庚子",
+      "mountain": "癸",
+      "start": 16.5,
+      "end": 19.5
+     },
+     {
+      "name": "壬子",
+      "mountain": "癸",
+      "start": 19.5,
+      "end": 22.5
+     },
+     {
+      "name": "乙丑",
+      "mountain": "丑",
+      "start": 22.5,
+      "end": 25.5
+     },
+     {
+      "name": "丁丑",
+      "mountain": "丑",
+      "start": 25.5,
+      "end": 28.5
+     },
+     {
+      "name": "己丑",
+      "mountain": "丑",
+      "start": 28.5,
+      "end": 31.5
+     },
+     {
+      "name": "辛丑",
+      "mountain": "丑",
+      "start": 31.5,
+      "end": 34.5
+     },
+     {
+      "name": "癸丑",
+      "mountain": "丑",
+      "start": 34.5,
+      "end": 37.5
+     },
+     {
+      "name": "乙丑",
+      "mountain": "艮",
+      "start": 37.5,
+      "end": 40.5
+     },
+     {
+      "name": "丁丑",
+      "mountain": "艮",
+      "start": 40.5,
+      "end": 43.5
+     },
+     {
+      "name": "己丑",
+      "mountain": "艮",
+      "start": 43.5,
+      "end": 46.5
+     },
+     {
+      "name": "辛丑",
+      "mountain": "艮",
+      "start": 46.5,
+      "end": 49.5
+     },
+     {
+      "name": "癸丑",
+      "mountain": "艮",
+      "start": 49.5,
+      "end": 52.5
+     },
+     {
+      "name": "甲寅",
+      "mountain": "寅",
+      "start": 52.5,
+      "end": 55.5
+     },
+     {
+      "name": "丙寅",
+      "mountain": "寅",
+      "start": 55.5,
+      "end": 58.5
+     },
+     {
+      "name": "戊寅",
+      "mountain": "寅",
+      "start": 58.5,
+      "end": 61.5
+     },
+     {
+      "name": "庚寅",
+      "mountain": "寅",
+      "start": 61.5,
+      "end": 64.5
+     },
+     {
+      "name": "壬寅",
+      "mountain": "寅",
+      "start": 64.5,
+      "end": 67.5
+     },
+     {
+      "name": "甲寅",
+      "mountain": "甲",
+      "start": 67.5,
+      "end": 70.5
+     },
+     {
+      "name": "丙寅",
+      "mountain": "甲",
+      "start": 70.5,
+      "end": 73.5
+     },
+     {
+      "name": "戊寅",
+      "mountain": "甲",
+      "start": 73.5,
+      "end": 76.5
+     },
+     {
+      "name": "庚寅",
+      "mountain": "甲",
+      "start": 76.5,
+      "end": 79.5
+     },
+     {
+      "name": "壬寅",
+      "mountain": "甲",
+      "start": 79.5,
+      "end": 82.5
+     },
+     {
+      "name": "乙卯",
+      "mountain": "卯",
+      "start": 82.5,
+      "end": 85.5
+     },
+     {
+      "name": "丁卯",
+      "mountain": "卯",
+      "start": 85.5,
+      "end": 88.5
+     },
+     {
+      "name": "己卯",
+      "mountain": "卯",
+      "start": 88.5,
+      "end": 91.5
+     },
+     {
+      "name": "辛卯",
+      "mountain": "卯",
+      "start": 91.5,
+      "end": 94.5
+     },
+     {
+      "name": "癸卯",
+      "mountain": "卯",
+      "start": 94.5,
+      "end": 97.5
+     },
+     {
+      "name": "乙卯",
+      "mountain": "乙",
+      "start": 97.5,
+      "end": 100.5
+     },
+     {
+      "name": "丁卯",
+      "mountain": "乙",
+      "start": 100.5,
+      "end": 103.5
+     },
+     {
+      "name": "己卯",
+      "mountain": "乙",
+      "start": 103.5,
+      "end": 106.5
+     },
+     {
+      "name": "辛卯",
+      "mountain": "乙",
+      "start": 106.5,
+      "end": 109.5
+     },
+     {
+      "name": "癸卯",
+      "mountain": "乙",
+      "start": 109.5,
+      "end": 112.5
+     },
+     {
+      "name": "甲辰",
+      "mountain": "辰",
+      "start": 112.5,
+      "end": 115.5
+     },
+     {
+      "name": "丙辰",
+      "mountain": "辰",
+      "start": 115.5,
+      "end": 118.5
+     },
+     {
+      "name": "戊辰",
+      "mountain": "辰",
+      "start": 118.5,
+      "end": 121.5
+     },
+     {
+      "name": "庚辰",
+      "mountain": "辰",
+      "start": 121.5,
+      "end": 124.5
+     },
+     {
+      "name": "壬辰",
+      "mountain": "辰",
+      "start": 124.5,
+      "end": 127.5
+     },
+     {
+      "name": "甲辰",
+      "mountain": "巽",
+      "start": 127.5,
+      "end": 130.5
+     },
+     {
+      "name": "丙辰",
+      "mountain": "巽",
+      "start": 130.5,
+      "end": 133.5
+     },
+     {
+      "name": "戊辰",
+      "mountain": "巽",
+      "start": 133.5,
+      "end": 136.5
+     },
+     {
+      "name": "庚辰",
+      "mountain": "巽",
+      "start": 136.5,
+      "end": 139.5
+     },
+     {
+      "name": "壬辰",
+      "mountain": "巽",
+      "start": 139.5,
+      "end": 142.5
+     },
+     {
+      "name": "乙巳",
+      "mountain": "巳",
+      "start": 142.5,
+      "end": 145.5
+     },
+     {
+      "name": "丁巳",
+      "mountain": "巳",
+      "start": 145.5,
+      "end": 148.5
+     },
+     {
+      "name": "己巳",
+      "mountain": "巳",
+      "start": 148.5,
+      "end": 151.5
+     },
+     {
+      "name": "辛巳",
+      "mountain": "巳",
+      "start": 151.5,
+      "end": 154.5
+     },
+     {
+      "name": "癸巳",
+      "mountain": "巳",
+      "start": 154.5,
+      "end": 157.5
+     },
+     {
+      "name": "乙巳",
+      "mountain": "丙",
+      "start": 157.5,
+      "end": 160.5
+     },
+     {
+      "name": "丁巳",
+      "mountain": "丙",
+      "start": 160.5,
+      "end": 163.5
+     },
+     {
+      "name": "己巳",
+      "mountain": "丙",
+      "start": 163.5,
+      "end": 166.5
+     },
+     {
+      "name": "辛巳",
+      "mountain": "丙",
+      "start": 166.5,
+      "end": 169.5
+     },
+     {
+      "name": "癸巳",
+      "mountain": "丙",
+      "start": 169.5,
+      "end": 172.5
+     },
+     {
+      "name": "甲午",
+      "mountain": "午",
+      "start": 172.5,
+      "end": 175.5
+     },
+     {
+      "name": "丙午",
+      "mountain": "午",
+      "start": 175.5,
+      "end": 178.5
+     },
+     {
+      "name": "戊午",
+      "mountain": "午",
+      "start": 178.5,
+      "end": 181.5
+     },
+     {
+      "name": "庚午",
+      "mountain": "午",
+      "start": 181.5,
+      "end": 184.5
+     },
+     {
+      "name": "壬午",
+      "mountain": "午",
+      "start": 184.5,
+      "end": 187.5
+     },
+     {
+      "name": "甲午",
+      "mountain": "丁",
+      "start": 187.5,
+      "end": 190.5
+     },
+     {
+      "name": "丙午",
+      "mountain": "丁",
+      "start": 190.5,
+      "end": 193.5
+     },
+     {
+      "name": "戊午",
+      "mountain": "丁",
+      "start": 193.5,
+      "end": 196.5
+     },
+     {
+      "name": "庚午",
+      "mountain": "丁",
+      "start": 196.5,
+      "end": 199.5
+     },
+     {
+      "name": "壬午",
+      "mountain": "丁",
+      "start": 199.5,
+      "end": 202.5
+     },
+     {
+      "name": "乙未",
+      "mountain": "未",
+      "start": 202.5,
+      "end": 205.5
+     },
+     {
+      "name": "丁未",
+      "mountain": "未",
+      "start": 205.5,
+      "end": 208.5
+     },
+     {
+      "name": "己未",
+      "mountain": "未",
+      "start": 208.5,
+      "end": 211.5
+     },
+     {
+      "name": "辛未",
+      "mountain": "未",
+      "start": 211.5,
+      "end": 214.5
+     },
+     {
+      "name": "癸未",
+      "mountain": "未",
+      "start": 214.5,
+      "end": 217.5
+     },
+     {
+      "name": "乙未",
+      "mountain": "坤",
+      "start": 217.5,
+      "end": 220.5
+     },
+     {
+      "name": "丁未",
+      "mountain": "坤",
+      "start": 220.5,
+      "end": 223.5
+     },
+     {
+      "name": "己未",
+      "mountain": "坤",
+      "start": 223.5,
+      "end": 226.5
+     },
+     {
+      "name": "辛未",
+      "mountain": "坤",
+      "start": 226.5,
+      "end": 229.5
+     },
+     {
+      "name": "癸未",
+      "mountain": "坤",
+      "start": 229.5,
+      "end": 232.5
+     },
+     {
+      "name": "甲申",
+      "mountain": "申",
+      "start": 232.5,
+      "end": 235.5
+     },
+     {
+      "name": "丙申",
+      "mountain": "申",
+      "start": 235.5,
+      "end": 238.5
+     },
+     {
+      "name": "戊申",
+      "mountain": "申",
+      "start": 238.5,
+      "end": 241.5
+     },
+     {
+      "name": "庚申",
+      "mountain": "申",
+      "start": 241.5,
+      "end": 244.5
+     },
+     {
+      "name": "壬申",
+      "mountain": "申",
+      "start": 244.5,
+      "end": 247.5
+     },
+     {
+      "name": "甲申",
+      "mountain": "庚",
+      "start": 247.5,
+      "end": 250.5
+     },
+     {
+      "name": "丙申",
+      "mountain": "庚",
+      "start": 250.5,
+      "end": 253.5
+     },
+     {
+      "name": "戊申",
+      "mountain": "庚",
+      "start": 253.5,
+      "end": 256.5
+     },
+     {
+      "name": "庚申",
+      "mountain": "庚",
+      "start": 256.5,
+      "end": 259.5
+     },
+     {
+      "name": "壬申",
+      "mountain": "庚",
+      "start": 259.5,
+      "end": 262.5
+     },
+     {
+      "name": "乙酉",
+      "mountain": "酉",
+      "start": 262.5,
+      "end": 265.5
+     },
+     {
+      "name": "丁酉",
+      "mountain": "酉",
+      "start": 265.5,
+      "end": 268.5
+     },
+     {
+      "name": "己酉",
+      "mountain": "酉",
+      "start": 268.5,
+      "end": 271.5
+     },
+     {
+      "name": "辛酉",
+      "mountain": "酉",
+      "start": 271.5,
+      "end": 274.5
+     },
+     {
+      "name": "癸酉",
+      "mountain": "酉",
+      "start": 274.5,
+      "end": 277.5
+     },
+     {
+      "name": "乙酉",
+      "mountain": "辛",
+      "start": 277.5,
+      "end": 280.5
+     },
+     {
+      "name": "丁酉",
+      "mountain": "辛",
+      "start": 280.5,
+      "end": 283.5
+     },
+     {
+      "name": "己酉",
+      "mountain": "辛",
+      "start": 283.5,
+      "end": 286.5
+     },
+     {
+      "name": "辛酉",
+      "mountain": "辛",
+      "start": 286.5,
+      "end": 289.5
+     },
+     {
+      "name": "癸酉",
+      "mountain": "辛",
+      "start": 289.5,
+      "end": 292.5
+     },
+     {
+      "name": "甲戌",
+      "mountain": "戌",
+      "start": 292.5,
+      "end": 295.5
+     },
+     {
+      "name": "丙戌",
+      "mountain": "戌",
+      "start": 295.5,
+      "end": 298.5
+     },
+     {
+      "name": "戊戌",
+      "mountain": "戌",
+      "start": 298.5,
+      "end": 301.5
+     },
+     {
+      "name": "庚戌",
+      "mountain": "戌",
+      "start": 301.5,
+      "end": 304.5
+     },
+     {
+      "name": "壬戌",
+      "mountain": "戌",
+      "start": 304.5,
+      "end": 307.5
+     },
+     {
+      "name": "甲戌",
+      "mountain": "乾",
+      "start": 307.5,
+      "end": 310.5
+     },
+     {
+      "name": "丙戌",
+      "mountain": "乾",
+      "start": 310.5,
+      "end": 313.5
+     },
+     {
+      "name": "戊戌",
+      "mountain": "乾",
+      "start": 313.5,
+      "end": 316.5
+     },
+     {
+      "name": "庚戌",
+      "mountain": "乾",
+      "start": 316.5,
+      "end": 319.5
+     },
+     {
+      "name": "壬戌",
+      "mountain": "乾",
+      "start": 319.5,
+      "end": 322.5
+     },
+     {
+      "name": "乙亥",
+      "mountain": "亥",
+      "start": 322.5,
+      "end": 325.5
+     },
+     {
+      "name": "丁亥",
+      "mountain": "亥",
+      "start": 325.5,
+      "end": 328.5
+     },
+     {
+      "name": "己亥",
+      "mountain": "亥",
+      "start": 328.5,
+      "end": 331.5
+     },
+     {
+      "name": "辛亥",
+      "mountain": "亥",
+      "start": 331.5,
+      "end": 334.5
+     },
+     {
+      "name": "癸亥",
+      "mountain": "亥",
+      "start": 334.5,
+      "end": 337.5
+     },
+     {
+      "name": "乙亥",
+      "mountain": "壬",
+      "start": 337.5,
+      "end": 340.5
+     },
+     {
+      "name": "丁亥",
+      "mountain": "壬",
+      "start": 340.5,
+      "end": 343.5
+     },
+     {
+      "name": "己亥",
+      "mountain": "壬",
+      "start": 343.5,
+      "end": 346.5
+     },
+     {
+      "name": "辛亥",
+      "mountain": "壬",
+      "start": 346.5,
+      "end": 349.5
+     },
+     {
+      "name": "癸亥",
+      "mountain": "壬",
+      "start": 349.5,
+      "end": 352.5
+     }
+    ],
+    "wangxiang_count": 48
+   },
+   "source": "S15 (排法+子丑甲山庚山例) + S02 + S16 (子山/丑山) + S06 (午向174度=甲午分金); script: each of 60 甲子 exactly twice, 旺相(丙丁庚辛)=48",
+   "confidence": "medium",
+   "low_confidence_mountains": [
+    "癸",
+    "艮",
+    "甲",
+    "乙",
+    "巽",
+    "丙",
+    "丁",
+    "坤",
+    "庚",
+    "辛",
+    "乾",
+    "壬"
+   ],
+   "note": "B.6 / spec 2.8.4: 八干四維 12 山(low_confidence_mountains)的分金依賴單一來源規則,標 low,測試對這 12 山走軟斷言;12 個地支山與「每個甲子恰出現 2 次、旺相 48 格」為硬斷言。"
+  },
+  {
+   "name": "fenjin120_lookup_174",
+   "input": {
+    "bearing": 174
+   },
+   "expected": "甲午",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_352.5",
+   "input": {
+    "bearing": 352.5
+   },
+   "expected": "甲子",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_359.9",
+   "input": {
+    "bearing": 359.9
+   },
+   "expected": "戊子",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_0.0",
+   "input": {
+    "bearing": 0.0
+   },
+   "expected": "戊子",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_337.5",
+   "input": {
+    "bearing": 337.5
+   },
+   "expected": "乙亥",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "low",
+   "note": "B.6 / spec 2.8.4: 依賴「八干四維山沿用前一位地支」的單一來源規則(163.com HJT97HRR),降為 low,測試走軟斷言。"
+  },
+  {
+   "name": "fenjin120_lookup_178.5",
+   "input": {
+    "bearing": 178.5
+   },
+   "expected": "戊午",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_7.4",
+   "input": {
+    "bearing": 7.4
+   },
+   "expected": "壬子",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "medium"
+  },
+  {
+   "name": "fenjin120_lookup_7.5",
+   "input": {
+    "bearing": 7.5
+   },
+   "expected": "甲子",
+   "source": "S25 (ring above); 174->甲午 and 352.5->甲子 also stated by S06 / S15",
+   "confidence": "low",
+   "note": "B.6 / spec 2.8.4: 依賴「八干四維山沿用前一位地支」的單一來源規則(163.com HJT97HRR),降為 low,測試走軟斷言。"
+  },
+  {
+   "name": "hexagram64_xiantian_circle_order",
+   "input": {
+    "order_rule": "圓圖: 內卦(下卦)宮序 乾兌離震巽坎艮坤, 宮內以外卦(上卦)同序; 乾盡午中(180), 前32卦向東(方位角遞減)排至子中, 後32卦向西排至子中"
+   },
+   "expected": {
+    "names": [
+     "乾",
+     "夬",
+     "大有",
+     "大壯",
+     "小畜",
+     "需",
+     "大畜",
+     "泰",
+     "履",
+     "兌",
+     "睽",
+     "歸妹",
+     "中孚",
+     "節",
+     "損",
+     "臨",
+     "同人",
+     "革",
+     "離",
+     "豐",
+     "家人",
+     "既濟",
+     "賁",
+     "明夷",
+     "無妄",
+     "隨",
+     "噬嗑",
+     "震",
+     "益",
+     "屯",
+     "頤",
+     "復",
+     "姤",
+     "大過",
+     "鼎",
+     "恆",
+     "巽",
+     "井",
+     "蠱",
+     "升",
+     "訟",
+     "困",
+     "未濟",
+     "解",
+     "渙",
+     "坎",
+     "蒙",
+     "師",
+     "遯",
+     "咸",
+     "旅",
+     "小過",
+     "漸",
+     "蹇",
+     "艮",
+     "謙",
+     "否",
+     "萃",
+     "晉",
+     "豫",
+     "觀",
+     "比",
+     "剝",
+     "坤"
+    ],
+    "ring": [
+     {
+      "index": 0,
+      "name": "乾",
+      "start": 174.375,
+      "end": 180.0
+     },
+     {
+      "index": 1,
+      "name": "夬",
+      "start": 168.75,
+      "end": 174.375
+     },
+     {
+      "index": 2,
+      "name": "大有",
+      "start": 163.125,
+      "end": 168.75
+     },
+     {
+      "index": 3,
+      "name": "大壯",
+      "start": 157.5,
+      "end": 163.125
+     },
+     {
+      "index": 4,
+      "name": "小畜",
+      "start": 151.875,
+      "end": 157.5
+     },
+     {
+      "index": 5,
+      "name": "需",
+      "start": 146.25,
+      "end": 151.875
+     },
+     {
+      "index": 6,
+      "name": "大畜",
+      "start": 140.625,
+      "end": 146.25
+     },
+     {
+      "index": 7,
+      "name": "泰",
+      "start": 135.0,
+      "end": 140.625
+     },
+     {
+      "index": 8,
+      "name": "履",
+      "start": 129.375,
+      "end": 135.0
+     },
+     {
+      "index": 9,
+      "name": "兌",
+      "start": 123.75,
+      "end": 129.375
+     },
+     {
+      "index": 10,
+      "name": "睽",
+      "start": 118.125,
+      "end": 123.75
+     },
+     {
+      "index": 11,
+      "name": "歸妹",
+      "start": 112.5,
+      "end": 118.125
+     },
+     {
+      "index": 12,
+      "name": "中孚",
+      "start": 106.875,
+      "end": 112.5
+     },
+     {
+      "index": 13,
+      "name": "節",
+      "start": 101.25,
+      "end": 106.875
+     },
+     {
+      "index": 14,
+      "name": "損",
+      "start": 95.625,
+      "end": 101.25
+     },
+     {
+      "index": 15,
+      "name": "臨",
+      "start": 90.0,
+      "end": 95.625
+     },
+     {
+      "index": 16,
+      "name": "同人",
+      "start": 84.375,
+      "end": 90.0
+     },
+     {
+      "index": 17,
+      "name": "革",
+      "start": 78.75,
+      "end": 84.375
+     },
+     {
+      "index": 18,
+      "name": "離",
+      "start": 73.125,
+      "end": 78.75
+     },
+     {
+      "index": 19,
+      "name": "豐",
+      "start": 67.5,
+      "end": 73.125
+     },
+     {
+      "index": 20,
+      "name": "家人",
+      "start": 61.875,
+      "end": 67.5
+     },
+     {
+      "index": 21,
+      "name": "既濟",
+      "start": 56.25,
+      "end": 61.875
+     },
+     {
+      "index": 22,
+      "name": "賁",
+      "start": 50.625,
+      "end": 56.25
+     },
+     {
+      "index": 23,
+      "name": "明夷",
+      "start": 45.0,
+      "end": 50.625
+     },
+     {
+      "index": 24,
+      "name": "無妄",
+      "start": 39.375,
+      "end": 45.0
+     },
+     {
+      "index": 25,
+      "name": "隨",
+      "start": 33.75,
+      "end": 39.375
+     },
+     {
+      "index": 26,
+      "name": "噬嗑",
+      "start": 28.125,
+      "end": 33.75
+     },
+     {
+      "index": 27,
+      "name": "震",
+      "start": 22.5,
+      "end": 28.125
+     },
+     {
+      "index": 28,
+      "name": "益",
+      "start": 16.875,
+      "end": 22.5
+     },
+     {
+      "index": 29,
+      "name": "屯",
+      "start": 11.25,
+      "end": 16.875
+     },
+     {
+      "index": 30,
+      "name": "頤",
+      "start": 5.625,
+      "end": 11.25
+     },
+     {
+      "index": 31,
+      "name": "復",
+      "start": 0.0,
+      "end": 5.625
+     },
+     {
+      "index": 32,
+      "name": "姤",
+      "start": 180.0,
+      "end": 185.625
+     },
+     {
+      "index": 33,
+      "name": "大過",
+      "start": 185.625,
+      "end": 191.25
+     },
+     {
+      "index": 34,
+      "name": "鼎",
+      "start": 191.25,
+      "end": 196.875
+     },
+     {
+      "index": 35,
+      "name": "恆",
+      "start": 196.875,
+      "end": 202.5
+     },
+     {
+      "index": 36,
+      "name": "巽",
+      "start": 202.5,
+      "end": 208.125
+     },
+     {
+      "index": 37,
+      "name": "井",
+      "start": 208.125,
+      "end": 213.75
+     },
+     {
+      "index": 38,
+      "name": "蠱",
+      "start": 213.75,
+      "end": 219.375
+     },
+     {
+      "index": 39,
+      "name": "升",
+      "start": 219.375,
+      "end": 225.0
+     },
+     {
+      "index": 40,
+      "name": "訟",
+      "start": 225.0,
+      "end": 230.625
+     },
+     {
+      "index": 41,
+      "name": "困",
+      "start": 230.625,
+      "end": 236.25
+     },
+     {
+      "index": 42,
+      "name": "未濟",
+      "start": 236.25,
+      "end": 241.875
+     },
+     {
+      "index": 43,
+      "name": "解",
+      "start": 241.875,
+      "end": 247.5
+     },
+     {
+      "index": 44,
+      "name": "渙",
+      "start": 247.5,
+      "end": 253.125
+     },
+     {
+      "index": 45,
+      "name": "坎",
+      "start": 253.125,
+      "end": 258.75
+     },
+     {
+      "index": 46,
+      "name": "蒙",
+      "start": 258.75,
+      "end": 264.375
+     },
+     {
+      "index": 47,
+      "name": "師",
+      "start": 264.375,
+      "end": 270.0
+     },
+     {
+      "index": 48,
+      "name": "遯",
+      "start": 270.0,
+      "end": 275.625
+     },
+     {
+      "index": 49,
+      "name": "咸",
+      "start": 275.625,
+      "end": 281.25
+     },
+     {
+      "index": 50,
+      "name": "旅",
+      "start": 281.25,
+      "end": 286.875
+     },
+     {
+      "index": 51,
+      "name": "小過",
+      "start": 286.875,
+      "end": 292.5
+     },
+     {
+      "index": 52,
+      "name": "漸",
+      "start": 292.5,
+      "end": 298.125
+     },
+     {
+      "index": 53,
+      "name": "蹇",
+      "start": 298.125,
+      "end": 303.75
+     },
+     {
+      "index": 54,
+      "name": "艮",
+      "start": 303.75,
+      "end": 309.375
+     },
+     {
+      "index": 55,
+      "name": "謙",
+      "start": 309.375,
+      "end": 315.0
+     },
+     {
+      "index": 56,
+      "name": "否",
+      "start": 315.0,
+      "end": 320.625
+     },
+     {
+      "index": 57,
+      "name": "萃",
+      "start": 320.625,
+      "end": 326.25
+     },
+     {
+      "index": 58,
+      "name": "晉",
+      "start": 326.25,
+      "end": 331.875
+     },
+     {
+      "index": 59,
+      "name": "豫",
+      "start": 331.875,
+      "end": 337.5
+     },
+     {
+      "index": 60,
+      "name": "觀",
+      "start": 337.5,
+      "end": 343.125
+     },
+     {
+      "index": 61,
+      "name": "比",
+      "start": 343.125,
+      "end": 348.75
+     },
+     {
+      "index": 62,
+      "name": "剝",
+      "start": 348.75,
+      "end": 354.375
+     },
+     {
+      "index": 63,
+      "name": "坤",
+      "start": 354.375,
+      "end": 360.0
+     }
+    ],
+    "unicode_by_name": {
+     "坤": "䷁",
+     "剝": "䷖",
+     "比": "䷇",
+     "觀": "䷓",
+     "豫": "䷏",
+     "晉": "䷢",
+     "萃": "䷬",
+     "否": "䷋",
+     "謙": "䷎",
+     "艮": "䷳",
+     "蹇": "䷦",
+     "漸": "䷴",
+     "小過": "䷽",
+     "旅": "䷷",
+     "咸": "䷞",
+     "遯": "䷠",
+     "師": "䷆",
+     "蒙": "䷃",
+     "坎": "䷜",
+     "渙": "䷺",
+     "解": "䷧",
+     "未濟": "䷿",
+     "困": "䷮",
+     "訟": "䷅",
+     "升": "䷭",
+     "蠱": "䷑",
+     "井": "䷯",
+     "巽": "䷸",
+     "恆": "䷟",
+     "鼎": "䷱",
+     "大過": "䷛",
+     "姤": "䷫",
+     "復": "䷗",
+     "頤": "䷚",
+     "屯": "䷂",
+     "益": "䷩",
+     "震": "䷲",
+     "噬嗑": "䷔",
+     "隨": "䷐",
+     "無妄": "䷘",
+     "明夷": "䷣",
+     "賁": "䷕",
+     "既濟": "䷾",
+     "家人": "䷤",
+     "豐": "䷶",
+     "離": "䷝",
+     "革": "䷰",
+     "同人": "䷌",
+     "臨": "䷒",
+     "損": "䷨",
+     "節": "䷻",
+     "中孚": "䷼",
+     "歸妹": "䷵",
+     "睽": "䷥",
+     "兌": "䷹",
+     "履": "䷉",
+     "泰": "䷊",
+     "大畜": "䷙",
+     "需": "䷄",
+     "小畜": "䷈",
+     "大壯": "䷡",
+     "大有": "䷍",
+     "夬": "䷪",
+     "乾": "䷀"
+    }
+   },
+   "source": "S21 (歌訣, 全64卦與script推導順序完全一致) ; S22 (上下卦) ; 角度起點僅單一來源",
+   "confidence": "low",
+   "note": "B.6 更正: unicode_by_name 的鍵「无妄」統一為「無妄」(U+4DD8);坤(index 63)的 end 由 0.0 改為 360.0,跨 0 度判斷用 (b-start) mod 360。角度錨點(乾盡午中)仍只有單一來源,confidence 維持 low。"
+  },
+  {
+   "name": "solar_term_ring_taiyang_dao_shan",
+   "input": {
+    "convention": "冬至=子 ... 立春始艮, 大寒終丑"
+   },
+   "expected": [
+    {
+     "term": "冬至",
+     "mountain": "子",
+     "center": 0
+    },
+    {
+     "term": "小寒",
+     "mountain": "癸",
+     "center": 15
+    },
+    {
+     "term": "大寒",
+     "mountain": "丑",
+     "center": 30
+    },
+    {
+     "term": "立春",
+     "mountain": "艮",
+     "center": 45
+    },
+    {
+     "term": "雨水",
+     "mountain": "寅",
+     "center": 60
+    },
+    {
+     "term": "驚蟄",
+     "mountain": "甲",
+     "center": 75
+    },
+    {
+     "term": "春分",
+     "mountain": "卯",
+     "center": 90
+    },
+    {
+     "term": "清明",
+     "mountain": "乙",
+     "center": 105
+    },
+    {
+     "term": "穀雨",
+     "mountain": "辰",
+     "center": 120
+    },
+    {
+     "term": "立夏",
+     "mountain": "巽",
+     "center": 135
+    },
+    {
+     "term": "小滿",
+     "mountain": "巳",
+     "center": 150
+    },
+    {
+     "term": "芒種",
+     "mountain": "丙",
+     "center": 165
+    },
+    {
+     "term": "夏至",
+     "mountain": "午",
+     "center": 180
+    },
+    {
+     "term": "小暑",
+     "mountain": "丁",
+     "center": 195
+    },
+    {
+     "term": "大暑",
+     "mountain": "未",
+     "center": 210
+    },
+    {
+     "term": "立秋",
+     "mountain": "坤",
+     "center": 225
+    },
+    {
+     "term": "處暑",
+     "mountain": "申",
+     "center": 240
+    },
+    {
+     "term": "白露",
+     "mountain": "庚",
+     "center": 255
+    },
+    {
+     "term": "秋分",
+     "mountain": "酉",
+     "center": 270
+    },
+    {
+     "term": "寒露",
+     "mountain": "辛",
+     "center": 285
+    },
+    {
+     "term": "霜降",
+     "mountain": "戌",
+     "center": 300
+    },
+    {
+     "term": "立冬",
+     "mountain": "乾",
+     "center": 315
+    },
+    {
+     "term": "小雪",
+     "mountain": "亥",
+     "center": 330
+    },
+    {
+     "term": "大雪",
+     "mountain": "壬",
+     "center": 345
+    }
+   ],
+   "source": "S19 (立春始艮、大寒終丑) + S17 (太陽到山層) ; 二分二至落四正 by script",
+   "confidence": "medium"
+  },
+  {
+   "name": "zheng_jian_xiang_markers",
+   "input": {
+    "centre_zone_deg": 9,
+    "edge_zone_each_side_deg": 3
+   },
+   "expected": {
+    "centre_half_width": 4.5,
+    "daKongWang_bearings": [
+     22.5,
+     67.5,
+     112.5,
+     157.5,
+     202.5,
+     247.5,
+     292.5,
+     337.5
+    ],
+    "xiaoKongWang_bearings": [
+     7.5,
+     37.5,
+     52.5,
+     82.5,
+     97.5,
+     127.5,
+     142.5,
+     172.5,
+     187.5,
+     217.5,
+     232.5,
+     262.5,
+     277.5,
+     307.5,
+     322.5,
+     352.5
+    ]
+   },
+   "source": "S24 (中間9度為正向, 山與山之間為小空亡, 卦與卦之間為大空亡) + S18 (第20層 正兼向度數指標: 地盤各山九度之內); 正向寬度另有 ±3 度 說法 -> disputes",
+   "confidence": "medium"
+  },
+  {
+   "name": "branches12_ring",
+   "input": {
+    "note": "12地支 30deg cells centred on the branch"
+   },
+   "expected": [
+    {
+     "branch": "子",
+     "center": 0,
+     "start": 345,
+     "end": 15
+    },
+    {
+     "branch": "丑",
+     "center": 30,
+     "start": 15,
+     "end": 45
+    },
+    {
+     "branch": "寅",
+     "center": 60,
+     "start": 45,
+     "end": 75
+    },
+    {
+     "branch": "卯",
+     "center": 90,
+     "start": 75,
+     "end": 105
+    },
+    {
+     "branch": "辰",
+     "center": 120,
+     "start": 105,
+     "end": 135
+    },
+    {
+     "branch": "巳",
+     "center": 150,
+     "start": 135,
+     "end": 165
+    },
+    {
+     "branch": "午",
+     "center": 180,
+     "start": 165,
+     "end": 195
+    },
+    {
+     "branch": "未",
+     "center": 210,
+     "start": 195,
+     "end": 225
+    },
+    {
+     "branch": "申",
+     "center": 240,
+     "start": 225,
+     "end": 255
+    },
+    {
+     "branch": "酉",
+     "center": 270,
+     "start": 255,
+     "end": 285
+    },
+    {
+     "branch": "戌",
+     "center": 300,
+     "start": 285,
+     "end": 315
+    },
+    {
+     "branch": "亥",
+     "center": 330,
+     "start": 315,
+     "end": 345
+    }
+   ],
+   "source": "S01 (支占 24 山隔位) + S06 (地支在24山中隔位排布)",
+   "confidence": "high"
+  },
+  {
+   "name": "stems8_in_24",
+   "input": {
+    "note": "戊己居中宮不入24山"
+   },
+   "expected": {
+    "甲": 75,
+    "乙": 105,
+    "丙": 165,
+    "丁": 195,
+    "庚": 255,
+    "辛": 285,
+    "壬": 345,
+    "癸": 15
+   },
+   "source": "S06/S01",
+   "confidence": "high"
+  },
+  {
+   "name": "layout_rings_A_solarterms",
+   "input": {
+    "mode": "A default (節氣 ring on)"
+   },
+   "expected": [
+    {
+     "key": "tianchi",
+     "label": "天池",
+     "r0": 0.0,
+     "r1": 0.188
+    },
+    {
+     "key": "r1",
+     "label": "八卦(後天卦爻+卦名;可切先天爻)",
+     "r0": 0.188,
+     "r1": 0.376
+    },
+    {
+     "key": "r2",
+     "label": "洛書數+五行",
+     "r0": 0.376,
+     "r1": 0.4511
+    },
+    {
+     "key": "r3",
+     "label": "二十四山(地盤正針)",
+     "r0": 0.4511,
+     "r1": 0.6203
+    },
+    {
+     "key": "r4",
+     "label": "三元龍/陰陽帶",
+     "r0": 0.6203,
+     "r1": 0.6485
+    },
+    {
+     "key": "r5",
+     "label": "二十四節氣(太陽到山)",
+     "r0": 0.6485,
+     "r1": 0.7735
+    },
+    {
+     "key": "r6",
+     "label": "二十八宿",
+     "r0": 0.7735,
+     "r1": 0.9051
+    },
+    {
+     "key": "r7",
+     "label": "三百六十度刻度",
+     "r0": 0.9051,
+     "r1": 0.985
+    }
+   ],
+   "source": "S25 design rule (contiguous, <=9 rings, ring 24山 width 0.18)",
+   "confidence": "medium",
+   "note": "B.6 / spec 2.8.6 更正: r5 節氣環加寬到 0.125R(R=180 時 22.5px,放得下 2 字徑向堆疊 10.5px 字),其餘環等比縮小;原值 r5 = [0.69, 0.76](12.4px)放不下。confidence 由 high 降為 medium。"
+  },
+  {
+   "name": "layout_rings_B_sanhe",
+   "input": {
+    "mode": "B (人盤+天盤 rings on, 節氣 off)"
+   },
+   "expected": [
+    {
+     "key": "tianchi",
+     "label": "天池",
+     "r0": 0.0,
+     "r1": 0.1869
+    },
+    {
+     "key": "r1",
+     "label": "八卦(後天卦爻+卦名;可切先天爻)",
+     "r0": 0.1869,
+     "r1": 0.3738
+    },
+    {
+     "key": "r2",
+     "label": "洛書數+五行",
+     "r0": 0.3738,
+     "r1": 0.4486
+    },
+    {
+     "key": "r3",
+     "label": "二十四山(地盤正針)",
+     "r0": 0.4486,
+     "r1": 0.6168
+    },
+    {
+     "key": "r4",
+     "label": "三元龍/陰陽帶",
+     "r0": 0.6168,
+     "r1": 0.6449
+    },
+    {
+     "key": "r5a",
+     "label": "人盤中針",
+     "r0": 0.6449,
+     "r1": 0.7103
+    },
+    {
+     "key": "r5b",
+     "label": "天盤縫針",
+     "r0": 0.7103,
+     "r1": 0.7757
+    },
+    {
+     "key": "r6",
+     "label": "二十八宿",
+     "r0": 0.7757,
+     "r1": 0.9065
+    },
+    {
+     "key": "r7",
+     "label": "三百六十度刻度",
+     "r0": 0.9065,
+     "r1": 0.986
+    }
+   ],
+   "source": "S25 design rule",
+   "confidence": "high"
+  },
+  {
+   "name": "palette_contrast",
+   "input": {
+    "formula": "WCAG 2.x relative luminance"
+   },
+   "expected": {
+    "palette": {
+     "lacquer_900": "#0E0B09",
+     "lacquer_800": "#17120E",
+     "lacquer_700": "#221A13",
+     "lacquer_600": "#2D231A",
+     "gold_100": "#F6E6B4",
+     "gold_300": "#E8CB7A",
+     "gold_500": "#D6B25A",
+     "gold_700": "#9A7526",
+     "gold_900": "#5E4514",
+     "cinnabar_500": "#D0342A",
+     "cinnabar_300": "#F0665A",
+     "cinnabar_800": "#7A130C",
+     "ivory": "#F3EBD8",
+     "jade": "#5FA37F",
+     "terracotta": "#C9705A",
+     "wx_wood": "#5DAA6B",
+     "wx_fire": "#EC6A57",
+     "wx_earth": "#D0A44A",
+     "wx_metal": "#E4E0D2",
+     "wx_water": "#6A9CDC"
+    },
+    "contrast": [
+     {
+      "pair": "gold_500 on lacquer_800 (陰 cell glyph)",
+      "fg": "#D6B25A",
+      "bg": "#17120E",
+      "ratio": 9.19
+     },
+     {
+      "pair": "gold_300 on lacquer_800",
+      "fg": "#E8CB7A",
+      "bg": "#17120E",
+      "ratio": 11.74
+     },
+     {
+      "pair": "cinnabar_300 on lacquer_800 (陽 glyph on dark)",
+      "fg": "#F0665A",
+      "bg": "#17120E",
+      "ratio": 5.98
+     },
+     {
+      "pair": "cinnabar_800 on gold_500 (陽 plate: red glyph on gold)",
+      "fg": "#7A130C",
+      "bg": "#D6B25A",
+      "ratio": 5.39
+     },
+     {
+      "pair": "lacquer_900 on gold_500",
+      "fg": "#0E0B09",
+      "bg": "#D6B25A",
+      "ratio": 9.69
+     },
+     {
+      "pair": "ivory on lacquer_800 (small numerals)",
+      "fg": "#F3EBD8",
+      "bg": "#17120E",
+      "ratio": 15.66
+     },
+     {
+      "pair": "wx_wood on lacquer_800",
+      "fg": "#5DAA6B",
+      "bg": "#17120E",
+      "ratio": 6.58
+     },
+     {
+      "pair": "wx_fire on lacquer_800",
+      "fg": "#E0503D",
+      "bg": "#17120E",
+      "ratio": 4.77,
+      "legacy": true
+     },
+     {
+      "pair": "wx_earth on lacquer_800",
+      "fg": "#D0A44A",
+      "bg": "#17120E",
+      "ratio": 8.05
+     },
+     {
+      "pair": "wx_metal on lacquer_800",
+      "fg": "#E4E0D2",
+      "bg": "#17120E",
+      "ratio": 14.07
+     },
+     {
+      "pair": "wx_water on lacquer_800",
+      "fg": "#4E86C6",
+      "bg": "#17120E",
+      "ratio": 4.91,
+      "legacy": true
+     },
+     {
+      "pair": "wx_fire (舊色) on lacquer_700",
+      "fg": "#E0503D",
+      "bg": "#221A13",
+      "ratio": 4.39,
+      "legacy": true,
+      "passes": false
+     },
+     {
+      "pair": "wx_fire (舊色) on lacquer_600",
+      "fg": "#E0503D",
+      "bg": "#2D231A",
+      "ratio": 3.94,
+      "legacy": true,
+      "passes": false
+     },
+     {
+      "pair": "wx_water (舊色) on lacquer_700",
+      "fg": "#4E86C6",
+      "bg": "#221A13",
+      "ratio": 4.53,
+      "legacy": true,
+      "passes": true
+     },
+     {
+      "pair": "wx_water (舊色) on lacquer_600",
+      "fg": "#4E86C6",
+      "bg": "#2D231A",
+      "ratio": 4.06,
+      "legacy": true,
+      "passes": false
+     },
+     {
+      "pair": "wx_fire (新色) on lacquer_800",
+      "fg": "#EC6A57",
+      "bg": "#17120E",
+      "ratio": 5.99,
+      "passes": true
+     },
+     {
+      "pair": "wx_fire (新色) on lacquer_700",
+      "fg": "#EC6A57",
+      "bg": "#221A13",
+      "ratio": 5.52,
+      "passes": true
+     },
+     {
+      "pair": "wx_fire (新色) on lacquer_600",
+      "fg": "#EC6A57",
+      "bg": "#2D231A",
+      "ratio": 4.95,
+      "passes": true
+     },
+     {
+      "pair": "wx_water (新色) on lacquer_800",
+      "fg": "#6A9CDC",
+      "bg": "#17120E",
+      "ratio": 6.55,
+      "passes": true
+     },
+     {
+      "pair": "wx_water (新色) on lacquer_700",
+      "fg": "#6A9CDC",
+      "bg": "#221A13",
+      "ratio": 6.04,
+      "passes": true
+     },
+     {
+      "pair": "wx_water (新色) on lacquer_600",
+      "fg": "#6A9CDC",
+      "bg": "#2D231A",
+      "ratio": 5.41,
+      "passes": true
+     }
+    ],
+    "legacy_palette": {
+     "wx_fire": "#E0503D",
+     "wx_water": "#4E86C6"
+    },
+    "rules": {
+     "min_text_ratio": 4.5,
+     "all_pairs_pass_only_on": [
+      "lacquer_800",
+      "lacquer_900"
+     ],
+     "new_wuxing_pass_on": [
+      "lacquer_800",
+      "lacquer_700",
+      "lacquer_600"
+     ],
+     "legacy_wuxing_fail": [
+      "wx_fire (舊色) on lacquer_700",
+      "wx_fire (舊色) on lacquer_600",
+      "wx_water (舊色) on lacquer_600"
+     ]
+    }
+   },
+   "source": "S25 (script recompute; formula from WCAG)",
+   "confidence": "high",
+   "note": "B.6 / D64 更正: 五行色 wx_fire、wx_water 改為 #EC6A57、#6A9CDC(舊值保留在 legacy_palette 與 legacy 列,作為不合格反例);補 lacquer_700/600 底各組合。「所有字底組合 >= 4.5:1」只在 lacquer_800/900 底成立,新五行色則 800/700/600 三種底皆過。舊色 wx_water on lacquer_700 = 4.53 數值上仍 >= 4.5(剛好過),其餘三格不合格。"
+  },
+  {
+   "name": "charset_for_font_subset",
+   "input": {
+    "purpose": "glyphs the dial needs (24山/八卦/28宿/節氣/UI/64卦/分金/動物)"
+   },
+   "expected": {
+    "core": "0123456789°丁丑丙乙乾井亡亢亥人元兌兼冬分北午南卯危參向土地坎坐坤壁壬夏大天奎女婁子室宮寅寒小尾山巳巽庚張心戌房斗日明星春昴暑月朝木未東柳正氐水清滿火牛甲申畢癸白秋種穀空立箕翼胃至艮芒處虛蟄西角觜軫辛辰酉金降陰陽離雨雪震霜露驚鬼龍",
+    "core_count": 120,
+    "full": "0123456789°丁三丑丙中乙乾二井亡亢亥人元兌兔八六兼冬分剝北十升午半南卦卯危參同向否咸嗑噬四困土地坎坐坤壁壬壯夏大天太夬夷奎女妄妹姤婁子孚室宮家宿寅寒小少尾履屯山己巳巽師庚度張復心恆戊戌房損斗旅既日明星春昴晉暑書月有朝木未東柳正歸比氐氣水池泰洛清渙滿漸濟火烏無燕牛犴狐狗狼猴猿獐獬甲申畜畢癸白百益睽碧秋種穀空立箕節紫綠羊翼胃臨至艮芒萃蒙虎處虛蚓蛇蛟蝠蟄蠱西觀角觜解訟謙豐豫豬豹貉貐賁赤蹇軫辛辰過遯酉金降陰陽隨雉雞離雨雪需震霜露革頤馬驚鬼鹿黃黑鼎鼠龍",
+    "full_count": 228,
+    "nine_star_color_glyphs": "碧紫綠赤黃黑",
+    "ring_name_glyphs": "三二八六十卦四宿山度書氣池洛百節"
+   },
+   "source": "S25 union of all arrays in this fixture",
+   "confidence": "high",
+   "note": "B.6 / spec 2.8.9 更正: core 補「山、宮、朝」(讀數列「朝向 90.0° 卯山(震宮/天元) 坐酉」需要)共 120 字;nine_star_color_glyphs=黑碧綠黃赤紫(洛書環顯示色名時才嵌);ring_name_glyphs=UI 環名用字;full 為 205 字原表 ∪ 山宮朝 ∪ 九星色字 ∪ 環名字。子集字型「TW-Kai 涵蓋 205 字」未實測(標未驗證)。字表組成規則: charset = core ∪ (九星色字,若顯示) ∪ 環名字。"
+  },
+  {
+   "name": "nine_star_colors_luoshu",
+   "input": {
+    "note": "一白二黑三碧四綠五黃六白七赤八白九紫"
+   },
+   "expected": {
+    "1": "白",
+    "2": "黑",
+    "3": "碧",
+    "4": "綠",
+    "5": "黃",
+    "6": "白",
+    "7": "赤",
+    "8": "白",
+    "9": "紫"
+   },
+   "source": "S03 (九星歌 一白二黑三碧四綠五黃六白七赤八白九紫) ; only one direct source -> used only as optional dot colours",
+   "confidence": "medium"
+  },
+  {
+   "name": "xiu28_kaixi_vs_12ci_mismatch",
+   "input": {
+    "rule": "宿中心所落地支 (30deg cell centred on branch) 與 十二次粗略表不一致者"
+   },
+   "expected": [
+    "畢",
+    "柳"
+   ],
+   "source": "S25: computed from xiu28_bearing_layout_kaixi vs S14 table. 畢 centre 252.32deg lies in the 申 cell [225,255) but S14 lists 畢 under 酉 (2.68deg from the 申/酉 seam at 255); 柳 centre 195.40deg lies in the 未 cell [195,225) but S14 lists 柳 under 午 (0.40deg from the 午/未 seam at 195). Both are seam cases, so the two schemes agree to within 3deg.",
+   "confidence": "medium"
+  },
+  {
+   "name": "arc_text_transform_outward_0",
+   "input": {
+    "bearing": 0,
+    "r": 100,
+    "cx": 0,
+    "cy": 0,
+    "glyph_up": "outward"
+   },
+   "expected": {
+    "x": 0.0,
+    "y": -100.0,
+    "rotate_rad": 0.0
+   },
+   "source": "S25 math: translate(cx+r*sin b, cy-r*cos b); rotate(b) ; canvas y grows downward",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_transform_outward_90",
+   "input": {
+    "bearing": 90,
+    "r": 100,
+    "cx": 0,
+    "cy": 0,
+    "glyph_up": "outward"
+   },
+   "expected": {
+    "x": 100.0,
+    "y": 0.0,
+    "rotate_rad": 1.5708
+   },
+   "source": "S25 math: translate(cx+r*sin b, cy-r*cos b); rotate(b) ; canvas y grows downward",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_transform_outward_180",
+   "input": {
+    "bearing": 180,
+    "r": 100,
+    "cx": 0,
+    "cy": 0,
+    "glyph_up": "outward"
+   },
+   "expected": {
+    "x": 0.0,
+    "y": 100.0,
+    "rotate_rad": 3.1416
+   },
+   "source": "S25 math: translate(cx+r*sin b, cy-r*cos b); rotate(b) ; canvas y grows downward",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_transform_outward_270",
+   "input": {
+    "bearing": 270,
+    "r": 100,
+    "cx": 0,
+    "cy": 0,
+    "glyph_up": "outward"
+   },
+   "expected": {
+    "x": -100.0,
+    "y": 0.0,
+    "rotate_rad": 4.7124
+   },
+   "source": "S25 math: translate(cx+r*sin b, cy-r*cos b); rotate(b) ; canvas y grows downward",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_transform_inward_180",
+   "input": {
+    "bearing": 180,
+    "r": 100,
+    "glyph_up": "inward"
+   },
+   "expected": {
+    "x": 0.0,
+    "y": 100.0,
+    "rotate_rad": 0.0
+   },
+   "source": "S25 math",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_multichar_angles",
+   "input": {
+    "bearing": 90,
+    "chars": 2,
+    "step_deg": 6
+   },
+   "expected": [
+    87.0,
+    93.0
+   ],
+   "source": "S25 math (reading direction clockwise when glyph-up is outward)",
+   "confidence": "high"
+  },
+  {
+   "name": "arc_text_multichar_angles_inward_up",
+   "input": {
+    "bearing": 180,
+    "chars": 3,
+    "step_deg": 5,
+    "inward_up": true
+   },
+   "expected": [
+    185.0,
+    180.0,
+    175.0
+   ],
+   "source": "S25 math (reading direction flips to counter-clockwise when glyph-up is inward)",
+   "confidence": "high"
+  },
+  {
+   "name": "bearing_to_canvas_angle",
+   "input": {
+    "bearings": [
+     0,
+     90,
+     180,
+     270
+    ]
+   },
+   "expected": {
+    "0": -1.5708,
+    "90": 0.0,
+    "180": 1.5708,
+    "270": 3.1416
+   },
+   "source": "S25 math: canvasRad = (bearing-90)*PI/180",
+   "confidence": "high"
+  },
+  {
+   "name": "drag_angle_unwrap",
+   "input": [
+    {
+     "prev": 170,
+     "cur": -170
+    },
+    {
+     "prev": -170,
+     "cur": 170
+    },
+    {
+     "prev": 10,
+     "cur": 25
+    },
+    {
+     "prev": 359,
+     "cur": 1
+    }
+   ],
+   "expected": [
+    20.0,
+    -20.0,
+    15.0,
+    2.0
+   ],
+   "source": "S25 math: delta = ((cur-prev+180) mod 360) - 180",
+   "confidence": "high"
+  },
+  {
+   "name": "inertia_total_rotation",
+   "input": {
+    "omega0_deg_per_s": 360,
+    "tau_s": 0.5
+   },
+   "expected": {
+    "total_extra_deg": 180.0,
+    "formula": "omega(t)=omega0*exp(-t/tau) ; integral = omega0*tau"
+   },
+   "source": "S25 math",
+   "confidence": "high"
+  },
+  {
+   "name": "facing_sitting_180",
+   "input": {
+    "facing_bearing": 180
+   },
+   "expected": {
+    "facing": "午",
+    "sit": "子",
+    "offset_deg": 0.0,
+    "centre9": true
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_0",
+   "input": {
+    "facing_bearing": 0
+   },
+   "expected": {
+    "facing": "子",
+    "sit": "午",
+    "offset_deg": 0.0,
+    "centre9": true
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_172",
+   "input": {
+    "facing_bearing": 172
+   },
+   "expected": {
+    "facing": "丙",
+    "sit": "壬",
+    "offset_deg": 7.0,
+    "centre9": false
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_165",
+   "input": {
+    "facing_bearing": 165
+   },
+   "expected": {
+    "facing": "丙",
+    "sit": "壬",
+    "offset_deg": 0.0,
+    "centre9": true
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_22.5",
+   "input": {
+    "facing_bearing": 22.5
+   },
+   "expected": {
+    "facing": "丑",
+    "sit": "未",
+    "offset_deg": -7.5,
+    "centre9": false
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_137",
+   "input": {
+    "facing_bearing": 137
+   },
+   "expected": {
+    "facing": "巽",
+    "sit": "乾",
+    "offset_deg": 2.0,
+    "centre9": true
+   },
+   "source": "S25 (24山 geometry S01) ; 正向寬度採 S24 的 中間9度 (dispute)",
+   "confidence": "medium"
+  },
+  {
+   "name": "facing_sitting_convention",
+   "input": {
+    "note": "坐山 = 向的對宮; 例: 向午(180) 坐子; 向 b 則坐 b+180"
+   },
+   "expected": {
+    "pairs": [
+     [
+      "子",
+      "午"
+     ],
+     [
+      "癸",
+      "丁"
+     ],
+     [
+      "丑",
+      "未"
+     ],
+     [
+      "艮",
+      "坤"
+     ],
+     [
+      "寅",
+      "申"
+     ],
+     [
+      "甲",
+      "庚"
+     ],
+     [
+      "卯",
+      "酉"
+     ],
+     [
+      "乙",
+      "辛"
+     ],
+     [
+      "辰",
+      "戌"
+     ],
+     [
+      "巽",
+      "乾"
+     ],
+     [
+      "巳",
+      "亥"
+     ],
+     [
+      "丙",
+      "壬"
+     ]
+    ]
+   },
+   "source": "S25 (12 opposite pairs)",
+   "confidence": "high"
+  },
+  {
+   "name": "traditional_ring_order_sanhe16",
+   "input": {
+    "plate": "三合盤 徽盤 16 層 (inner -> outer)"
+   },
+   "expected": [
+    "天池",
+    "龍上八煞",
+    "八煞黃泉",
+    "坐山九星",
+    "正針地盤二十四山",
+    "穿山七十二龍",
+    "正針一百二十分金",
+    "中針人盤二十四山",
+    "透地六十龍",
+    "縫針天盤二十四山",
+    "縫針一百二十分金",
+    "盈縮透地六十龍",
+    "渾天星度五行",
+    "三百六十五度",
+    "星度吉凶",
+    "周天宿度(二十八宿)"
+   ],
+   "source": "S02",
+   "confidence": "high"
+  },
+  {
+   "name": "traditional_ring_order_sanyuan",
+   "input": {
+    "plate": "三元盤 (inner -> outer, grouped)"
+   },
+   "expected": [
+    "天池",
+    "後天八卦",
+    "廿四天星",
+    "坐山劫煞/挨星",
+    "三合廿四山陰陽(24山環)",
+    "易卦內盤(卦氣數、成卦)",
+    "易卦外盤(卦氣數、外卦爻、成卦)",
+    "易卦星運(九星、星數、父母天人地)",
+    "太陽到山",
+    "廿捌宿天星分金",
+    "叁百陸拾度"
+   ],
+   "source": "S17",
+   "confidence": "medium"
+  },
+  {
+   "name": "traditional_ring_order_sanyuan22_bigpeak",
+   "input": {
+    "plate": "巨峰三元盤 22 層 (第0..21層 grouped)"
+   },
+   "expected": [
+    "天池",
+    "先天八卦象/後天八卦名/八路黃泉",
+    "先天八卦洛書數",
+    "二十四天星",
+    "地盤正針24山天地人元龍",
+    "地盤正針24山(三元陰陽/出卦/替卦)",
+    "太陽到山二十四節氣",
+    "三元水法龍門八局",
+    "先天方圖64卦(內卦象/卦運/卦名)",
+    "先天圓圖64卦(外卦數/卦名/出卦/九星/外卦象/三元三般卦/南北三般卦/384爻)",
+    "正兼向度數指標",
+    "三百六十經緯度"
+   ],
+   "source": "S18",
+   "confidence": "medium"
+  },
+  {
+   "name": "traditional_ring_order_photo18",
+   "input": {
+    "plate": "實物照片圖例 (inner -> outer)"
+   },
+   "expected": [
+    "先天八卦盤",
+    "地母翻卦九星盤",
+    "二十四天星盤",
+    "地盤正針二十四山",
+    "二十四節氣",
+    "穿山七十二龍",
+    "二百二十龍(圖中原字,疑為二百四十龍)",
+    "人盤中針二十四山",
+    "人盤中針一百二十龍",
+    "透地六十龍盤",
+    "二百四十分金盤",
+    "十二次盤",
+    "十二分野",
+    "天盤縫針二十四山",
+    "天盤縫針一百二十龍",
+    "盈縮六十龍",
+    "渾天星度五行",
+    "二十八宿分度/二十八宿分度五行/二十八宿界限"
+   ],
+   "source": "S33",
+   "confidence": "medium"
+  },
+  {
+   "name": "ring_order_invariants",
+   "input": {
+    "checks": [
+     "天池 innermost",
+     "二十四節氣 immediately outside 地盤 24 山 (S33 layer5, S18 layer6, S19 layer6)",
+     "人盤 and 天盤 outside 地盤 (S02, S33)",
+     "二十八宿/360度 outermost (all four lists)"
+    ]
+   },
+   "expected": {
+    "tianchi_first": true,
+    "jieqi_after_di24": true,
+    "ren_tian_outside_di": true,
+    "xiu_outermost": true
+   },
+   "source": "S02, S17, S18, S19, S33",
+   "confidence": "medium"
+  }
+ ]
+}

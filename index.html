@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0b09">
+  <meta name="color-scheme" content="dark light">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="風水羅盤">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="description" content="風水羅盤:量房屋坐向、看八宅與玄空飛星、在平面圖上找出財位。離線可用。">
+  <title>風水羅盤</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230e0b09' stroke='%23d6b25a' stroke-width='3'/%3E%3Cpath d='M32 10l6 22-6 22-6-22z' fill='%23d0342a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/v-compass.css">
+  <link rel="stylesheet" href="css/v-house.css">
+  <link rel="stylesheet" href="css/v-plan.css">
+  <link rel="stylesheet" href="css/v-wealth.css">
+  <link rel="stylesheet" href="css/v-report.css">
+  <link rel="stylesheet" href="css/v-settings.css">
+  <script>
+    // 先套用使用者選的主題,避免載入時閃一下。讀不到就用系統偏好。
+    try {
+      var s = JSON.parse(localStorage.getItem('fengshui.state.v1') || 'null');
+      var t = s && s.ui && s.ui.theme;
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <h1 class="app-title">風水羅盤</h1>
+      <div class="app-sub" id="app-sub" aria-live="polite"></div>
+      <button class="icon-btn" id="btn-settings" aria-label="設定"></button>
+    </header>
+    <main class="view" id="view" role="tabpanel" tabindex="-1"></main>
+    <nav class="tabbar" id="tabbar" role="tablist" aria-label="主要功能"></nav>
+  </div>
+  <noscript>這個 App 需要開啟 JavaScript 才能使用。</noscript>
+  <script type="module" src="src/ui/main.js"></script>
+  <script>
+    // 離線用的 service worker。只在 https 或 localhost 註冊;失敗就當沒有,不影響使用。
+    try {
+      var h = location.hostname;
+      if ('serviceWorker' in navigator && (location.protocol === 'https:' || h === 'localhost' || h === '127.0.0.1' || h === '[::1]')) {
+        // 新版接手時重新載入一次,避免舊畫面模組配新版核心;第一次安裝(原本沒有控制者)不重載
+        var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (hadController && !reloaded) { reloaded = true; location.reload(); }
+        });
+        addEventListener('load', function () {
+          try {
+            navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then(function (reg) {
+              // 主畫面 App 可能好幾天不關,回到前景時主動檢查有沒有新版
+              document.addEventListener('visibilitychange', function () {
+                if (document.visibilityState === 'visible') { try { reg.update().catch(function () {}); } catch (e) {} }
+              });
+            }).catch(function () {});
+          } catch (e) {}
+        });
+      }
+    } catch (e) {}
+  </script>
+</body>
+</html>

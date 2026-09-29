@@ -1,0 +1,104 @@
+/* 報告畫面與九宮星盤圖(.v-sg-*)。 */
+
+.v-report-actions { gap: 10px; }
+.v-report-actions .btn { flex: 1 1 150px; }
+
+/* 折疊區塊(details):只有「總覽」預設展開 */
+.v-report-sec { padding: 0; }
+.v-report-sum {
+  display: flex; align-items: center; gap: 8px;
+  min-height: 56px; padding: 8px 14px;
+  cursor: pointer; list-style: none;
+}
+.v-report-sum::-webkit-details-marker { display: none; }
+.v-report-sumt { flex: 1; font-family: var(--font-kai); font-size: 18px; letter-spacing: .04em; color: var(--gold-bright); }
+.v-report-chev { flex: none; display: inline-grid; color: var(--text-dim); transition: transform .15s; }
+.v-report-chev svg { width: 20px; height: 20px; }
+.v-report-sec[open] > .v-report-sum .v-report-chev { transform: rotate(90deg); }
+.v-report-secbody { padding: 2px 14px 16px; display: grid; gap: 12px; }
+@media (prefers-reduced-motion: reduce) { .v-report-chev { transition: none; } }
+.v-report-hint { font-size: 13.5px; }
+
+.v-report-summary p { font-size: 15.5px; line-height: 1.7; white-space: pre-line; }
+.v-report-summary p + p { margin-top: 8px; }
+.v-report-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.v-report-points li {
+  display: grid; grid-template-columns: 5.5em 1fr; column-gap: 10px; row-gap: 0;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2);
+}
+.v-report-pl { grid-row: 1 / span 2; font-size: 13px; color: var(--text-dim); align-self: center; }
+.v-report-pv { font-size: 17px; color: var(--gold-bright); line-height: 1.4; overflow-wrap: anywhere; }
+.v-report-points .sub { grid-column: 2; font-size: 13.5px; }
+
+.v-report-cards { display: grid; gap: 0; }
+.v-report-restwrap { margin-top: 4px; }
+
+/* 八宅 */
+.v-report-bazhai { display: grid; gap: 14px; }
+.v-report-sub { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.v-report-stars { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.v-report-stars li { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); font-size: 14px; }
+.v-report-stars .v-report-dir { color: var(--text-dim); min-width: 3.2em; }
+.v-report-stars .v-report-star { font-weight: 600; flex: 1; }
+.v-report-starmark { font-size: 12px; }
+.v-report-stars li.is-good .v-report-starmark { color: var(--good-fg); }
+.v-report-stars li.is-plain .v-report-starmark { color: var(--warn-fg); }
+.v-report-uses > div { grid-template-columns: 6.5em 1fr; }
+.v-report-uses dd { font-size: 14px; line-height: 1.7; }
+.v-report-settings > div { grid-template-columns: 11em 1fr; }
+.v-report-list { margin: 0; padding-inline-start: 1.2em; display: grid; gap: 6px; font-size: 14.5px; }
+.v-report-disclaimers { padding: 0 4px 8px; }
+.v-report-disclaimers p { font-size: 13px; line-height: 1.65; margin-top: 8px; }
+.v-report-textarea { width: 100%; min-height: 220px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-md); background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.6; resize: vertical; }
+
+/* ── 九宮星盤圖(南上:上排 巽 離 坤,中排 震 中 兌,下排 艮 坎 乾) ── */
+.v-sg { margin: 0; display: grid; gap: 8px; }
+.v-sg-cap { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.v-sg-title { font-family: var(--font-kai); font-size: 17px; color: var(--gold-bright); }
+.v-sg-sub { font-size: 13px; color: var(--text-dim); }
+.v-sg-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; max-width: 460px; width: 100%; margin-inline: auto; }
+.v-sg-cell {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 2px;
+  min-height: 104px; padding: 6px 6px 7px;
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  background: var(--surface-2);
+}
+.v-sg-cell.is-center { background: var(--wealth-bg); border-color: var(--gold); }
+.v-sg-head { display: flex; align-items: baseline; gap: 4px; min-height: 20px; }
+.v-sg-gua { font-family: var(--font-kai); font-size: 16px; color: var(--gold-bright); line-height: 1; }
+.v-sg-dir { font-size: 11px; color: var(--text-dim); }
+.v-sg-mark { margin-inline-start: auto; align-self: center; padding: 0 6px; border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 1.6; }
+.v-sg-mark.is-xiang { background: var(--gold); color: var(--on-gold); }
+.v-sg-mark.is-zuo { background: var(--surface-3); color: var(--text); border: 1px solid var(--line-strong); }
+.v-sg-pair { display: flex; justify-content: space-around; align-items: flex-end; gap: 2px; }
+.v-sg-star { display: grid; justify-items: center; line-height: 1.1; min-width: 0; }
+.v-sg-k { font-size: 10.5px; color: var(--text-dim); }
+.v-sg-n { font-family: var(--font-mono); font-size: 26px; font-weight: 700; line-height: 1.05; }
+.v-sg-n.big { font-size: 32px; }
+.v-sg-q { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 999px; }
+.v-sg-yun { text-align: center; font-size: 12px; color: var(--text-dim); }
+/* 旺=金、退=灰、煞=赭;另外有「旺/退/煞」文字,不只靠顏色 */
+.is-wang .v-sg-n, .v-sg-yun.is-wang, .v-sg-flow.is-wang .v-sg-n { color: var(--gold-bright); }
+.is-wang .v-sg-q { background: var(--wealth-bg); color: var(--wealth-fg); }
+.is-tui .v-sg-n, .v-sg-yun.is-tui, .v-sg-flow.is-tui .v-sg-n { color: var(--text-dim); }
+.is-tui .v-sg-q { background: var(--surface-3); color: var(--text-dim); }
+.is-sha .v-sg-n, .v-sg-yun.is-sha, .v-sg-flow.is-sha .v-sg-n { color: var(--terracotta); }
+.is-sha .v-sg-q { background: var(--warn-bg); color: var(--warn-fg); }
+.v-sg-flow { display: grid; justify-items: center; line-height: 1.15; }
+.v-sg-fname { font-size: 12px; color: var(--text-dim); }
+.v-sg-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+.v-sg-tag { font-size: 11px; padding: 0 6px; border-radius: 999px; background: var(--warn-bg); color: var(--warn-fg); border: 1px solid var(--line); }
+.v-sg-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--text-dim); justify-content: center; }
+.v-sg-lg b { display: inline-block; padding: 0 6px; border-radius: 999px; margin-inline-end: 2px; }
+.v-sg-lg.is-wang b { background: var(--wealth-bg); color: var(--wealth-fg); }
+.v-sg-lg.is-tui b { background: var(--surface-3); color: var(--text-dim); }
+.v-sg-lg.is-sha b { background: var(--warn-bg); color: var(--warn-fg); }
+.v-sg-note { font-size: 12.5px; color: var(--text-dim); text-align: center; line-height: 1.5; }
+@media (max-width: 360px) {
+  .v-sg-n { font-size: 22px; }
+  .v-sg-cell { min-height: 96px; padding: 5px; }
+}
+
+/* 總覽的「更多說明」摺疊 */
+.v-report-more > summary { min-height: var(--tap); color: var(--gold-bright); font-size: 14.5px; }
+.v-report-more[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }

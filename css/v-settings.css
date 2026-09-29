@@ -1,0 +1,26 @@
+/* 設定面板(底部面板內)。共用元件沿用 base.css,這裡只補間距與摺疊區。 */
+.v-settings { gap: 4px; }
+.v-settings-sec { display: grid; gap: 12px; padding-block: 14px; border-top: 1px solid var(--line); }
+.v-settings-sec:first-child { border-top: 0; padding-top: 4px; }
+.v-settings-h { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: .04em; color: var(--gold-bright); }
+h4.v-settings-h { font-size: 14px; color: var(--text-dim); }
+.v-settings-item { display: grid; gap: 6px; }
+.v-settings-label { color: var(--text); font-size: 15px; font-weight: 500; }
+.v-settings .field > .v-settings-label { color: var(--text); font-size: 15px; }
+.v-settings .hint { font-size: 13px; color: var(--text-faint); }
+.v-settings .sub { font-size: 13.5px; color: var(--text-dim); }
+.v-settings .switch { padding-block: 2px; }
+.v-settings .v-house-switch-text { padding-block: 4px; }
+
+.v-settings-adv { border: 1px solid var(--line); border-radius: var(--r-md); padding: 0 12px; }
+.v-settings-adv > summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; font-weight: 600; color: var(--text); }
+.v-settings-adv[open] { padding-bottom: 4px; }
+.v-settings-adv[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.v-settings-advnote { padding-block: 8px; }
+
+.v-settings-msg { min-height: 1.2em; color: var(--warn-fg); }
+.v-settings-confirm { display: grid; gap: 10px; }
+.v-settings-confirm-actions { justify-content: flex-start; }
+.v-settings-danger { margin-top: 4px; }
+.v-settings .v-house-details { border-top: 1px solid var(--line); }
+.v-settings .v-house-details > summary { min-height: var(--tap); display: flex; align-items: center; cursor: pointer; color: var(--text-dim); }

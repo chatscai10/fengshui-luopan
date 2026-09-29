@@ -1,0 +1,155 @@
+/* 設計語彙。色票來源: docs/DOMAIN_SPEC.md 2.8.7(漆面/金/朱砂/象牙)。
+   深色漆面為預設(與羅盤盤面同調);淺色為「宣紙」主題。文字對比度皆 >= 4.5:1。 */
+:root {
+  color-scheme: dark;
+
+  --bg: #0e0b09;
+  --surface: #17120e;
+  --surface-2: #221a13;
+  --surface-3: #2d231a;
+  --line: rgba(232, 203, 122, 0.16);
+  --line-strong: rgba(232, 203, 122, 0.34);
+
+  --text: #f3ebd8;
+  --text-dim: #b9ae95;
+  --text-faint: #9a917d;
+
+  --gold: #d6b25a;
+  --gold-bright: #e8cb7a;
+  --gold-deep: #9a7526;
+  --on-gold: #1a1208;
+
+  --cinnabar: #f0665a;
+  --cinnabar-solid: #d0342a;
+  --jade: #5fa37f;
+  --terracotta: #d27a63;
+  --sky: #6a9cdc;
+
+  --good-bg: rgba(95, 163, 127, 0.16);
+  --good-fg: #86c9a5;
+  --warn-bg: rgba(201, 112, 90, 0.18);
+  --warn-fg: #eb9a86;
+  --info-bg: rgba(106, 156, 220, 0.16);
+  --info-fg: #9cbdec;
+  --wealth-bg: rgba(214, 178, 90, 0.18);
+  --wealth-fg: #e8cb7a;
+
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --scrim: rgba(6, 4, 3, 0.62);
+
+  --font-ui: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Heiti TC", sans-serif;
+  --font-kai: "LuopanKai", "Kaiti TC", "BiauKaiTC", "BiauKai", "DFKai-SB", "KaiTi", "STKaiti",
+    "Noto Serif CJK TC", "Noto Serif TC", "Songti TC", "PMingLiU", "PingFang TC", serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --gap: 12px;
+  --gutter: 16px;
+  --tap: 44px;
+  --tabbar-h: 62px;
+  --header-h: 52px;
+}
+
+/* 淺色:系統偏好淺色且使用者未強制深色,或使用者在設定裡手動選淺色 */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f4eedf;
+    --surface: #fbf7ec;
+    --surface-2: #efe6d0;
+    --surface-3: #e5d9bd;
+    --line: rgba(34, 26, 19, 0.14);
+    --line-strong: rgba(34, 26, 19, 0.3);
+    --text: #221a13;
+    --text-dim: #5e5140;
+    --text-faint: #685b48;
+    --gold: #8a6a1e;
+    --gold-bright: #6f5313;
+    --gold-deep: #6f5313;
+    --on-gold: #fbf7ec;
+    --cinnabar: #b02a20;
+    --jade: #2f7a57;
+    --terracotta: #96402a;
+    --sky: #2f5f9e;
+    --good-bg: rgba(47, 122, 87, 0.12);
+    --good-fg: #23664a;
+    --warn-bg: rgba(163, 71, 47, 0.12);
+    --warn-fg: #8d3a24;
+    --info-bg: rgba(47, 95, 158, 0.1);
+    --info-fg: #264f86;
+    --wealth-bg: rgba(138, 106, 30, 0.14);
+    --wealth-fg: #6f5313;
+    --shadow-card: 0 1px 2px rgba(60, 44, 20, 0.12), 0 6px 18px rgba(60, 44, 20, 0.1);
+    --scrim: rgba(34, 26, 19, 0.45);
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4eedf;
+  --surface: #fbf7ec;
+  --surface-2: #efe6d0;
+  --surface-3: #e5d9bd;
+  --line: rgba(34, 26, 19, 0.14);
+  --line-strong: rgba(34, 26, 19, 0.3);
+  --text: #221a13;
+  --text-dim: #5e5140;
+  --text-faint: #685b48;
+  --gold: #8a6a1e;
+  --gold-bright: #6f5313;
+  --gold-deep: #6f5313;
+  --on-gold: #fbf7ec;
+  --cinnabar: #b02a20;
+  --jade: #2f7a57;
+  --terracotta: #96402a;
+  --sky: #2f5f9e;
+  --good-bg: rgba(47, 122, 87, 0.12);
+  --good-fg: #23664a;
+  --warn-bg: rgba(163, 71, 47, 0.12);
+  --warn-fg: #8d3a24;
+  --info-bg: rgba(47, 95, 158, 0.1);
+  --info-fg: #264f86;
+  --wealth-bg: rgba(138, 106, 30, 0.14);
+  --wealth-fg: #6f5313;
+  --shadow-card: 0 1px 2px rgba(60, 44, 20, 0.12), 0 6px 18px rgba(60, 44, 20, 0.1);
+  --scrim: rgba(34, 26, 19, 0.45);
+}
+
+/* 房間底色(畫布與範本縮圖共用)。深色沿用漆面配色的柔和色相,淺色用較深的同色相確保對比。 */
+:root {
+  --plan-living: #d6b25a;
+  --plan-bedroom: #6a9cdc;
+  --plan-kitchen: #c9705a;
+  --plan-toilet: #5fa37f;
+  --plan-study: #9a86c8;
+  --plan-entry: #8d8471;
+  --plan-balcony: #4fa3a5;
+  --plan-stair: #a08a6a;
+  --plan-other: #b9ae95;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --plan-living: #8a6a1e;
+    --plan-bedroom: #2f5f9e;
+    --plan-kitchen: #a3472f;
+    --plan-toilet: #2f7a57;
+    --plan-study: #6a55a0;
+    --plan-entry: #7a6c58;
+    --plan-balcony: #2a7a7c;
+    --plan-stair: #7a6448;
+    --plan-other: #5e5140;
+  }
+}
+:root[data-theme="light"] {
+  --plan-living: #8a6a1e;
+  --plan-bedroom: #2f5f9e;
+  --plan-kitchen: #a3472f;
+  --plan-toilet: #2f7a57;
+  --plan-study: #6a55a0;
+  --plan-entry: #7a6c58;
+  --plan-balcony: #2a7a7c;
+  --plan-stair: #7a6448;
+  --plan-other: #5e5140;
+}

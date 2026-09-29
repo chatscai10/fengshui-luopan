@@ -1,0 +1,5141 @@
+{
+ "meta": {
+  "topic": "bazhai (八宅風水: 命卦 / 遊年八星 / 宅卦 / 命宅配)",
+  "schema": "cases[].{name,kind,input,expected,source,confidence}",
+  "generated": "2026-09-29",
+  "generator": "independent recomputation in Python 3.13 (classical 排山掌訣 + closed form + yao-change walk); not copied from tools/lib/divine_bazhai.py",
+  "encoding": "UTF-8 no BOM",
+  "conventions": {
+   "gua_numbers": {
+    "坎": 1,
+    "坤": 2,
+    "震": 3,
+    "巽": 4,
+    "中": 5,
+    "乾": 6,
+    "兌": 7,
+    "艮": 8,
+    "離": 9
+   },
+   "five_rule": "raw number 5 -> male uses 坤(2), female uses 艮(8)",
+   "directions": {
+    "坎": "北",
+    "艮": "東北",
+    "震": "東",
+    "巽": "東南",
+    "離": "南",
+    "坤": "西南",
+    "兌": "西",
+    "乾": "西北"
+   },
+   "east_group": [
+    "坎",
+    "震",
+    "巽",
+    "離"
+   ],
+   "west_group": [
+    "乾",
+    "坤",
+    "艮",
+    "兌"
+   ],
+   "trigram_lines_bottom_to_top": {
+    "乾": [
+     1,
+     1,
+     1
+    ],
+    "兌": [
+     1,
+     1,
+     0
+    ],
+    "離": [
+     1,
+     0,
+     1
+    ],
+    "震": [
+     1,
+     0,
+     0
+    ],
+    "巽": [
+     0,
+     1,
+     1
+    ],
+    "坎": [
+     0,
+     1,
+     0
+    ],
+    "艮": [
+     0,
+     0,
+     1
+    ],
+    "坤": [
+     0,
+     0,
+     0
+    ]
+   },
+   "minggua_closed_form": "male: n = mod9(2 - Y) ; female: n = mod9(Y + 4) ; mod9 maps 0 -> 9 ; Y = 干支年 (立春為界)",
+   "minggua_equivalent_digit_formulas": "1900-1999: male mod9(100-yy) female mod9(yy-4) ; 2000-2099: male mod9(99-yy) female mod9(yy+6)",
+   "default_boundary": "lichun_exact (太陽黃經315度的交節時刻, 台灣時間 UTC+8, 分鐘精度)",
+   "boundary_options": [
+    "lichun_exact",
+    "lichun_date_only",
+    "fixed_feb4",
+    "lunar_new_year",
+    "gregorian_jan1"
+   ],
+   "timezone": "lichun_cst table is UTC+8. Asia/Taipei tzdata: clock offset at each 立春 instant is +08:00 for 1900-2050 except 1938-1945 (JST +09:00); Taiwan DST never covered early February. Convert recorded local birth time to UTC+8 before comparing.",
+   "sector_boundary": "octant/mountain boundaries treated as half-open [start, end) clockwise (design choice; sources silent)"
+  },
+  "stars": {
+   "生氣": {
+    "star": "貪狼",
+    "element": "木",
+    "level_classical": "上吉",
+    "rank_in_good": 1,
+    "wealth": "primary"
+   },
+   "延年": {
+    "star": "武曲",
+    "element": "金",
+    "level_classical": "上吉",
+    "rank_in_good": 2,
+    "wealth": "secondary"
+   },
+   "天醫": {
+    "star": "巨門",
+    "element": "土",
+    "level_classical": "中吉",
+    "rank_in_good": 3,
+    "wealth": "secondary"
+   },
+   "伏位": {
+    "star": "輔弼",
+    "element": "木",
+    "level_classical": "小吉",
+    "rank_in_good": 4,
+    "wealth": "minor"
+   },
+   "絕命": {
+    "star": "破軍",
+    "element": "金",
+    "level_classical": "大凶",
+    "rank_in_bad": 1
+   },
+   "五鬼": {
+    "star": "廉貞",
+    "element": "火",
+    "level_classical": "大凶",
+    "rank_in_bad": 2
+   },
+   "六煞": {
+    "star": "文曲",
+    "element": "水",
+    "level_classical": "次凶",
+    "rank_in_bad": 3
+   },
+   "禍害": {
+    "star": "祿存",
+    "element": "土",
+    "level_classical": "次凶",
+    "rank_in_bad": 4
+   }
+  },
+  "star_walk_from_home_gua": [
+   [
+    "top",
+    "生氣"
+   ],
+   [
+    "middle",
+    "五鬼"
+   ],
+   [
+    "bottom",
+    "延年"
+   ],
+   [
+    "middle",
+    "六煞"
+   ],
+   [
+    "top",
+    "禍害"
+   ],
+   [
+    "middle",
+    "天醫"
+   ],
+   [
+    "bottom",
+    "絕命"
+   ],
+   [
+    "middle",
+    "伏位"
+   ]
+  ],
+  "song_da_you_nian": {
+   "乾": "六天五禍絕延生",
+   "坎": "五天生延絕禍六",
+   "艮": "六絕禍生延天五",
+   "震": "延生禍絕五天六",
+   "巽": "天五六禍生絕延",
+   "離": "六五絕延禍生天",
+   "坤": "天延絕生禍五六",
+   "兌": "生禍延絕六五天"
+  },
+  "lichun_cst_1900_2100": {
+   "1900": "1900-02-04 13:50:45",
+   "1901": "1901-02-04 19:39:07",
+   "1902": "1902-02-05 01:37:25",
+   "1903": "1903-02-05 07:30:35",
+   "1904": "1904-02-05 13:23:27",
+   "1905": "1905-02-04 19:15:09",
+   "1906": "1906-02-05 01:03:15",
+   "1907": "1907-02-05 06:58:11",
+   "1908": "1908-02-05 12:46:39",
+   "1909": "1909-02-04 18:31:58",
+   "1910": "1910-02-05 00:26:50",
+   "1911": "1911-02-05 06:09:46",
+   "1912": "1912-02-05 11:53:02",
+   "1913": "1913-02-04 17:42:10",
+   "1914": "1914-02-04 23:28:50",
+   "1915": "1915-02-05 05:24:59",
+   "1916": "1916-02-05 11:13:34",
+   "1917": "1917-02-04 16:57:08",
+   "1918": "1918-02-04 22:52:43",
+   "1919": "1919-02-05 04:39:01",
+   "1920": "1920-02-05 10:26:05",
+   "1921": "1921-02-04 16:19:51",
+   "1922": "1922-02-04 22:06:04",
+   "1923": "1923-02-05 03:59:57",
+   "1924": "1924-02-05 09:49:13",
+   "1925": "1925-02-04 15:36:26",
+   "1926": "1926-02-04 21:37:56",
+   "1927": "1927-02-05 03:29:43",
+   "1928": "1928-02-05 09:16:04",
+   "1929": "1929-02-04 15:08:24",
+   "1930": "1930-02-04 20:50:49",
+   "1931": "1931-02-05 02:40:18",
+   "1932": "1932-02-05 08:29:02",
+   "1933": "1933-02-04 14:08:57",
+   "1934": "1934-02-04 20:03:17",
+   "1935": "1935-02-05 01:48:22",
+   "1936": "1936-02-05 07:28:56",
+   "1937": "1937-02-04 13:25:14",
+   "1938": "1938-02-04 19:14:39",
+   "1939": "1939-02-05 01:10:07",
+   "1940": "1940-02-05 07:07:14",
+   "1941": "1941-02-04 12:49:27",
+   "1942": "1942-02-04 18:48:16",
+   "1943": "1943-02-05 00:39:47",
+   "1944": "1944-02-05 06:22:38",
+   "1945": "1945-02-04 12:19:06",
+   "1946": "1946-02-04 18:03:38",
+   "1947": "1947-02-04 23:50:06",
+   "1948": "1948-02-05 05:41:46",
+   "1949": "1949-02-04 11:22:36",
+   "1950": "1950-02-04 17:20:32",
+   "1951": "1951-02-04 23:13:13",
+   "1952": "1952-02-05 04:52:40",
+   "1953": "1953-02-04 10:45:40",
+   "1954": "1954-02-04 16:30:29",
+   "1955": "1955-02-04 22:17:24",
+   "1956": "1956-02-05 04:11:43",
+   "1957": "1957-02-04 09:54:26",
+   "1958": "1958-02-04 15:49:00",
+   "1959": "1959-02-04 21:42:00",
+   "1960": "1960-02-05 03:22:58",
+   "1961": "1961-02-04 09:22:15",
+   "1962": "1962-02-04 15:17:12",
+   "1963": "1963-02-04 21:07:36",
+   "1964": "1964-02-05 03:04:47",
+   "1965": "1965-02-04 08:45:59",
+   "1966": "1966-02-04 14:37:43",
+   "1967": "1967-02-04 20:30:44",
+   "1968": "1968-02-05 02:07:19",
+   "1969": "1969-02-04 07:58:49",
+   "1970": "1970-02-04 13:45:42",
+   "1971": "1971-02-04 19:25:22",
+   "1972": "1972-02-05 01:20:11",
+   "1973": "1973-02-04 07:04:10",
+   "1974": "1974-02-04 13:00:04",
+   "1975": "1975-02-04 18:59:10",
+   "1976": "1976-02-05 00:39:27",
+   "1977": "1977-02-04 06:33:23",
+   "1978": "1978-02-04 12:26:57",
+   "1979": "1979-02-04 18:12:17",
+   "1980": "1980-02-05 00:09:27",
+   "1981": "1981-02-04 05:55:23",
+   "1982": "1982-02-04 11:45:28",
+   "1983": "1983-02-04 17:39:41",
+   "1984": "1984-02-04 23:18:44",
+   "1985": "1985-02-04 05:11:47",
+   "1986": "1986-02-04 11:07:41",
+   "1987": "1987-02-04 16:51:39",
+   "1988": "1988-02-04 22:42:48",
+   "1989": "1989-02-04 04:27:09",
+   "1990": "1990-02-04 10:13:59",
+   "1991": "1991-02-04 16:08:23",
+   "1992": "1992-02-04 21:48:16",
+   "1993": "1993-02-04 03:37:08",
+   "1994": "1994-02-04 09:30:55",
+   "1995": "1995-02-04 15:12:50",
+   "1996": "1996-02-04 21:07:51",
+   "1997": "1997-02-04 03:01:57",
+   "1998": "1998-02-04 08:56:50",
+   "1999": "1999-02-04 14:57:02",
+   "2000": "2000-02-04 20:40:22",
+   "2001": "2001-02-04 02:28:49",
+   "2002": "2002-02-04 08:24:05",
+   "2003": "2003-02-04 14:05:19",
+   "2004": "2004-02-04 19:56:12",
+   "2005": "2005-02-04 01:43:02",
+   "2006": "2006-02-04 07:27:16",
+   "2007": "2007-02-04 13:18:12",
+   "2008": "2008-02-04 19:00:24",
+   "2009": "2009-02-04 00:49:47",
+   "2010": "2010-02-04 06:47:50",
+   "2011": "2011-02-04 12:32:56",
+   "2012": "2012-02-04 18:22:23",
+   "2013": "2013-02-04 00:13:25",
+   "2014": "2014-02-04 06:03:16",
+   "2015": "2015-02-04 11:58:28",
+   "2016": "2016-02-04 17:46:02",
+   "2017": "2017-02-03 23:34:03",
+   "2018": "2018-02-04 05:28:29",
+   "2019": "2019-02-04 11:14:19",
+   "2020": "2020-02-04 17:03:19",
+   "2021": "2021-02-03 22:58:47",
+   "2022": "2022-02-04 04:50:47",
+   "2023": "2023-02-04 10:42:33",
+   "2024": "2024-02-04 16:27:07",
+   "2025": "2025-02-03 22:10:28",
+   "2026": "2026-02-04 04:02:07",
+   "2027": "2027-02-04 09:46:18",
+   "2028": "2028-02-04 15:31:14",
+   "2029": "2029-02-03 21:20:46",
+   "2030": "2030-02-04 03:08:28",
+   "2031": "2031-02-04 08:58:18",
+   "2032": "2032-02-04 14:48:57",
+   "2033": "2033-02-03 20:41:35",
+   "2034": "2034-02-04 02:41:10",
+   "2035": "2035-02-04 08:31:34",
+   "2036": "2036-02-04 14:19:56",
+   "2037": "2037-02-03 20:11:38",
+   "2038": "2038-02-04 02:03:49",
+   "2039": "2039-02-04 07:52:56",
+   "2040": "2040-02-04 13:39:55",
+   "2041": "2041-02-03 19:25:11",
+   "2042": "2042-02-04 01:12:54",
+   "2043": "2043-02-04 06:58:49",
+   "2044": "2044-02-04 12:44:21",
+   "2045": "2045-02-03 18:36:22",
+   "2046": "2046-02-04 00:31:10",
+   "2047": "2047-02-04 06:18:08",
+   "2048": "2048-02-04 12:04:44",
+   "2049": "2049-02-03 17:53:31",
+   "2050": "2050-02-03 23:43:55",
+   "2051": "2051-02-04 05:36:14",
+   "2052": "2052-02-04 11:23:05",
+   "2053": "2053-02-03 17:13:09",
+   "2054": "2054-02-03 23:08:01",
+   "2055": "2055-02-04 04:55:54",
+   "2056": "2056-02-04 10:47:14",
+   "2057": "2057-02-03 16:42:35",
+   "2058": "2058-02-03 22:34:35",
+   "2059": "2059-02-04 04:24:01",
+   "2060": "2060-02-04 10:08:14",
+   "2061": "2061-02-03 15:53:47",
+   "2062": "2062-02-03 21:47:05",
+   "2063": "2063-02-04 03:31:12",
+   "2064": "2064-02-04 09:14:52",
+   "2065": "2065-02-03 15:03:41",
+   "2066": "2066-02-03 20:49:22",
+   "2067": "2067-02-04 02:37:20",
+   "2068": "2068-02-04 08:29:03",
+   "2069": "2069-02-03 14:20:50",
+   "2070": "2070-02-03 20:21:48",
+   "2071": "2071-02-04 02:10:50",
+   "2072": "2072-02-04 07:57:00",
+   "2073": "2073-02-03 13:52:44",
+   "2074": "2074-02-03 19:41:15",
+   "2075": "2075-02-04 01:30:36",
+   "2076": "2076-02-04 07:19:52",
+   "2077": "2077-02-03 13:03:06",
+   "2078": "2078-02-03 18:57:21",
+   "2079": "2079-02-04 00:43:11",
+   "2080": "2080-02-04 06:27:57",
+   "2081": "2081-02-03 12:25:55",
+   "2082": "2082-02-03 18:12:12",
+   "2083": "2083-02-03 23:58:22",
+   "2084": "2084-02-04 05:46:37",
+   "2085": "2085-02-03 11:29:53",
+   "2086": "2086-02-03 17:26:26",
+   "2087": "2087-02-03 23:15:12",
+   "2088": "2088-02-04 04:58:09",
+   "2089": "2089-02-03 10:54:39",
+   "2090": "2090-02-03 16:42:17",
+   "2091": "2091-02-03 22:30:49",
+   "2092": "2092-02-04 04:28:49",
+   "2093": "2093-02-03 10:18:35",
+   "2094": "2094-02-03 16:17:03",
+   "2095": "2095-02-03 22:07:04",
+   "2096": "2096-02-04 03:46:51",
+   "2097": "2097-02-03 09:41:59",
+   "2098": "2098-02-03 15:29:00",
+   "2099": "2099-02-03 21:09:29",
+   "2100": "2100-02-04 03:00:17"
+  },
+  "lichun_validation": "Skyfield+JPL DE421 for 1900-2050 (agrees with HKO official XML to the minute for 2019-2028; max 46 s vs lunar_python over 1900-2050); 2051-2100 from lunar_python only (unverified, +-1 min). Treat any birth within +-2 minutes of 立春 as uncertain.",
+  "sources": {
+   "zdic": {
+    "title": "漢典: 風水學中的陽宅三要之大遊年歌 (趙九峰《陽宅三要》八卦兩兩配星全文)",
+    "url": "https://hl.zdic.net/xxfs/fssl/0224/19876.html"
+   },
+   "xzw": {
+    "title": "星座屋: 同文轉載 (趙九峰《陽宅三要》大遊年歌詳解)",
+    "url": "https://m.xzw.com/fengshui/anli/2013/0515/114882.html"
+   },
+   "qqqs": {
+    "title": "第一風水網: 《八宅明鏡》全文(乾隆五十五年序)含三元命卦排山掌訣、男五寄坤女五寄艮、九星變爻說明、灶座論方灶口論向",
+    "url": "https://fs.qqqs.org/fssj/396.html"
+   },
+   "chen_sohu": {
+    "title": "搜狐: 陳益峰 大游年歌訣什麼意思 (方位逐格白話)",
+    "url": "https://m.sohu.com/n/464942610/"
+   },
+   "chen_read01": {
+    "title": "壹讀: 陳益峰 大游年歌訣什麼意思 (同文繁體)",
+    "url": "https://read01.com/zh-hk/jO748D.html"
+   },
+   "chen_sina": {
+    "title": "新浪: 大游年歌訣白話注解 (同陳益峰文)",
+    "url": "https://www.sina.cn/news/detail/5105334824470905.html"
+   },
+   "sohu_yanyi": {
+    "title": "搜狐: 八宅風水與命卦方位吉凶的關係 (研易人士, 2018; 八命卦逐一列方位與星名、立春為界、男五寄坤女五寄艮)",
+    "url": "https://www.sohu.com/a/214552542_100070733"
+   },
+   "fsweb_uk": {
+    "title": "Feng Shui Store (UK): Eight Mansions Feng Shui - 8x8 direction table, Gua formulas before/after 2000, 1924-2024 Gua table",
+    "url": "https://www.fengshuiweb.co.uk/eight-mansions-feng-shui-2/"
+   },
+   "fsweb_uk_8m": {
+    "title": "Feng Shui Store (UK): Eight Mansions Feng Shui (Sallie Tsui Sien) - house by sitting position, facing degree ranges, uses of the 8 directions",
+    "url": "https://www.fengshuiweb.co.uk/advice/8mansions.htm"
+   },
+   "yca": {
+    "title": "Your Chinese Astrology: Feng Shui Directions chart (Kua 1-9, male/female 5)",
+    "url": "https://www.yourchineseastrology.com/feng-shui/direction/"
+   },
+   "unclekin": {
+    "title": "Uncle Kin: 八宅堪輿完整版 (compilation: 對稱矩陣、五種起伏位法、灶坐方位吉凶應驗、灶座灶口、門主灶)",
+    "url": "http://unclekin2604.blogspot.com/2012/03/blog-post.html"
+   },
+   "fusui": {
+    "title": "Feng Shui Beginner (香港): 八宅吉凶方位計算口訣 (變爻口訣、各星宜忌)",
+    "url": "https://fusuibeginnercom.wordpress.com/2018/10/17/%E5%85%AB%E5%AE%85%E5%90%89%E5%87%B6%E6%96%B9%E4%BD%8D%E4%B9%8B%E8%A8%88%E7%AE%97%E5%8F%A3%E8%A8%A3-4/"
+   },
+   "zhouyi_biz": {
+    "title": "周易網: 八宅法-大游年歌訣 (門床安吉方, 廁灶壓凶方, 灶口朝吉)",
+    "url": "http://www.zhouyi.biz/fengsui/zs/449.html"
+   },
+   "hokming": {
+    "title": "白鶴鳴風水: 答讀者 八宅命卦的分界 (白如雪博士, 2019-06-22; 以立春為界, 附2020/2021示例)",
+    "url": "https://www.hokming.com/fengshui-BRX-calculatingyearofbirthmethod-fengshui.htm"
+   },
+   "ziwei_tw": {
+    "title": "潮紫微(台灣): 八宅派風水 東西四命如何算 (三元甲子、排山掌訣、2000年前公式)",
+    "url": "https://ziwei.tw/how-to-know-4life-stye/"
+   },
+   "fushantang": {
+    "title": "福山堂: 命卦速查表 (1924-2013 男女命宮表)",
+    "url": "http://www.fushantang.com/1012/1012a/j0168.html"
+   },
+   "fatekeep": {
+    "title": "今日農曆: 東四命西四命速查表 (1944-2043)",
+    "url": "https://www.fatekeep.com/blog/2236"
+   },
+   "zyrm": {
+    "title": "周易人命網: 東四命卦和西四命卦的速查表 (立春到次年立春)",
+    "url": "http://www.zyrm.com/fengsui/zs/201.html"
+   },
+   "fsmall": {
+    "title": "Feng Shui Mall: Feng Shui Kua (formula, LUNAR year)",
+    "url": "https://www.fengshuimall.com/blog/feng-shui-kua"
+   },
+   "michaeloon": {
+    "title": "Dr Michael Oon: 8 Controversies of the Eight Mansions Feng Shui (Solar calendar 4 Feb - 3 Feb)",
+    "url": "https://michaeloon.com/blog/eight-mansions-feng-shui/"
+   },
+   "masterseanchan": {
+    "title": "Master Sean Chan (Singapore): 24 Mountains x Personal Kua reference (24山->8方 45度; kua by lunar new year)",
+    "url": "https://www.masterseanchan.com/feng-shui-24-mountains/"
+   },
+   "yixiansheng_4896": {
+    "title": "易先生: 二十四山兼家吉凶圖示 (八卦各管三山)",
+    "url": "https://www.yixiansheng.com/article/4896.html"
+   },
+   "wuyoushan": {
+    "title": "無憂山: 八宅風水學入門基礎 (八宅由一行所創、坐向定宅卦、東四命配東四宅)",
+    "url": "https://wuyoushan.org/document.php?id=192"
+   },
+   "sohu_table": {
+    "title": "搜狐: 易經堂 八宅命卦吉凶速查表 (宅命相配、夫妻不同命卦、四吉四凶星財運描述)",
+    "url": "https://m.sohu.com/n/474115129/"
+   },
+   "mingtianji": {
+    "title": "明天機: 什麼是八宅風水 (床睡吉位、廁在凶方、灶坐凶向吉、天醫=財位之說、香港某師之說)",
+    "url": "https://mingtianji.com/2025/01/07/31417/"
+   },
+   "csdn_practitioner": {
+    "title": "CSDN 風水師筆記: 八宅只用於定門樓與灶向、床頭擺放、灶口用女主人年命",
+    "url": "https://blog.csdn.net/qq_42971998/article/details/137422354"
+   },
+   "d02": {
+    "title": "乾坤網: 八宅風水核心要領 (門主灶三要、灶宜安凶方灶口對吉方、夫妻睡房位於妻子吉方)",
+    "url": "https://www.d02.cn/mingli/fengshui/2025_143206.html"
+   },
+   "shenjige_sq": {
+    "title": "神機閣: 八宅風水吉凶方位解析 生氣方位 (生氣旺丁旺財, 不可作浴廁)",
+    "url": "https://www.shenjige.cn/details/v04zRHu6S.html"
+   },
+   "shenjige_ty": {
+    "title": "神機閣: 八宅風水吉凶方位解析 天醫方位 (健康與財富, 貴人)",
+    "url": "https://www.shenjige.cn/details/ZwqYpxV-j.html"
+   },
+   "taiwanfolk": {
+    "title": "台灣文民: 民間神秘的求財術「五鬼運財」(紫白飛星說、輔星水法說、需專業佈局)",
+    "url": "https://taiwanfolk.com/blog/detail/73"
+   },
+   "sina_wugui": {
+    "title": "新浪: 李光東 八宅五鬼運財示例 (艮宅乾命廚房在五鬼位, 需八字喜火)",
+    "url": "https://www.sina.cn/news/detail/5171178382821101.html"
+   },
+   "sohu_wugui": {
+    "title": "搜狐星座: 家中八宅五鬼位破解之道 (各宅五鬼位、五鬼偷金; 注意混用五黃廉貞)",
+    "url": "https://www.sohu.com/a/108011356_161203"
+   },
+   "shuge_kuxu": {
+    "title": "書格論壇: 略論八宅風水卦序之謎 (九星五行、卦序、兩兩對稱)",
+    "url": "https://www.shuge.org/meet/topic/94065/"
+   },
+   "wp_lichun": {
+    "title": "維基百科(中): 立春 (太陽黃經315度; 術數上為新一年開始; 八字以立春為生肖起點)",
+    "url": "https://zh.wikipedia.org/wiki/%E7%AB%8B%E6%98%A5"
+   },
+   "wp_ganzhi": {
+    "title": "維基百科(中): 干支 (干支曆以立春時刻為一年之始)",
+    "url": "https://zh.wikipedia.org/wiki/%E5%B9%B2%E6%94%AF"
+   },
+   "hko_xml": {
+    "title": "香港天文台: 二十四節氣的日期及時間 (香港時間=UTC+8; XML 2019-2028 已逐年比對)",
+    "url": "https://www.hko.gov.hk/tc/gts/astronomy/Solar_Term.htm"
+   },
+   "web_chacd_2000": {
+    "title": "節氣查詢: 2000年立春 2000-02-04 20:40:24 (北京時間)",
+    "url": "https://jieqi.chacd.com/2000-1/"
+   },
+   "skyfield_de421": {
+    "title": "Skyfield 1.55 + JPL DE421 ephemeris (almanac_east_asia solar_terms, 黃經315度) 本任務自行計算",
+    "url": "https://rhodesmill.org/skyfield/"
+   },
+   "lunar_python": {
+    "title": "lunar-python 節氣/農曆表 (交叉比對, 1900-2050 與 Skyfield 最大差 46 秒)",
+    "url": "https://github.com/6tail/lunar-python"
+   },
+   "derived": {
+    "title": "本任務以獨立程式重算 (三種演算法互證)",
+    "url": ""
+   },
+   "derived_yao_walk": {
+    "title": "本任務以爻變序列(上中下中上中下中)獨立推導 8x8 表, 與大遊年歌及相對爻差法完全一致",
+    "url": ""
+   }
+  }
+ },
+ "cases": [
+  {
+   "name": "minggua_year_1945_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1945,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1945,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "fengshuiweb worked example (1945 male -> 1)"
+  },
+  {
+   "name": "minggua_year_1945_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1945,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1945,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "fengshuiweb worked example (1945 female -> 5 -> uses Gua 8)"
+  },
+  {
+   "name": "minggua_year_2001_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2001,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2001,
+    "raw_number": 8,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "fengshuiweb worked example (2001 male -> 8)"
+  },
+  {
+   "name": "minggua_year_2001_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2001,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2001,
+    "raw_number": 7,
+    "gua": "兌",
+    "gua_number_used": 7,
+    "group": "west"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "fengshuiweb worked example (2001 female -> 7)"
+  },
+  {
+   "name": "minggua_year_1985_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1985,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1985,
+    "raw_number": 6,
+    "gua": "乾",
+    "gua_number_used": 6,
+    "group": "west"
+   },
+   "source": [
+    "ziwei_tw"
+   ],
+   "confidence": "high",
+   "note": "ziwei.tw example: (100-85) mod 9 = 6 -> 乾"
+  },
+  {
+   "name": "minggua_year_1954_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1954,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1954,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "fushantang table + example: 1954 male 坎"
+  },
+  {
+   "name": "minggua_year_1954_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1954,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1954,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "fushantang table + example: 1954 female 5 -> 艮"
+  },
+  {
+   "name": "minggua_year_1966_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1966,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1966,
+    "raw_number": 7,
+    "gua": "兌",
+    "gua_number_used": 7,
+    "group": "west"
+   },
+   "source": [
+    "zyrm"
+   ],
+   "confidence": "high",
+   "note": "zyrm example: 1966 male 7 -> 兌"
+  },
+  {
+   "name": "minggua_year_1962_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1962,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1962,
+    "raw_number": 4,
+    "gua": "巽",
+    "gua_number_used": 4,
+    "group": "east"
+   },
+   "source": [
+    "zyrm"
+   ],
+   "confidence": "high",
+   "note": "zyrm example: 1962 female 4 -> 巽"
+  },
+  {
+   "name": "minggua_year_1940_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1940,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1940,
+    "raw_number": 9,
+    "gua": "離",
+    "gua_number_used": 9,
+    "group": "east"
+   },
+   "source": [
+    "unclekin"
+   ],
+   "confidence": "high",
+   "note": "unclekin example: 1940 female (40-4)/9 remainder 0 -> 9 離"
+  },
+  {
+   "name": "minggua_year_1974_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1974,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1974,
+    "raw_number": 8,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fsmall"
+   ],
+   "confidence": "high",
+   "note": "fengshuimall example: 1974 male 10-2=8"
+  },
+  {
+   "name": "minggua_year_1974_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1974,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1974,
+    "raw_number": 7,
+    "gua": "兌",
+    "gua_number_used": 7,
+    "group": "west"
+   },
+   "source": [
+    "fsmall"
+   ],
+   "confidence": "high",
+   "note": "fengshuimall example: 1974 female 5+2=7"
+  },
+  {
+   "name": "minggua_year_1999_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1999,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1999,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "1900s last year: male 坎; fushantang table row 1999"
+  },
+  {
+   "name": "minggua_year_1999_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1999,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1999,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "1900s last year: female 5 -> 艮; fushantang table row 1999"
+  },
+  {
+   "name": "minggua_year_2000_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2000,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2000,
+    "raw_number": 9,
+    "gua": "離",
+    "gua_number_used": 9,
+    "group": "east"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "yy=00 trap year: male 離(9). fushantang row 2000; legacy code gives 坎, yca text rule gives 8"
+  },
+  {
+   "name": "minggua_year_2000_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2000,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2000,
+    "raw_number": 6,
+    "gua": "乾",
+    "gua_number_used": 6,
+    "group": "west"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "yy=00 trap year: female 乾(6). fushantang row 2000"
+  },
+  {
+   "name": "minggua_year_2004_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2004,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2004,
+    "raw_number": 5,
+    "gua": "坤",
+    "gua_number_used": 2,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "male 5 -> 寄坤: fushantang row 2004 (坤土)"
+  },
+  {
+   "name": "minggua_year_2008_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2008,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2008,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "female 5 -> 寄艮 in 2000s (2008)"
+  },
+  {
+   "name": "minggua_year_1932_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1932,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1932,
+    "raw_number": 5,
+    "gua": "坤",
+    "gua_number_used": 2,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "male 5 -> 寄坤 in 1900s; fushantang row 1932"
+  },
+  {
+   "name": "minggua_year_1927_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1927,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1927,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "female 5 -> 寄艮 in 1900s; fushantang row 1927"
+  },
+  {
+   "name": "minggua_year_2024_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2024,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2024,
+    "raw_number": 3,
+    "gua": "震",
+    "gua_number_used": 3,
+    "group": "east"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "2024 male 震(3)"
+  },
+  {
+   "name": "minggua_year_2024_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2024,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2024,
+    "raw_number": 3,
+    "gua": "震",
+    "gua_number_used": 3,
+    "group": "east"
+   },
+   "source": [
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "2024 female 震(3)"
+  },
+  {
+   "name": "minggua_year_1864_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1864,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1864,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "qqqs",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "上元甲子 男起坎(1)"
+  },
+  {
+   "name": "minggua_year_1864_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1864,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1864,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "qqqs",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "上元甲子 女起中宮(5) -> 寄艮"
+  },
+  {
+   "name": "minggua_year_1924_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1924,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1924,
+    "raw_number": 4,
+    "gua": "巽",
+    "gua_number_used": 4,
+    "group": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "中元甲子 男起巽(4); fengshuiweb row 1924"
+  },
+  {
+   "name": "minggua_year_1924_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1924,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1924,
+    "raw_number": 2,
+    "gua": "坤",
+    "gua_number_used": 2,
+    "group": "west"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "中元甲子 女起坤(2); fengshuiweb row 1924"
+  },
+  {
+   "name": "minggua_year_1984_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1984,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1984,
+    "raw_number": 7,
+    "gua": "兌",
+    "gua_number_used": 7,
+    "group": "west"
+   },
+   "source": [
+    "qqqs",
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "下元甲子 男起兌(7); fushantang row 1984"
+  },
+  {
+   "name": "minggua_year_1984_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1984,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1984,
+    "raw_number": 8,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "qqqs",
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "下元甲子 女起艮(8); fushantang row 1984"
+  },
+  {
+   "name": "minggua_year_1914_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1914,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 1914,
+    "raw_number": 5,
+    "gua": "坤",
+    "gua_number_used": 2,
+    "group": "west"
+   },
+   "source": [
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "八宅明鏡 example: 上元甲寅男 -> 中宮 -> 寄坤"
+  },
+  {
+   "name": "minggua_year_1914_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 1914,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 1914,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "八宅明鏡 example: 上元甲寅女 -> 坎宮"
+  },
+  {
+   "name": "minggua_year_2043_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2043,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2043,
+    "raw_number": 2,
+    "gua": "坤",
+    "gua_number_used": 2,
+    "group": "west"
+   },
+   "source": [
+    "derived"
+   ],
+   "confidence": "medium",
+   "note": "下元癸亥 男 -> 坤(2)"
+  },
+  {
+   "name": "minggua_year_2043_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2043,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2043,
+    "raw_number": 4,
+    "gua": "巽",
+    "gua_number_used": 4,
+    "group": "east"
+   },
+   "source": [
+    "derived"
+   ],
+   "confidence": "medium",
+   "note": "下元癸亥 女 -> 巽(4). NOTE fatekeep/zyrm tables print 震 for 2043 female (their typo; 3 independent algorithms give 4)"
+  },
+  {
+   "name": "minggua_year_2044_male",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2044,
+    "gender": "male"
+   },
+   "expected": {
+    "effective_year": 2044,
+    "raw_number": 1,
+    "gua": "坎",
+    "gua_number_used": 1,
+    "group": "east"
+   },
+   "source": [
+    "qqqs",
+    "derived"
+   ],
+   "confidence": "medium",
+   "note": "新上元甲子 男起坎(1)"
+  },
+  {
+   "name": "minggua_year_2044_female",
+   "kind": "minggua_year",
+   "input": {
+    "year": 2044,
+    "gender": "female"
+   },
+   "expected": {
+    "effective_year": 2044,
+    "raw_number": 5,
+    "gua": "艮",
+    "gua_number_used": 8,
+    "group": "west"
+   },
+   "source": [
+    "qqqs",
+    "derived"
+   ],
+   "confidence": "medium",
+   "note": "新上元甲子 女起中宮(5) -> 寄艮"
+  },
+  {
+   "name": "minggua_birth_1999-12-31T2359_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1999-12-31T23:59:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1999-02-04 14:57:02",
+    "lunar_new_year_this_year": "1999-02-16"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "1999 last minute of Gregorian year; 立春 not reached -> 1999. Gregorian year 1999."
+  },
+  {
+   "name": "minggua_birth_2000-01-01T0000_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-01-01T00:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421",
+    "wp_ganzhi"
+   ],
+   "confidence": "high",
+   "note": "2000-01-01 is still 己卯(1999) in 干支曆 (立春 2000-02-04 20:40). gregorian_jan1 wrongly says 2000."
+  },
+  {
+   "name": "minggua_birth_2000-01-01T0000_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-01-01T00:00:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1999,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1999,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1999,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "same as above, female (5 -> 艮 under 1999)"
+  },
+  {
+   "name": "minggua_birth_2000-02-04T2039_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-04T20:39:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python",
+    "web_chacd_2000"
+   ],
+   "confidence": "high",
+   "note": "1 minute before 立春 2000 (20:40:22). exact -> 1999; date-only -> 2000"
+  },
+  {
+   "name": "minggua_birth_2000-02-04T2045_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-04T20:45:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "5 minutes after 立春 2000 -> 2000 (庚辰). lunar_new_year (2000-02-05) still says 1999"
+  },
+  {
+   "name": "minggua_birth_2000-02-04T2330_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-04T23:30:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2000,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2000,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2000,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1999,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "立春 passed, but before 2000 春節 (02-05): exact->2000, lunar_new_year->1999"
+  },
+  {
+   "name": "minggua_birth_2000-02-05T0030_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-05T00:30:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2000,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "春節 day, after 立春: all lichun-based and lunar rules give 2000"
+  },
+  {
+   "name": "minggua_birth_2024-02-04T1626_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2024-02-04T16:26:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2023,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2023,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2024-02-04 16:27:07",
+    "lunar_new_year_this_year": "2024-02-10"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "1 min before 立春 2024 (HKO 16:27,四捨五入到分;表值 16:27:07) -> 2023"
+  },
+  {
+   "name": "minggua_birth_2024-02-04T1628_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2024-02-04T16:28:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2023,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2024-02-04 16:27:07",
+    "lunar_new_year_this_year": "2024-02-10"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "1 min after 立春 2024 (HKO 16:27,四捨五入到分;表值 16:27:07) -> 2024"
+  },
+  {
+   "name": "minggua_birth_2024-02-04T1626_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2024-02-04T16:26:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2023,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2023,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2024-02-04 16:27:07",
+    "lunar_new_year_this_year": "2024-02-10"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "female, 1 min before 立春 2024 -> 2023 (坤)"
+  },
+  {
+   "name": "minggua_birth_2025-02-03T1200_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2025-02-03T12:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2025-02-03 22:10:28",
+    "lunar_new_year_this_year": "2025-01-29"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "立春 2025 is on Feb 3 (22:10): before it -> 2024; lichun_date_only wrongly gives 2025 (as does lunar_new_year 2025-01-29)"
+  },
+  {
+   "name": "minggua_birth_2025-02-03T2212_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2025-02-03T22:12:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2024,
+     "raw_number": 3,
+     "gua": "震",
+     "gua_number_used": 3,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2025,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2025-02-03 22:10:28",
+    "lunar_new_year_this_year": "2025-01-29"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "after 立春 2025 (HKO 22:10,四捨五入到分;表值 22:10:28) -> 2025 even though date is Feb 3; fixed_feb4 wrongly 2024"
+  },
+  {
+   "name": "minggua_birth_2021-02-03T2330_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2021-02-03T23:30:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2021,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2021,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2020,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2020,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2021,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2021-02-03 22:58:47",
+    "lunar_new_year_this_year": "2021-02-12"
+   },
+   "source": [
+    "hko_xml",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "立春 2021 = Feb 3 22:59 (HKO,四捨五入到分;表值 22:58:47). after it -> 2021; fixed_feb4 / fengshuiweb table wrongly 2020"
+  },
+  {
+   "name": "minggua_birth_2021-02-09T1000_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2021-02-09T10:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2021,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2021,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2021,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2020,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2021,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2021-02-03 22:58:47",
+    "lunar_new_year_this_year": "2021-02-12"
+   },
+   "source": [
+    "hokming",
+    "hko_xml"
+   ],
+   "confidence": "high",
+   "note": "hokming example: 農曆十二月廿八 but past 立春 -> 2021; lunar_new_year (2021-02-12) says 2020"
+  },
+  {
+   "name": "minggua_birth_2020-01-25T1200_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2020-01-25T12:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2019,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2019,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2019,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2020,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2020,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2020-02-04 17:03:19",
+    "lunar_new_year_this_year": "2020-01-25"
+   },
+   "source": [
+    "hokming",
+    "hko_xml"
+   ],
+   "confidence": "high",
+   "note": "hokming example: 鼠年正月初一 but before 立春 -> 2019 (豬年命卦); lunar_new_year says 2020"
+  },
+  {
+   "name": "minggua_birth_2020-01-25T1200_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2020-01-25T12:00:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2019,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2019,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2019,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2020,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2020,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2020-02-04 17:03:19",
+    "lunar_new_year_this_year": "2020-01-25"
+   },
+   "source": [
+    "hokming",
+    "hko_xml"
+   ],
+   "confidence": "high",
+   "note": "same, female"
+  },
+  {
+   "name": "minggua_birth_1982-01-16T0800_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1982-01-16T08:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1982,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1982-02-04 11:45:28",
+    "lunar_new_year_this_year": "1982-01-25"
+   },
+   "source": [
+    "yca",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "yourchineseastrology example (Kua 1): before both LNY and 立春 -> 1981"
+  },
+  {
+   "name": "minggua_birth_1982-01-30T0800_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1982-01-30T08:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1981,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1982,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1982,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1982-02-04 11:45:28",
+    "lunar_new_year_this_year": "1982-01-25"
+   },
+   "source": [
+    "lunar_python",
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "between 春節 (1982-01-25) and 立春 (1982-02-04): lichun->1981 (坎), lunar_new_year->1982 (離)"
+  },
+  {
+   "name": "minggua_birth_1984-02-04T2300_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1984-02-04T23:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1983,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1984-02-04 23:18:44",
+    "lunar_new_year_this_year": "1984-02-02"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "甲子年立春 1984-02-04 23:19: before -> 1983 (中元癸亥)"
+  },
+  {
+   "name": "minggua_birth_1984-02-05T0030_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1984-02-05T00:30:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1984,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1984-02-04 23:18:44",
+    "lunar_new_year_this_year": "1984-02-02"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "after 甲子立春: 下元開始, male 兌(7)"
+  },
+  {
+   "name": "minggua_birth_1984-02-05T0030_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1984-02-05T00:30:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1984,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1984,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1984,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1984,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1984,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1984-02-04 23:18:44",
+    "lunar_new_year_this_year": "1984-02-02"
+   },
+   "source": [
+    "skyfield_de421"
+   ],
+   "confidence": "high",
+   "note": "after 甲子立春: 下元開始, female 艮(8)"
+  },
+  {
+   "name": "minggua_birth_1924-02-05T1200_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1924-02-05T12:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1924,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1924,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1924,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1924,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1924,
+     "raw_number": 4,
+     "gua": "巽",
+     "gua_number_used": 4,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1924-02-05 09:49:13",
+    "lunar_new_year_this_year": "1924-02-05"
+   },
+   "source": [
+    "skyfield_de421",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "中元甲子 立春 1924-02-05: male 巽(4)"
+  },
+  {
+   "name": "minggua_birth_1990-03-15T0930_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1990-03-15T09:30:00",
+    "utc_offset": "+08:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1990,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1990,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1990,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1990,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1990,
+     "raw_number": 5,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1990-02-04 10:13:59",
+    "lunar_new_year_this_year": "1990-01-27"
+   },
+   "source": [
+    "fushantang"
+   ],
+   "confidence": "high",
+   "note": "ordinary mid-year birth: 1990 female 艮 (5->8)"
+  },
+  {
+   "name": "minggua_birth_2004-02-04T1800_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2004-02-04T18:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2003,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2004-02-04 19:56:12",
+    "lunar_new_year_this_year": "2004-01-22"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "2004 立春 = 2004-02-04 19:56; before -> 2003 male 乾(6). date_only/fixed_feb4 wrongly say 2004"
+  },
+  {
+   "name": "minggua_birth_2004-02-04T2100_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2004-02-04T21:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2004,
+     "raw_number": 5,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2004-02-04 19:56:12",
+    "lunar_new_year_this_year": "2004-01-22"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "after 立春 2004: male raw 5 -> 寄坤 (2). lunar_new_year (2004-01-22) also gives 2004"
+  },
+  {
+   "name": "minggua_birth_2044-02-04T1200_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2044-02-04T12:00:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2043,
+     "raw_number": 2,
+     "gua": "坤",
+     "gua_number_used": 2,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2044-02-04 12:44:21",
+    "lunar_new_year_this_year": "2044-01-30"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "medium",
+   "note": "立春 2044 = 2044-02-04 12:44; before -> 2043 (下元癸亥) male 坤"
+  },
+  {
+   "name": "minggua_birth_2044-02-04T1330_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2044-02-04T13:30:00",
+    "utc_offset": "+08:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "gregorian_jan1": {
+     "effective_year": 2044,
+     "raw_number": 1,
+     "gua": "坎",
+     "gua_number_used": 1,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "2044-02-04 12:44:21",
+    "lunar_new_year_this_year": "2044-01-30"
+   },
+   "source": [
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "medium",
+   "note": "after 立春 2044: new 上元 starts, male 坎(1)"
+  },
+  {
+   "name": "star_matrix_full_8x8",
+   "kind": "star_matrix",
+   "input": {
+    "description": "rows = home gua (命卦 or 宅卦) ; columns = compass direction (後天八卦方位) ; value = 遊年星"
+   },
+   "expected": {
+    "by_direction": {
+     "坎": {
+      "北": "伏位",
+      "東北": "五鬼",
+      "東": "天醫",
+      "東南": "生氣",
+      "南": "延年",
+      "西南": "絕命",
+      "西": "禍害",
+      "西北": "六煞"
+     },
+     "坤": {
+      "北": "絕命",
+      "東北": "生氣",
+      "東": "禍害",
+      "東南": "五鬼",
+      "南": "六煞",
+      "西南": "伏位",
+      "西": "天醫",
+      "西北": "延年"
+     },
+     "震": {
+      "北": "天醫",
+      "東北": "六煞",
+      "東": "伏位",
+      "東南": "延年",
+      "南": "生氣",
+      "西南": "禍害",
+      "西": "絕命",
+      "西北": "五鬼"
+     },
+     "巽": {
+      "北": "生氣",
+      "東北": "絕命",
+      "東": "延年",
+      "東南": "伏位",
+      "南": "天醫",
+      "西南": "五鬼",
+      "西": "六煞",
+      "西北": "禍害"
+     },
+     "乾": {
+      "北": "六煞",
+      "東北": "天醫",
+      "東": "五鬼",
+      "東南": "禍害",
+      "南": "絕命",
+      "西南": "延年",
+      "西": "生氣",
+      "西北": "伏位"
+     },
+     "兌": {
+      "北": "禍害",
+      "東北": "延年",
+      "東": "絕命",
+      "東南": "六煞",
+      "南": "五鬼",
+      "西南": "天醫",
+      "西": "伏位",
+      "西北": "生氣"
+     },
+     "艮": {
+      "北": "五鬼",
+      "東北": "伏位",
+      "東": "六煞",
+      "東南": "絕命",
+      "南": "禍害",
+      "西南": "生氣",
+      "西": "延年",
+      "西北": "天醫"
+     },
+     "離": {
+      "北": "延年",
+      "東北": "禍害",
+      "東": "生氣",
+      "東南": "天醫",
+      "南": "伏位",
+      "西南": "六煞",
+      "西": "五鬼",
+      "西北": "絕命"
+     }
+    },
+    "by_gua": {
+     "坎": {
+      "坎": "伏位",
+      "坤": "絕命",
+      "震": "天醫",
+      "巽": "生氣",
+      "乾": "六煞",
+      "兌": "禍害",
+      "艮": "五鬼",
+      "離": "延年"
+     },
+     "坤": {
+      "坎": "絕命",
+      "坤": "伏位",
+      "震": "禍害",
+      "巽": "五鬼",
+      "乾": "延年",
+      "兌": "天醫",
+      "艮": "生氣",
+      "離": "六煞"
+     },
+     "震": {
+      "坎": "天醫",
+      "坤": "禍害",
+      "震": "伏位",
+      "巽": "延年",
+      "乾": "五鬼",
+      "兌": "絕命",
+      "艮": "六煞",
+      "離": "生氣"
+     },
+     "巽": {
+      "坎": "生氣",
+      "坤": "五鬼",
+      "震": "延年",
+      "巽": "伏位",
+      "乾": "禍害",
+      "兌": "六煞",
+      "艮": "絕命",
+      "離": "天醫"
+     },
+     "乾": {
+      "坎": "六煞",
+      "坤": "延年",
+      "震": "五鬼",
+      "巽": "禍害",
+      "乾": "伏位",
+      "兌": "生氣",
+      "艮": "天醫",
+      "離": "絕命"
+     },
+     "兌": {
+      "坎": "禍害",
+      "坤": "天醫",
+      "震": "絕命",
+      "巽": "六煞",
+      "乾": "生氣",
+      "兌": "伏位",
+      "艮": "延年",
+      "離": "五鬼"
+     },
+     "艮": {
+      "坎": "五鬼",
+      "坤": "生氣",
+      "震": "六煞",
+      "巽": "絕命",
+      "乾": "天醫",
+      "兌": "延年",
+      "艮": "伏位",
+      "離": "禍害"
+     },
+     "離": {
+      "坎": "延年",
+      "坤": "六煞",
+      "震": "生氣",
+      "巽": "天醫",
+      "乾": "絕命",
+      "兌": "五鬼",
+      "艮": "禍害",
+      "離": "伏位"
+     }
+    }
+   },
+   "source": [
+    "zdic",
+    "xzw",
+    "qqqs",
+    "chen_sohu",
+    "chen_read01",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca",
+    "unclekin",
+    "derived_yao_walk"
+   ],
+   "confidence": "high",
+   "note": "64 cells; matches 7 independently published tables cell-by-cell (see report). Also equals yao-change walk and the 大遊年歌."
+  },
+  {
+   "name": "star_row_坎",
+   "kind": "star_row",
+   "input": {
+    "gua": "坎",
+    "gua_number": 1
+   },
+   "expected": {
+    "by_direction": {
+     "北": "伏位",
+     "東北": "五鬼",
+     "東": "天醫",
+     "東南": "生氣",
+     "南": "延年",
+     "西南": "絕命",
+     "西": "禍害",
+     "西北": "六煞"
+    },
+    "song": "五天生延絕禍六",
+    "fu_wei_direction": "北"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_坤",
+   "kind": "star_row",
+   "input": {
+    "gua": "坤",
+    "gua_number": 2
+   },
+   "expected": {
+    "by_direction": {
+     "北": "絕命",
+     "東北": "生氣",
+     "東": "禍害",
+     "東南": "五鬼",
+     "南": "六煞",
+     "西南": "伏位",
+     "西": "天醫",
+     "西北": "延年"
+    },
+    "song": "天延絕生禍五六",
+    "fu_wei_direction": "西南"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_震",
+   "kind": "star_row",
+   "input": {
+    "gua": "震",
+    "gua_number": 3
+   },
+   "expected": {
+    "by_direction": {
+     "北": "天醫",
+     "東北": "六煞",
+     "東": "伏位",
+     "東南": "延年",
+     "南": "生氣",
+     "西南": "禍害",
+     "西": "絕命",
+     "西北": "五鬼"
+    },
+    "song": "延生禍絕五天六",
+    "fu_wei_direction": "東"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_巽",
+   "kind": "star_row",
+   "input": {
+    "gua": "巽",
+    "gua_number": 4
+   },
+   "expected": {
+    "by_direction": {
+     "北": "生氣",
+     "東北": "絕命",
+     "東": "延年",
+     "東南": "伏位",
+     "南": "天醫",
+     "西南": "五鬼",
+     "西": "六煞",
+     "西北": "禍害"
+    },
+    "song": "天五六禍生絕延",
+    "fu_wei_direction": "東南"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_乾",
+   "kind": "star_row",
+   "input": {
+    "gua": "乾",
+    "gua_number": 6
+   },
+   "expected": {
+    "by_direction": {
+     "北": "六煞",
+     "東北": "天醫",
+     "東": "五鬼",
+     "東南": "禍害",
+     "南": "絕命",
+     "西南": "延年",
+     "西": "生氣",
+     "西北": "伏位"
+    },
+    "song": "六天五禍絕延生",
+    "fu_wei_direction": "西北"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_兌",
+   "kind": "star_row",
+   "input": {
+    "gua": "兌",
+    "gua_number": 7
+   },
+   "expected": {
+    "by_direction": {
+     "北": "禍害",
+     "東北": "延年",
+     "東": "絕命",
+     "東南": "六煞",
+     "南": "五鬼",
+     "西南": "天醫",
+     "西": "伏位",
+     "西北": "生氣"
+    },
+    "song": "生禍延絕六五天",
+    "fu_wei_direction": "西"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_艮",
+   "kind": "star_row",
+   "input": {
+    "gua": "艮",
+    "gua_number": 8
+   },
+   "expected": {
+    "by_direction": {
+     "北": "五鬼",
+     "東北": "伏位",
+     "東": "六煞",
+     "東南": "絕命",
+     "南": "禍害",
+     "西南": "生氣",
+     "西": "延年",
+     "西北": "天醫"
+    },
+    "song": "六絕禍生延天五",
+    "fu_wei_direction": "東北"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_row_離",
+   "kind": "star_row",
+   "input": {
+    "gua": "離",
+    "gua_number": 9
+   },
+   "expected": {
+    "by_direction": {
+     "北": "延年",
+     "東北": "禍害",
+     "東": "生氣",
+     "東南": "天醫",
+     "南": "伏位",
+     "西南": "六煞",
+     "西": "五鬼",
+     "西北": "絕命"
+    },
+    "song": "六五絕延禍生天",
+    "fu_wei_direction": "南"
+   },
+   "source": [
+    "zdic",
+    "chen_sohu",
+    "sohu_yanyi",
+    "fsweb_uk",
+    "yca"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_pair_symmetry",
+   "kind": "property",
+   "input": {
+    "rule": "star(home=A, target=B) == star(home=B, target=A) for all A,B"
+   },
+   "expected": {
+    "pairs": [
+     {
+      "a": "乾",
+      "b": "坎",
+      "star_a_sees_b": "六煞",
+      "star_b_sees_a": "六煞"
+     },
+     {
+      "a": "乾",
+      "b": "艮",
+      "star_a_sees_b": "天醫",
+      "star_b_sees_a": "天醫"
+     },
+     {
+      "a": "乾",
+      "b": "震",
+      "star_a_sees_b": "五鬼",
+      "star_b_sees_a": "五鬼"
+     },
+     {
+      "a": "乾",
+      "b": "巽",
+      "star_a_sees_b": "禍害",
+      "star_b_sees_a": "禍害"
+     },
+     {
+      "a": "乾",
+      "b": "離",
+      "star_a_sees_b": "絕命",
+      "star_b_sees_a": "絕命"
+     },
+     {
+      "a": "乾",
+      "b": "坤",
+      "star_a_sees_b": "延年",
+      "star_b_sees_a": "延年"
+     },
+     {
+      "a": "乾",
+      "b": "兌",
+      "star_a_sees_b": "生氣",
+      "star_b_sees_a": "生氣"
+     },
+     {
+      "a": "坎",
+      "b": "艮",
+      "star_a_sees_b": "五鬼",
+      "star_b_sees_a": "五鬼"
+     },
+     {
+      "a": "坎",
+      "b": "震",
+      "star_a_sees_b": "天醫",
+      "star_b_sees_a": "天醫"
+     },
+     {
+      "a": "坎",
+      "b": "巽",
+      "star_a_sees_b": "生氣",
+      "star_b_sees_a": "生氣"
+     },
+     {
+      "a": "坎",
+      "b": "離",
+      "star_a_sees_b": "延年",
+      "star_b_sees_a": "延年"
+     },
+     {
+      "a": "坎",
+      "b": "坤",
+      "star_a_sees_b": "絕命",
+      "star_b_sees_a": "絕命"
+     },
+     {
+      "a": "坎",
+      "b": "兌",
+      "star_a_sees_b": "禍害",
+      "star_b_sees_a": "禍害"
+     },
+     {
+      "a": "艮",
+      "b": "震",
+      "star_a_sees_b": "六煞",
+      "star_b_sees_a": "六煞"
+     },
+     {
+      "a": "艮",
+      "b": "巽",
+      "star_a_sees_b": "絕命",
+      "star_b_sees_a": "絕命"
+     },
+     {
+      "a": "艮",
+      "b": "離",
+      "star_a_sees_b": "禍害",
+      "star_b_sees_a": "禍害"
+     },
+     {
+      "a": "艮",
+      "b": "坤",
+      "star_a_sees_b": "生氣",
+      "star_b_sees_a": "生氣"
+     },
+     {
+      "a": "艮",
+      "b": "兌",
+      "star_a_sees_b": "延年",
+      "star_b_sees_a": "延年"
+     },
+     {
+      "a": "震",
+      "b": "巽",
+      "star_a_sees_b": "延年",
+      "star_b_sees_a": "延年"
+     },
+     {
+      "a": "震",
+      "b": "離",
+      "star_a_sees_b": "生氣",
+      "star_b_sees_a": "生氣"
+     },
+     {
+      "a": "震",
+      "b": "坤",
+      "star_a_sees_b": "禍害",
+      "star_b_sees_a": "禍害"
+     },
+     {
+      "a": "震",
+      "b": "兌",
+      "star_a_sees_b": "絕命",
+      "star_b_sees_a": "絕命"
+     },
+     {
+      "a": "巽",
+      "b": "離",
+      "star_a_sees_b": "天醫",
+      "star_b_sees_a": "天醫"
+     },
+     {
+      "a": "巽",
+      "b": "坤",
+      "star_a_sees_b": "五鬼",
+      "star_b_sees_a": "五鬼"
+     },
+     {
+      "a": "巽",
+      "b": "兌",
+      "star_a_sees_b": "六煞",
+      "star_b_sees_a": "六煞"
+     },
+     {
+      "a": "離",
+      "b": "坤",
+      "star_a_sees_b": "六煞",
+      "star_b_sees_a": "六煞"
+     },
+     {
+      "a": "離",
+      "b": "兌",
+      "star_a_sees_b": "五鬼",
+      "star_b_sees_a": "五鬼"
+     },
+     {
+      "a": "坤",
+      "b": "兌",
+      "star_a_sees_b": "天醫",
+      "star_b_sees_a": "天醫"
+     }
+    ],
+    "all_symmetric": true,
+    "example": "坎命生氣在巽(東南)，巽命生氣在坎(北)"
+   },
+   "source": [
+    "unclekin",
+    "derived_yao_walk"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_group_closure",
+   "kind": "property",
+   "input": {
+    "rule": "the four good stars of an East-group gua all lie on East-group directions (坎震巽離); West likewise"
+   },
+   "expected": {
+    "east_group": [
+     "坎",
+     "震",
+     "巽",
+     "離"
+    ],
+    "west_group": [
+     "乾",
+     "坤",
+     "艮",
+     "兌"
+    ],
+    "holds": true
+   },
+   "source": [
+    "unclekin",
+    "qqqs",
+    "derived_yao_walk"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "star_yao_rule",
+   "kind": "property",
+   "input": {
+    "rule": "star by which lines differ between home gua and target gua (bottom,middle,top)"
+   },
+   "expected": {
+    "伏位": "none",
+    "生氣": "top only",
+    "五鬼": "top+middle",
+    "延年": "all three",
+    "六煞": "top+bottom",
+    "禍害": "bottom only",
+    "天醫": "middle+bottom",
+    "絕命": "middle only",
+    "walk_from_home": [
+     "top(生氣)",
+     "middle(五鬼)",
+     "bottom(延年)",
+     "middle(六煞)",
+     "top(禍害)",
+     "middle(天醫)",
+     "bottom(絕命)",
+     "middle(伏位)"
+    ]
+   },
+   "source": [
+    "fusui",
+    "qqqs",
+    "derived_yao_walk"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "legacy_regression_乾命_東北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "乾",
+    "direction": "東北"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_乾命_西",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "乾",
+    "direction": "西"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_兌命_西南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "兌",
+    "direction": "西南"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_兌命_西北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "兌",
+    "direction": "西北"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_離命_東",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "離",
+    "direction": "東"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_離命_東南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "離",
+    "direction": "東南"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_震命_北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "震",
+    "direction": "北"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_震命_南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "震",
+    "direction": "南"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_巽命_北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "巽",
+    "direction": "北"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_巽命_南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "巽",
+    "direction": "南"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_坎命_東",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "坎",
+    "direction": "東"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_坎命_東南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "坎",
+    "direction": "東南"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_艮命_西南",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "艮",
+    "direction": "西南"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_艮命_西",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "艮",
+    "direction": "西"
+   },
+   "expected": {
+    "correct_star": "延年",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_艮命_西北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "艮",
+    "direction": "西北"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "延年"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_坤命_東北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "坤",
+    "direction": "東北"
+   },
+   "expected": {
+    "correct_star": "生氣",
+    "legacy_wrong_star": "天醫"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_坤命_西",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "坤",
+    "direction": "西"
+   },
+   "expected": {
+    "correct_star": "天醫",
+    "legacy_wrong_star": "延年"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_坤命_西北",
+   "kind": "legacy_regression",
+   "input": {
+    "gua": "坤",
+    "direction": "西北"
+   },
+   "expected": {
+    "correct_star": "延年",
+    "legacy_wrong_star": "生氣"
+   },
+   "source": [
+    "derived_yao_walk",
+    "zdic",
+    "fsweb_uk"
+   ],
+   "confidence": "high",
+   "note": "tools/lib/divine_bazhai.py BAZHAI_MAP has the wrong star in this cell"
+  },
+  {
+   "name": "legacy_regression_minggua_2000_male",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2000,
+    "gender": "male"
+   },
+   "expected": {
+    "correct_gua": "離",
+    "legacy_wrong_gua": "坎"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "legacy_regression_minggua_2000_female",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2000,
+    "gender": "female"
+   },
+   "expected": {
+    "correct_gua": "乾",
+    "legacy_wrong_gua": "艮"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "legacy_regression_minggua_2001_male",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2001,
+    "gender": "male"
+   },
+   "expected": {
+    "correct_gua": "艮",
+    "legacy_wrong_gua": "離"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "legacy_regression_minggua_2001_female",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2001,
+    "gender": "female"
+   },
+   "expected": {
+    "correct_gua": "兌",
+    "legacy_wrong_gua": "乾"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "legacy_regression_minggua_2002_male",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2002,
+    "gender": "male"
+   },
+   "expected": {
+    "correct_gua": "兌",
+    "legacy_wrong_gua": "艮"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "legacy_regression_minggua_2002_female",
+   "kind": "legacy_regression",
+   "input": {
+    "year": 2002,
+    "gender": "female"
+   },
+   "expected": {
+    "correct_gua": "艮",
+    "legacy_wrong_gua": "兌"
+   },
+   "source": [
+    "fushantang",
+    "derived"
+   ],
+   "confidence": "high",
+   "note": "calc_ming_gua uses only the 1900s formula; wrong for every year 2000-2099"
+  },
+  {
+   "name": "zhai_gua_sit_子",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "子",
+    "sit_center_degree": 0
+   },
+   "expected": {
+    "zhai_gua": "坎",
+    "zhai_name": "坎宅",
+    "camp": "east",
+    "facing_mountain": "午",
+    "facing_center_degree": 180
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_癸",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "癸",
+    "sit_center_degree": 15
+   },
+   "expected": {
+    "zhai_gua": "坎",
+    "zhai_name": "坎宅",
+    "camp": "east",
+    "facing_mountain": "丁",
+    "facing_center_degree": 195
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_丑",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "丑",
+    "sit_center_degree": 30
+   },
+   "expected": {
+    "zhai_gua": "艮",
+    "zhai_name": "艮宅",
+    "camp": "west",
+    "facing_mountain": "未",
+    "facing_center_degree": 210
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_艮",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "艮",
+    "sit_center_degree": 45
+   },
+   "expected": {
+    "zhai_gua": "艮",
+    "zhai_name": "艮宅",
+    "camp": "west",
+    "facing_mountain": "坤",
+    "facing_center_degree": 225
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_寅",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "寅",
+    "sit_center_degree": 60
+   },
+   "expected": {
+    "zhai_gua": "艮",
+    "zhai_name": "艮宅",
+    "camp": "west",
+    "facing_mountain": "申",
+    "facing_center_degree": 240
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_甲",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "甲",
+    "sit_center_degree": 75
+   },
+   "expected": {
+    "zhai_gua": "震",
+    "zhai_name": "震宅",
+    "camp": "east",
+    "facing_mountain": "庚",
+    "facing_center_degree": 255
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_卯",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "卯",
+    "sit_center_degree": 90
+   },
+   "expected": {
+    "zhai_gua": "震",
+    "zhai_name": "震宅",
+    "camp": "east",
+    "facing_mountain": "酉",
+    "facing_center_degree": 270
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_乙",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "乙",
+    "sit_center_degree": 105
+   },
+   "expected": {
+    "zhai_gua": "震",
+    "zhai_name": "震宅",
+    "camp": "east",
+    "facing_mountain": "辛",
+    "facing_center_degree": 285
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_辰",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "辰",
+    "sit_center_degree": 120
+   },
+   "expected": {
+    "zhai_gua": "巽",
+    "zhai_name": "巽宅",
+    "camp": "east",
+    "facing_mountain": "戌",
+    "facing_center_degree": 300
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_巽",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "巽",
+    "sit_center_degree": 135
+   },
+   "expected": {
+    "zhai_gua": "巽",
+    "zhai_name": "巽宅",
+    "camp": "east",
+    "facing_mountain": "乾",
+    "facing_center_degree": 315
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_巳",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "巳",
+    "sit_center_degree": 150
+   },
+   "expected": {
+    "zhai_gua": "巽",
+    "zhai_name": "巽宅",
+    "camp": "east",
+    "facing_mountain": "亥",
+    "facing_center_degree": 330
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_丙",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "丙",
+    "sit_center_degree": 165
+   },
+   "expected": {
+    "zhai_gua": "離",
+    "zhai_name": "離宅",
+    "camp": "east",
+    "facing_mountain": "壬",
+    "facing_center_degree": 345
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_午",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "午",
+    "sit_center_degree": 180
+   },
+   "expected": {
+    "zhai_gua": "離",
+    "zhai_name": "離宅",
+    "camp": "east",
+    "facing_mountain": "子",
+    "facing_center_degree": 0
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_丁",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "丁",
+    "sit_center_degree": 195
+   },
+   "expected": {
+    "zhai_gua": "離",
+    "zhai_name": "離宅",
+    "camp": "east",
+    "facing_mountain": "癸",
+    "facing_center_degree": 15
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_未",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "未",
+    "sit_center_degree": 210
+   },
+   "expected": {
+    "zhai_gua": "坤",
+    "zhai_name": "坤宅",
+    "camp": "west",
+    "facing_mountain": "丑",
+    "facing_center_degree": 30
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_坤",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "坤",
+    "sit_center_degree": 225
+   },
+   "expected": {
+    "zhai_gua": "坤",
+    "zhai_name": "坤宅",
+    "camp": "west",
+    "facing_mountain": "艮",
+    "facing_center_degree": 45
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_申",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "申",
+    "sit_center_degree": 240
+   },
+   "expected": {
+    "zhai_gua": "坤",
+    "zhai_name": "坤宅",
+    "camp": "west",
+    "facing_mountain": "寅",
+    "facing_center_degree": 60
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_庚",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "庚",
+    "sit_center_degree": 255
+   },
+   "expected": {
+    "zhai_gua": "兌",
+    "zhai_name": "兌宅",
+    "camp": "west",
+    "facing_mountain": "甲",
+    "facing_center_degree": 75
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_酉",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "酉",
+    "sit_center_degree": 270
+   },
+   "expected": {
+    "zhai_gua": "兌",
+    "zhai_name": "兌宅",
+    "camp": "west",
+    "facing_mountain": "卯",
+    "facing_center_degree": 90
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_辛",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "辛",
+    "sit_center_degree": 285
+   },
+   "expected": {
+    "zhai_gua": "兌",
+    "zhai_name": "兌宅",
+    "camp": "west",
+    "facing_mountain": "乙",
+    "facing_center_degree": 105
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_戌",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "戌",
+    "sit_center_degree": 300
+   },
+   "expected": {
+    "zhai_gua": "乾",
+    "zhai_name": "乾宅",
+    "camp": "west",
+    "facing_mountain": "辰",
+    "facing_center_degree": 120
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_乾",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "乾",
+    "sit_center_degree": 315
+   },
+   "expected": {
+    "zhai_gua": "乾",
+    "zhai_name": "乾宅",
+    "camp": "west",
+    "facing_mountain": "巽",
+    "facing_center_degree": 135
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_亥",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "亥",
+    "sit_center_degree": 330
+   },
+   "expected": {
+    "zhai_gua": "乾",
+    "zhai_name": "乾宅",
+    "camp": "west",
+    "facing_mountain": "巳",
+    "facing_center_degree": 150
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_sit_壬",
+   "kind": "zhai_gua_from_sit_mountain",
+   "input": {
+    "sit_mountain": "壬",
+    "sit_center_degree": 345
+   },
+   "expected": {
+    "zhai_gua": "坎",
+    "zhai_name": "坎宅",
+    "camp": "east",
+    "facing_mountain": "丙",
+    "facing_center_degree": 165
+   },
+   "source": [
+    "yixiansheng_4896",
+    "masterseanchan"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "zhai_gua_facing_0",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 0
+   },
+   "expected": {
+    "sit_degree": 180,
+    "zhai_gua": "離",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_45",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 45
+   },
+   "expected": {
+    "sit_degree": 225,
+    "zhai_gua": "坤",
+    "camp": "west"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_90",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 90
+   },
+   "expected": {
+    "sit_degree": 270,
+    "zhai_gua": "兌",
+    "camp": "west"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_135",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 135
+   },
+   "expected": {
+    "sit_degree": 315,
+    "zhai_gua": "乾",
+    "camp": "west"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_158.5",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 158.5
+   },
+   "expected": {
+    "sit_degree": 338.5,
+    "zhai_gua": "坎",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_180",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 180
+   },
+   "expected": {
+    "sit_degree": 0,
+    "zhai_gua": "坎",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_200",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 200
+   },
+   "expected": {
+    "sit_degree": 20,
+    "zhai_gua": "坎",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_225",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 225
+   },
+   "expected": {
+    "sit_degree": 45,
+    "zhai_gua": "艮",
+    "camp": "west"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_270",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 270
+   },
+   "expected": {
+    "sit_degree": 90,
+    "zhai_gua": "震",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_293.5",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 293.5
+   },
+   "expected": {
+    "sit_degree": 113.5,
+    "zhai_gua": "巽",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_315",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 315
+   },
+   "expected": {
+    "sit_degree": 135,
+    "zhai_gua": "巽",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "zhai_gua_facing_350",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 350
+   },
+   "expected": {
+    "sit_degree": 170,
+    "zhai_gua": "離",
+    "camp": "east"
+   },
+   "source": [
+    "qqqs",
+    "fsweb_uk_8m",
+    "fusui"
+   ],
+   "confidence": "high",
+   "note": "宅卦 by 坐(sit) = facing + 180; 45-degree octants, sector boundaries at 22.5+45k are half-open [start,end) by our convention (sources are silent)."
+  },
+  {
+   "name": "ming_zhai_match_matrix",
+   "kind": "match_matrix",
+   "input": {
+    "rows": "ming gua",
+    "cols": "zhai gua"
+   },
+   "expected": {
+    "matrix": {
+     "坎": {
+      "坎": "相配",
+      "坤": "不配",
+      "震": "相配",
+      "巽": "相配",
+      "乾": "不配",
+      "兌": "不配",
+      "艮": "不配",
+      "離": "相配"
+     },
+     "坤": {
+      "坎": "不配",
+      "坤": "相配",
+      "震": "不配",
+      "巽": "不配",
+      "乾": "相配",
+      "兌": "相配",
+      "艮": "相配",
+      "離": "不配"
+     },
+     "震": {
+      "坎": "相配",
+      "坤": "不配",
+      "震": "相配",
+      "巽": "相配",
+      "乾": "不配",
+      "兌": "不配",
+      "艮": "不配",
+      "離": "相配"
+     },
+     "巽": {
+      "坎": "相配",
+      "坤": "不配",
+      "震": "相配",
+      "巽": "相配",
+      "乾": "不配",
+      "兌": "不配",
+      "艮": "不配",
+      "離": "相配"
+     },
+     "乾": {
+      "坎": "不配",
+      "坤": "相配",
+      "震": "不配",
+      "巽": "不配",
+      "乾": "相配",
+      "兌": "相配",
+      "艮": "相配",
+      "離": "不配"
+     },
+     "兌": {
+      "坎": "不配",
+      "坤": "相配",
+      "震": "不配",
+      "巽": "不配",
+      "乾": "相配",
+      "兌": "相配",
+      "艮": "相配",
+      "離": "不配"
+     },
+     "艮": {
+      "坎": "不配",
+      "坤": "相配",
+      "震": "不配",
+      "巽": "不配",
+      "乾": "相配",
+      "兌": "相配",
+      "艮": "相配",
+      "離": "不配"
+     },
+     "離": {
+      "坎": "相配",
+      "坤": "不配",
+      "震": "相配",
+      "巽": "相配",
+      "乾": "不配",
+      "兌": "不配",
+      "艮": "不配",
+      "離": "相配"
+     }
+    }
+   },
+   "source": [
+    "qqqs",
+    "sohu_yanyi",
+    "wuyoushan",
+    "unclekin"
+   ],
+   "confidence": "high"
+  },
+  {
+   "name": "usage_position_vs_facing_lookup",
+   "kind": "usage",
+   "input": {
+    "ming_gua": "坎",
+    "room_position_from_house_center": "東南",
+    "bed_head_direction": "東",
+    "stove_seat_position": "西南",
+    "stove_mouth_facing": "東南",
+    "desk_facing": "東南"
+   },
+   "expected": {
+    "room_position_star": "生氣",
+    "bed_head_star": "天醫",
+    "stove_seat_star": "絕命",
+    "stove_mouth_star": "生氣",
+    "desk_facing_star": "生氣",
+    "note": "lookup is the same table; what differs is which physical quantity supplies the direction (position of a thing vs the direction something faces)"
+   },
+   "source": [
+    "qqqs",
+    "unclekin",
+    "fsweb_uk_8m"
+   ],
+   "confidence": "medium"
+  },
+  {
+   "name": "minggua_birth_1940-02-05T0800_+0900_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1940-02-05T08:00:00",
+    "utc_offset": "+09:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1939,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1939,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1940-02-05 07:07:14",
+    "lunar_new_year_this_year": "1940-02-08"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 台灣 1938-1945 使用日本標準時 +09:00(zoneinfo Asia/Taipei 已確認)。換算 07:00 CST,早於 1940 立春(表 07:07:14),有效年 1939;若誤當 +08:00(08:00 CST 已過立春)會得 1940。1940 立春: annual 參考實作 07:07:10、Skyfield 表 07:07:14、lunar_python 07:07:32;lunar_new_year 期望值依 1940 春節 1940-02-08(lunar_python)"
+  },
+  {
+   "name": "minggua_birth_1940-02-05T0800_+0900_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1940-02-05T08:00:00",
+    "utc_offset": "+09:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1939,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1939,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1940-02-05 07:07:14",
+    "lunar_new_year_this_year": "1940-02-08"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 台灣 1938-1945 使用日本標準時 +09:00(zoneinfo Asia/Taipei 已確認)。換算 07:00 CST,早於 1940 立春(表 07:07:14),有效年 1939;若誤當 +08:00(08:00 CST 已過立春)會得 1940。1940 立春: annual 參考實作 07:07:10、Skyfield 表 07:07:14、lunar_python 07:07:32;lunar_new_year 期望值依 1940 春節 1940-02-08(lunar_python)"
+  },
+  {
+   "name": "minggua_birth_1940-02-05T0830_+0900_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1940-02-05T08:30:00",
+    "utc_offset": "+09:00",
+    "gender": "male"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lichun_date_only": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "fixed_feb4": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "lunar_new_year": {
+     "effective_year": 1939,
+     "raw_number": 7,
+     "gua": "兌",
+     "gua_number_used": 7,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1940,
+     "raw_number": 6,
+     "gua": "乾",
+     "gua_number_used": 6,
+     "group": "west"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1940-02-05 07:07:14",
+    "lunar_new_year_this_year": "1940-02-08"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 台灣 1938-1945 使用日本標準時 +09:00(zoneinfo Asia/Taipei 已確認)。換算 07:30 CST,晚於 1940 立春(表 07:07:14),有效年 1940。1940 立春: annual 參考實作 07:07:10、Skyfield 表 07:07:14、lunar_python 07:07:32;lunar_new_year 期望值依 1940 春節 1940-02-08(lunar_python)"
+  },
+  {
+   "name": "minggua_birth_1940-02-05T0830_+0900_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "1940-02-05T08:30:00",
+    "utc_offset": "+09:00",
+    "gender": "female"
+   },
+   "expected": {
+    "lichun_exact": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lichun_date_only": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "fixed_feb4": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "lunar_new_year": {
+     "effective_year": 1939,
+     "raw_number": 8,
+     "gua": "艮",
+     "gua_number_used": 8,
+     "group": "west"
+    },
+    "gregorian_jan1": {
+     "effective_year": 1940,
+     "raw_number": 9,
+     "gua": "離",
+     "gua_number_used": 9,
+     "group": "east"
+    },
+    "default_boundary": "lichun_exact",
+    "lichun_cst_this_year": "1940-02-05 07:07:14",
+    "lunar_new_year_this_year": "1940-02-08"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 台灣 1938-1945 使用日本標準時 +09:00(zoneinfo Asia/Taipei 已確認)。換算 07:30 CST,晚於 1940 立春(表 07:07:14),有效年 1940。1940 立春: annual 參考實作 07:07:10、Skyfield 表 07:07:14、lunar_python 07:07:32;lunar_new_year 期望值依 1940 春節 1940-02-08(lunar_python)"
+  },
+  {
+   "name": "minggua_birth_2000-02-04_timeUnknown_male",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-04",
+    "utc_offset": "+08:00",
+    "timeKnown": false,
+    "gender": "male"
+   },
+   "expected": {
+    "flags": {
+     "nearLichun": false,
+     "dateIsLichunDay": true
+    },
+    "alternatives": [
+     {
+      "effective_year": 1999,
+      "raw_number": 1,
+      "gua": "坎",
+      "gua_number_used": 1,
+      "group": "east",
+      "side": "beforeLichun"
+     },
+     {
+      "effective_year": 2000,
+      "raw_number": 9,
+      "gua": "離",
+      "gua_number_used": 9,
+      "group": "east",
+      "side": "afterLichun"
+     }
+    ],
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05",
+    "default_boundary": "lichun_exact"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python",
+    "web_chacd_2000"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 2000-02-04 是立春日(20:40:22),不知出生時刻時 dateIsLichunDay=true,alternatives 給立春前(1999)與立春後(2000)兩種結果;主結果只要求是其中之一(不指定取正午的慣例)"
+  },
+  {
+   "name": "minggua_birth_2000-02-04_timeUnknown_female",
+   "kind": "minggua_birth",
+   "input": {
+    "birth_local": "2000-02-04",
+    "utc_offset": "+08:00",
+    "timeKnown": false,
+    "gender": "female"
+   },
+   "expected": {
+    "flags": {
+     "nearLichun": false,
+     "dateIsLichunDay": true
+    },
+    "alternatives": [
+     {
+      "effective_year": 1999,
+      "raw_number": 5,
+      "gua": "艮",
+      "gua_number_used": 8,
+      "group": "west",
+      "side": "beforeLichun"
+     },
+     {
+      "effective_year": 2000,
+      "raw_number": 6,
+      "gua": "乾",
+      "gua_number_used": 6,
+      "group": "west",
+      "side": "afterLichun"
+     }
+    ],
+    "lichun_cst_this_year": "2000-02-04 20:40:22",
+    "lunar_new_year_this_year": "2000-02-05",
+    "default_boundary": "lichun_exact"
+   },
+   "source": [
+    "derived",
+    "skyfield_de421",
+    "lunar_python",
+    "web_chacd_2000"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 2000-02-04 是立春日(20:40:22),不知出生時刻時 dateIsLichunDay=true,alternatives 給立春前(1999)與立春後(2000)兩種結果;主結果只要求是其中之一(不指定取正午的慣例)"
+  },
+  {
+   "name": "zhai_boundary_facing_22.5",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 22.5
+   },
+   "expected": {
+    "sit_degree": 202.5,
+    "zhai_gua": "坤",
+    "camp": "west"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_boundary_facing_22.4999",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 22.4999
+   },
+   "expected": {
+    "sit_degree": 202.4999,
+    "zhai_gua": "離",
+    "camp": "east"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_boundary_facing_157.5",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 157.5
+   },
+   "expected": {
+    "sit_degree": 337.5,
+    "zhai_gua": "坎",
+    "camp": "east"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_boundary_facing_157.4999",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 157.4999
+   },
+   "expected": {
+    "sit_degree": 337.4999,
+    "zhai_gua": "乾",
+    "camp": "west"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_boundary_facing_337.5",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 337.5
+   },
+   "expected": {
+    "sit_degree": 157.5,
+    "zhai_gua": "離",
+    "camp": "east"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_boundary_facing_337.4999",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": 337.4999
+   },
+   "expected": {
+    "sit_degree": 157.4999,
+    "zhai_gua": "巽",
+    "camp": "east"
+   },
+   "source": [
+    "derived",
+    "masterseanchan",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 扇區邊界 22.5+45k 度,半開區間 [起,止) 歸順時針下一卦(設計約定,來源沒有規定);期望值以 fractions 精確算術重算"
+  },
+  {
+   "name": "zhai_facing_-300",
+   "kind": "zhai_gua_from_facing_degree",
+   "input": {
+    "facing_degree": -300
+   },
+   "expected": {
+    "sit_degree": 240,
+    "zhai_gua": "坤",
+    "camp": "west"
+   },
+   "source": [
+    "derived",
+    "qqqs"
+   ],
+   "confidence": "high",
+   "note": "附錄 B.1: 負角度先正規化(-300 -> 60),坐 240,坤宅;bazhai.md 偽碼對 facing < -180 會得 undefined"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "fengshui-luopan",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "離線風水羅盤 App(羅盤、坐向、八宅、玄空飛星、財位)",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\"",
+    "serve": "python -m http.server 5180 --bind 127.0.0.1",
+    "build:sw": "node tools/gen-sw.mjs"
+  }
+}
