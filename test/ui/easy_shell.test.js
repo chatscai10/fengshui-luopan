@@ -83,6 +83,27 @@ test('views/easy.js:文字來源只有允許的模組', () => {
   assert.match(src, /from '\.\/wealth\.js'/);
 });
 
+test('views/easy.js:「看說明」摺疊區預設關閉,1B 的提醒行在主按鈕下方', () => {
+  const src = stripComments(read('src/ui/views/easy.js'));
+  // 摺疊區只能透過 fold() 產生,預設 open = false;沒有任何地方寫死 open: true
+  assert.match(src, /const fold = \(children, \{[^}]*open = false/);
+  assert.doesNotMatch(src, /open:\s*true/);
+  // 1B:主按鈕之後才是那一行提醒(提醒出現或消失時不會把主按鈕擠上擠下)
+  const b = src.slice(src.indexOf('function view1B'), src.indexOf('function view1D'));
+  assert.ok(b.indexOf('refs.lockBtn,') > 0 && b.indexOf('refs.lockBtn,') < b.indexOf('refs.note,'), '1B 的提醒行要在主按鈕下方');
+  // 每個畫面最多兩個小連結:links(...) 的參數不超過兩個
+  for (const m of src.matchAll(/\blinks\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)/g)) {
+    let depth = 0;
+    let commas = 0;
+    for (const ch of m[1]) {
+      if ('([{'.includes(ch)) depth += 1;
+      else if (')]}'.includes(ch)) depth -= 1;
+      else if (ch === ',' && depth === 0) commas += 1;
+    }
+    assert.ok(commas <= 1, `小連結超過兩個: links(${m[1].slice(0, 60)}…)`);
+  }
+});
+
 test('v-easy.css:外殼規則、class 前綴與顏色 tokens', () => {
   const css = read('css/v-easy.css');
   assert.match(css, /html\[data-mode="easy"\]\s*\{\s*--tabbar-h:\s*0px;\s*\}/);

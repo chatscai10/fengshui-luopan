@@ -120,19 +120,45 @@ test('EASY_TEXT 是凍結的;每個 {名稱} 都是英數', () => {
   }
 });
 
+test('畫面上直接露出的句子都短:標題一句、說明與提醒一行、按鈕與連結幾個字(其餘收在「看說明」)', () => {
+  // 視覺寬度:中文與全形 1、英數與半形標點約 0.55(375px 寬、15px 字一行大約 22 到 26 個中文字)
+  const width = (key) => [...EASY_TEXT[key].replace(/\{\w+\}/g, '')].reduce((w, ch) => w + (/[\x20-\x7e]/.test(ch) ? 0.55 : 1), 0);
+  const TITLES = ['a.title', 'b.title', 'm.title', 'l.title', 'l.ownTitle', 'r.title'];
+  const LINES = ['a.iosNote', 'm.lead', 'l.doorTitle', 'l.ownLead', 'l.pickFirst', 'l.removed', 'd.near', 'd.nearOk', 'd.far',
+    'd.unsteady', 'd.rough', 'd.inconsistent', 'm.noSensor', 'm.noEvents', 'm.deniedShort', 'm.relative', 'm.inAppShort',
+    'r.changeAny', 'r.changeTier', 'r.near', 'r.shaky', 'r.notAdvised', 'r.frameShort', 'r.darkWhere'];
+  // 1B 按鈕下方那一行、結果頁接在「重新量」連結前面的那一行:要更短(旁邊還有東西)
+  const SHORT_LINES = ['b.warnWide', 'b.warnBad', 'b.warnJitter', 'b.warnJumpy', 'b.warnCalib', 'b.warnWait', 'r.change', 'r.changeSameRoom', 'm.pickFirst'];
+  const ACTIONS = ['a.start', 'a.manual', 'a.help', 'b.lock', 'b.stop', 'd.use', 'd.again', 'd.useAnyway', 'd.toManual',
+    'm.use', 'm.retrySensor', 's.next', 's.remeasure', 'l.next', 'l.skip', 'l.ownNext', 'l.ownEdit', 'r.retestBtn',
+    'r.remeasure', 'r.editLayout', 'common.more', 'r.more'];
+  for (const k of TITLES) assert.ok(width(k) <= 16, `${k} 標題太長: ${EASY_TEXT[k]}`);
+  for (const k of LINES) assert.ok(width(k) <= 26, `${k} 不只一行: ${EASY_TEXT[k]}`);
+  for (const k of SHORT_LINES) assert.ok(width(k) <= 19, `${k} 一行放不下: ${EASY_TEXT[k]}`);
+  for (const k of ACTIONS) assert.ok(width(k) <= 10, `${k} 按鈕字太多: ${EASY_TEXT[k]}`);
+  // 移進「看說明」或拿掉的舊文字不再是畫面上的鍵
+  for (const k of ['steps.count', 'a.lead', 'b.headLabel', 'b.paren', 'd.third', 'l.lead', 'l.cardAria', 'r.retest', 'r.done', 'r.doneToast', 'r.moreDisclaimers']) {
+    assert.ok(!Object.hasOwn(EASY_TEXT, k), `${k} 應已移除`);
+  }
+  assert.equal(EASY_TEXT['common.more'], '看說明');
+  assert.equal(EASY_TEXT['r.more'], '看詳細說明');
+});
+
 test('fillText:代換、缺值與不存在的鍵會丟例外', () => {
-  assert.equal(fillText('steps.count', { n: 2 }), '第 2 步,共 3 步');
+  assert.equal(fillText('steps.back', { n: 2, name: '選格局' }), '回到第 2 步:選格局');
   assert.equal(fillText('d.item', { i: 1, deg: 215 }), '第 1 次:215 度');
   assert.equal(fillText('b.degree', { deg: 0 }), '約 0 度');
-  assert.equal(fillText('b.paren', { paren: '稍微偏南' }), '(稍微偏南)');
+  assert.equal(fillText('d.near', { a: '南', b: '西南' }), '剛好在南方和西南方中間,換個位置再量一次');
+  assert.equal(fillText('r.change', { place: '次臥 1' }), '方向差一點,可能換到次臥 1');
+  assert.equal(fillText('d.nearOk', { a: '南', b: '西南' }), '剛好在南方和西南方中間,結果僅供參考');
   assert.equal(fillText('common.dir', { dir: '西南' }), '西南方');
-  assert.equal(fillText('a.title'), '量出大門朝哪個方向');
-  assert.equal(fillText('a.title', { extra: 1 }), '量出大門朝哪個方向', '多給的值不影響');
+  assert.equal(fillText('a.title'), '站在大門口,手機平放,頂端朝門外');
+  assert.equal(fillText('a.title', { extra: 1 }), '站在大門口,手機平放,頂端朝門外', '多給的值不影響');
   assert.equal(fillText('l.applied', { label: '{奇怪}的名字' }), '已套用「{奇怪}的名字」', '代入值裡的大括號不算漏給');
   assert.equal(fillText('m.denied', { message: `${sensorText.sensorMessage('permission-denied')}${sensorText.DENIED_HELP}` }),
     '需要允許「動作與方向」才能使用羅盤(沒有跳出詢問的話,請完全關閉 Safari 或主畫面 App 後重開;仍不行,到 設定 > Safari > 進階 > 網站資料 移除本網站)。請直接選大門朝哪個方向。');
-  assert.throws(() => fillText('steps.count'), /缺少代入值 \{n\}/);
+  assert.throws(() => fillText('d.item', { deg: 1 }), /缺少代入值 \{i\}/);
   assert.throws(() => fillText('steps.back', { n: 1 }), /\{name\}/);
-  assert.throws(() => fillText('steps.count', { n: null }), /\{n\}/);
+  assert.throws(() => fillText('d.item', { i: null, deg: 1 }), /\{i\}/);
   assert.throws(() => fillText('no.such.key'), /沒有這個鍵/);
 });

@@ -698,6 +698,12 @@ export const EASY_DISCLAIMERS = Object.freeze([
   '手機指北針附近有鐵門、鋼筋時可能不準。',
   '要更仔細,請找老師到現場看。',
 ]);
+const softAdviceText = (id) => { const a = SOFT_ADVICE.find((x) => x.id === id); return a ? a.text : ''; };
+/**
+ * 簡單模式結果頁的一行「這樣用:」:取 SOFT_ADVICE 的整潔(前半句)、垃圾桶、鏡子三條組成,
+ * 375px 寬一行放得下(完整清單收在「看詳細說明」)。
+ */
+export const EASY_USE_TIP = `這樣用:${softAdviceText('tidy').split(/[,,]/)[0]},${softAdviceText('noTrash')}、${softAdviceText('noMirror').replace(/^不放/, '')}`;
 /** 羅盤頁鎖定後的一句短評(8 方位會不會受誤差影響)。 */
 export const IMPACT_SHORT = Object.freeze({ ok: '對 8 個大方位:不影響。', near: '對 8 個大方位:接近分界,可能影響。' });
 

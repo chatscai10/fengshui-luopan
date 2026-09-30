@@ -155,6 +155,7 @@ const ROOM_FILL = Object.freeze({ living: '--wealth-bg', bedroom: '--info-bg', k
 /**
  * 掛載縮圖。opts: { plan, taiji, up, markers:[{id, point, sector, order}], selectedId, onSelect(id), alt, sectorLabels?:'gua'|'dir8' }
  * sectorLabels 預設 'gua'(八方位標卦名);簡單模式傳 'dir8' 改標「北、東北…」。
+ * plain: true(簡單模式結果頁)只畫房間、房間名、大門與財位標記:不畫方位扇形與虛線、中心十字、八方位名稱、指北針、窗。
  * 回傳 { setSelected(id), update(opts), destroy() }。
  */
 export function mountMiniPlan(container, opts) {
@@ -195,9 +196,10 @@ export function mountMiniPlan(container, opts) {
     const dim = cssVar('--text-dim', '#b9ae95');
     const onGold = cssVar('--on-gold', '#1a1208');
     const sel = lay.markers.find((m) => m.id === selectedId) || null;
+    const plain = cur.plain === true;
 
     // 選取位置所在的方位,先淡淡塗一塊,幫忙看出「在哪個方位」
-    if (sel && sel.sector && lay.taiji && lay.up !== null) {
+    if (!plain && sel && sel.sector && lay.taiji && lay.up !== null) {
       const k = GUA.indexOf(sel.sector);
       if (k >= 0) {
         const R = Math.hypot(w, h) / lay.view.scale;
@@ -212,7 +214,7 @@ export function mountMiniPlan(container, opts) {
       }
     }
     // 八方位的分隔線(很淡)
-    if (lay.taiji && lay.sectors.length) {
+    if (!plain && lay.taiji && lay.sectors.length) {
       ctx.save();
       ctx.strokeStyle = line;
       ctx.globalAlpha = 0.5;
@@ -250,13 +252,14 @@ export function mountMiniPlan(container, opts) {
       if (r.widthPx <= tw + 6) continue;
       let [lx, ly] = r.center;
       // 太極點的十字剛好在房間中央時,名稱挪到十字下方,不被劃掉
-      if (lay.taiji && Math.abs(lx - lay.taiji[0]) < tw / 2 + 10 && Math.abs(ly - lay.taiji[1]) < 15) ly = lay.taiji[1] + 17;
+      if (!plain && lay.taiji && Math.abs(lx - lay.taiji[0]) < tw / 2 + 10 && Math.abs(ly - lay.taiji[1]) < 15) ly = lay.taiji[1] + 17;
       ctx.fillText(r.label, lx, ly);
     }
     // 門窗
     for (const o of lay.openings) {
       const horizontal = o.wall === 'top' || o.wall === 'bottom';
       const isWin = o.kind === 'window' || o.kind === 'floorWindow';
+      if (plain && !o.main) continue;
       ctx.save();
       ctx.translate(o.at[0], o.at[1]);
       if (o.main) {
@@ -278,7 +281,7 @@ export function mountMiniPlan(container, opts) {
       ctx.restore();
     }
     // 太極點
-    if (lay.taiji) {
+    if (!plain && lay.taiji) {
       const [tx, ty] = lay.taiji;
       ctx.strokeStyle = text;
       ctx.lineWidth = 1.4;
@@ -290,7 +293,7 @@ export function mountMiniPlan(container, opts) {
     }
     // 八方位名稱
     ctx.font = `13px ${KAI_STACK}`;
-    for (const s of lay.sectors) {
+    for (const s of plain ? [] : lay.sectors) {
       ctx.fillStyle = sel && sel.sector === s.gua ? gold : dim;
       ctx.globalAlpha = sel && sel.sector === s.gua ? 1 : 0.9;
       ctx.fillText(s.text, s.label[0], s.label[1]);
@@ -342,7 +345,7 @@ export function mountMiniPlan(container, opts) {
       ctx.fillText('財', x, y + 1);
     }
     // 指北針(右上角):箭頭指向平面圖上「北」的方向
-    if (lay.north) {
+    if (!plain && lay.north) {
       const [cx, cy] = lay.north.at || [w - 22, 22];
       ctx.save();
       ctx.translate(cx, cy);

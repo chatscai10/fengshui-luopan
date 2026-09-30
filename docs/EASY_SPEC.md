@@ -88,7 +88,7 @@
 | 兩次「差很多」 | 差 > 15 度 | 設計值:剛好一個 24 山的寬度 |
 | 三次時排除離群值 | 恰有一對 ≤ 一致門檻、第三次和兩者都 > 一致門檻 → 排除第三次 | 設計值 |
 | 送進引擎的誤差 U | `max(measureUncertainty, 2σ, iPhone 估計誤差, 兩次差距)`;自己選的 8 方位為 `max(measureUncertainty, 22.5)` | 延用 `geo.measurementUncertainty` 的 `max(基準, 2σ, accuracy)`,再加上差距;8 方位存的是該格正中間,真正方向可能在半格(22.5 度)內任何地方 |
-| 只量一次時的結論 | 讀數晃(σ > 3)→ `single-unstable`;iPhone 估計誤差 > 10(綠燈門檻)→ `single-wide`;手機不回報誤差(Android)→ `single-noacc`;其他 → `single-ok` | `SENSOR_DEFAULTS.accuracyGreenMax`;Android 的主按鈕改成「移一步,再量一次」 |
+| 只量一次時的結論 | 讀數晃(σ > 3)→ `single-unstable`;iPhone 估計誤差 > 10(綠燈門檻)→ `single-wide`;手機不回報誤差(Android)→ `single-noacc`;其他 → `single-ok` | `SENSOR_DEFAULTS.accuracyGreenMax`;只量一次而且沒有警告(含 Android 的 `single-noacc`)時主按鈕是「下一步」,「再量一次」是小連結,結論句收在「看說明」 |
 | 8 方位「接近分界」 | 離 8 方位分界(22.5 + 45k 度)< max(U, 3) | 與引擎 `nearGuaBoundary` 同門檻(`GUA_HINT_MIN_DEG = 3`)。U ≤ 7.5 時兩者完全一致;U > 7.5 時引擎只看「最近的山界剛好是卦界」,會漏掉離卦界 7.5 到 U 度的情況,簡單模式較嚴格(較誠實),所以簡單模式的畫面一律用 `eightImpact`,不讀引擎旗標 |
 | 24 山「接近分界」 | 離山界 < U | 與引擎 `geo.retest` 同式 |
 | 排第一的財位會不會換 | 朝向在 [b − U, b + U] 每隔 ≤ 1.5 度重算 `analyzeHouse`,比對 `wealthTop[0]` 的 id 與評等 | 8.12;1.5 度抓得到每一次 8 方位(45 度)與 24 山(15 度)換格 |
@@ -120,7 +120,7 @@
 |---|---|---|
 | 標題列按鈕 `#btn-mode`(在設定齒輪左邊,`.btn .btn-sm .btn-ghost`,高 ≥ 44px) | 文字「完整功能」;`aria-label`「切換到完整功能:羅盤、住宅、平面圖、財位、報告五個分頁」;點了 `location.hash = '#/' + proHomeOf(ui)` | 文字「簡單模式」;`aria-label`「切換到簡單模式:三個步驟看財位」;點了 `location.hash = '#/easy'` |
 | 設定面板最上面「介面」分組 | 分段控制「簡單模式 / 完整功能」,說明文字見 5.6。切換後改網址並關閉設定面板 | 同左 |
-| 簡單模式結果頁 | 主按鈕是「完成」;另有 ghost 按鈕「看專業版分析(名詞較多)」→ `ctx.go('wealth')` | — |
+| 簡單模式結果頁 | 沒有「完成」按鈕;「看專業版分析(名詞較多)」→ `ctx.go('wealth')` 收在「看詳細說明」裡 | — |
 
 - 兩種模式共用同一個 store:任何一邊輸入的資料,另一邊立刻看得到。
 - 從完整功能切回簡單模式時,依 `resumeStep(state)`(第 8.6 節)停在該停的步驟。
@@ -136,16 +136,18 @@
 
 ## 4. 使用者流程總覽與線框(375px 寬優先)
 
+**每個畫面的原則**:一句短標題 + 最多一行短說明 + 一個大按鈕 + 最多兩個小連結;主按鈕在 375×812 不用捲動就看得到。其他說明、數字、檢查、例外情況一律收進「看說明」摺疊區(`<details class="v-card-more v-easy-fold">`,預設關閉)。會影響結果的提醒(大門接近兩個方位中間、方向差一點財位會換)仍然出現在畫面上,但只用一行短句。
+
 ```
 開啟 App ──(簡單模式)── resumeStep ─┬─ 沒有朝向 ─────────────→ 步驟 1 量方向
                                     ├─ 有朝向、沒有平面圖 ───→ 步驟 2 選格局(可跳過)
                                     └─ 有朝向、有平面圖 ─────→ 步驟 3 看財位
 
-步驟 1:1A 說明 →「開始量」→ 1B 對準 →「記下這個方向」→ 1C 取平均 3 秒 → 1D 結果(可再量 1–2 次比對)
+步驟 1:1A 開始量 →「開始量」→ 1B 量測中 →「就是這個方向」→ 1C 取平均 3 秒 → 1D 量完(需要時再量 1–2 次比對)
         └ 不能用指北針 / 權限被拒 / 偵測不到 → 1M 自己選方向
         └ 已有朝向時回到步驟 1 → 1S 已記下
 步驟 2:2A 選範本 + 大門在左/中/右 ;2B 已有自己畫的平面圖
-步驟 3:財位卡(圖 + 位置 + 白話說明)→ 想看更完整的分析?→ 其他位置 → 完成(另有「看專業版分析」)
+步驟 3:財位卡(圖 + 位置 + 這樣用)→ 看詳細說明(評等、檢查、其他位置、年份、專業版)→ 重新量方向 / 修改格局
 ```
 
 ### 共用外框(每一步)
@@ -154,56 +156,55 @@
 │ 風水羅盤         [完整功能] [⚙ 設定] │  ← 標題列,摘要隱藏;齒輪旁有「設定」字樣
 ├──────────────────────────────────┤
 │ ●量方向 ─ ○選格局 ─ ○看財位        │  ← 步驟條(已完成的可點回去)
-│ 第 1 步,共 3 步                  │
 │                                  │
-│  (內容卡片)                      │
-│                                  │
+│ 一句標題                          │
+│ 最多一行說明                      │
 │ [      主按鈕(56px 高)        ] │  ← 每畫面只有一個 .btn-primary
-│ [ 次要按鈕 ]                      │
+│    小連結        小連結           │  ← 最多兩個,觸控範圍 ≥ 44px
+│ ▸ 看說明                          │  ← 預設關閉
 └──────────────────────────────────┘      (沒有底部分頁列)
 ```
 
-### 1B 對準(感測器執行中)
+### 1A 開始量
 ```
-│ 慢慢轉身,讓手機頂端對準大門外      │
+│ 站在大門口,手機平放,頂端朝門外    │
+│        (示意圖:人、手機、門)      │
+│ [          開始量               ] │
+│ iPhone 會問要不要允許,請按允許     │  ← 只有 iPhone
+│  不能量?自己選方向  手機指北針準嗎? │
+│ ▸ 看說明                          │
+```
+
+### 1B 量測中
+```
+│ 慢慢轉身,讓頂端對準門外            │
 │            ▼ 手機頂端              │
 │        ╭────北────╮               │  ← 方向圈:8 個中文方位,
 │     西北          東北             │    整圈旋轉,目前方位的
 │    西     西南方      東           │    45 度扇形淡金色
 │     西南          東南             │
 │        ╰────南────╯               │
-│   手機頂端朝向                     │
-│   西南方                           │  ← 大字楷體,只寫大方位
-│   (稍微偏南)                     │  ← 偏向放括號小字
-│   約 215 度                        │
-│ ▮▮▯ 手有點晃                       │
-│ 讀數有點晃。手機放平、手不要動…    │
-│ [       記下這個方向            ] │
-│ [ 停止,改成自己選方向 ]           │
-│ ⓘ 手機指北針準嗎?                 │
+│            西南方                  │  ← 大字楷體,只寫大方位
+│           約 215 度                │
+│ [        就是這個方向           ] │
+│   ! 有點晃,手機放平、不要動        │  ← 固定一行高,只有讀數有問題或按下被擋時才有字
+│          改成自己選方向            │
 ```
 
-### 1D 量測結果
+### 1D 量完
 ```
-│ 大門朝:西南方                     │  ← 接近分界時才加括號偏向
-│ 約 214 度                         │
-│ 第 1 次:215 度                    │
-│ 第 2 次:213 度                    │
-│ ✓ 2 次只差 2 度,附近沒有明顯干擾。 │
-│   不過如果整棟大樓鋼筋很多…        │  ← 同一個框
-│ ┌ 手機差幾度,會不會影響結果? ───┐ │
-│ │ ✓ 財位在哪個角落:不受影響 …     │ │
-│ │ ✓ 大門朝哪一方:不受影響 …       │ │
-│ └────────────────────────────────┘ │
-│ [       用這個方向              ] │
-│ [ 全部重量 ]                      │
+│ 大門朝:西南方                     │
+│ ! 剛好在西南方和南方中間,換個位置… │  ← 只有需要時一行(已量 3 次時改說「結果僅供參考」)
+│ [          下一步               ] │  ← 需要重量時是「再量一次」
+│             再量一次               │
+│ ▸ 看說明(度數、每次讀數、結論、   │
+│   手機差幾度會不會影響結果)        │
 ```
 
 ### 1M 自己選方向
 ```
 │ 大門朝哪個方向?                   │
-│ 站在屋內面向大門,想想門外是哪一邊。 │
-│ • 不確定的話:打開 Google 地圖…     │
+│ 站在門內看出去,門外是哪一邊?     │
 │ ┌──────┬──────┬──────┐           │
 │ │ 西北 │  北  │ 東北 │           │  ← 每格 ≥ 64px 高
 │ ├──────┼──────┼──────┤           │
@@ -212,43 +213,37 @@
 │ │ 西南 │  南  │ 東南 │           │
 │ └──────┴──────┴──────┘           │
 │ ▸ 知道確切度數?                   │
-│ [       用這個方向              ] │
+│ [           下一步              ] │
+│ 手機指北針準嗎?  再試一次手機指北針 │  ← 權限被拒時不放「再試一次」
+│ ▸ 看說明                          │
 ```
 
 ### 2A 選格局
 ```
-│ 你家大概長什麼樣子?               │
+│ 你家比較像哪一種?                 │
 │ ┌──────────────┐ ┌──────────────┐ │
-│ │ ▭ 套房        │ │ ▭ 2 房 1 廳   │ │  ← 範本卡(縮圖 + 名稱 + 說明)
+│ │ ▭ 套房        │ │ ▭ 2 房 1 廳   │ │  ← 縮圖 + 名稱 + 坪數
+│ │ 約 10 坪      │ │ 約 19 坪      │ │
 │ └──────────────┘ └──────────────┘ │
-│ 大門在哪一邊?                     │
-│ 站在進門的那個空間(通常是客廳)中間, │
-│ 面向有大門的那面牆。大門在這面牆的哪一邊?│
-│ [ 左邊 | 正中間 | 右邊 ]           │
-│ ┌ 預覽:大門用金色標出 ─────────┐ │
-│ └──────────────────────────────┘ │
-│ [          下一步               ] │
-│ [ 都不像,先跳過 ]  [ 上一步 ]     │
+│ 站在屋內看大門,門在:              │  ← 選了範本後才出現
+│ [ 左邊 | 中間 | 右邊 ]             │
+│ [          看財位               ] │
+│     都不像,跳過      上一步        │
+│ ▸ 看說明(大門位置的說明、大預覽)  │
 ```
 
 ### 3 看財位
 ```
-│ 你家最值得留意的財位               │
-│ ┌ 平面縮圖:金色「財」─────────┐  │
+│ 你家的財位                         │
+│ ┌ 平面縮圖:房間、大門、金色「財」┐  │
 │ └──────────────────────────────┘  │
+│ 站在屋內、面向大門時:              │  ← 位置用到前後左右時
 │ 客廳的後方右邊角落                 │  ← 大字
-│ 在房子的東北方  [較適合]           │
-│ 傳統上認為進門後斜對角遠端…        │
-│ ✓ 兩面都是實牆,角落沒有門或窗擋住  │
-│ ▸ 財位佈置的傳統說法               │
-│ ┌ 想看更完整的分析? ──────────┐  │
-│ │ 建成年份 [ 例如 2005 或 民國 94 ]│  │
-│ └──────────────────────────────┘  │
-│ ▸ 其他可以考慮的位置(2)           │
-│ [            完成               ] │
+│ 這樣用:保持整潔,不放垃圾桶、鏡子  │
+│ ! 方向差一點,可能換到次臥 1  重新量 │  ← 只有會換時(只寫房間)
+│ ▸ 看詳細說明                       │
 │ [ 重新量方向 ] [ 修改格局 ]        │
-│ [ 看專業版分析(名詞較多) ]        │
-│ 風水是華人的傳統民俗文化…          │
+│ 傳統民俗參考,請勿過度迷信。       │
 ```
 
 ---
@@ -270,7 +265,6 @@
 | `steps.facing` | 量方向 |
 | `steps.layout` | 選格局 |
 | `steps.result` | 看財位 |
-| `steps.count` | 第 {n} 步,共 3 步 |
 | `steps.back` | 回到第 {n} 步:{name}(`aria-label`) |
 | `intro.toast` | 已切到簡單模式。原本的完整功能在右上角「完整功能」。 |
 | `mode.toPro` | 完整功能 |
@@ -280,10 +274,13 @@
 | `common.undo` | 復原 |
 | `common.back` | 上一步 |
 | `common.dir` | {dir}方 |
+| `common.more` | 看說明 |
 | `view.aria` | 簡單模式(`#view` 在簡單模式的 `aria-label`,由 main.js 設定) |
 
-- 步驟條:`<nav aria-label="步驟"><ol>`,3 項。目前這一步 `aria-current="step"`;有朝向後,每一項都是可點的按鈕(`aria-label` 用 `steps.back`);沒有朝向時只有第 1 項可用。
-- 每畫面只有一個 `.btn-primary .btn-block`(`.v-easy-big`:高 56px、字 18px)。次要動作用 `.btn` 或 `.btn-ghost`。
+- 步驟條:`<nav aria-label="步驟"><ol>`,3 項。目前這一步 `aria-current="step"`;有朝向後,每一項都是可點的按鈕(`aria-label` 用 `steps.back`);沒有朝向時只有第 1 項可用。步驟條下面不再寫「第 N 步,共 3 步」。
+- 每畫面只有一個 `.btn-primary .btn-block`(`.v-easy-big`:高 56px、字 18px),375×812 不用捲動就看得到。次要動作是小連結(`.btn.btn-ghost.v-easy-link`,文字加底線,觸控範圍 ≥ 44px),同一列最多兩個。
+- 「看說明」摺疊區:`<details class="v-card-more v-easy-fold">`,標題 `common.more`(結果頁用 `r.more`),預設關閉;量字數時不算已關閉摺疊區裡的字。
+- 一行短句(`.v-easy-one`):會影響結果的提醒加 `.is-warn`(警告色,前面有「!」圖示,不只靠顏色)。
 - 換步驟:`store.update(d => { d.ui.easyStep = step; })`,畫面內重畫並捲回頂端,焦點移到新步驟的標題(`tabindex="-1"`)。
 - 會覆蓋舊資料的動作都跳 toast 並附「復原」:`toast(msg, { action: { label: EASY_TEXT['common.undo'], onClick } })`。
 
@@ -291,87 +288,115 @@
 
 進入步驟 1 時依狀態顯示下面其中一種。感測器只在 1B/1C 開著;離開步驟 1 或 `destroy()` 時一律 `session.destroy()`。
 
-- 從結果頁的「重新量方向」或接近分界提醒的按鈕進來 → **1A**(使用者明確要重量)。
+- 從結果頁的「重新量方向」或提醒旁的「重新量」進來 → **1A**(使用者明確要重量)。
 - 其他情況下已有朝向(步驟條點回來、重開 App 停在步驟 1)→ **1S**。
 - 沒有朝向:沒有 `DeviceOrientationEvent`(`sensorSupported(window)` 為 false)→ **1M**,並顯示 `m.noSensor`;否則 → **1A**。
-- 1A、1M 在有 `DeviceOrientationEvent` 時,「開始量」前的畫面都要能看到「手機指北針準嗎?」按鈕(`a.help`);1B 也顯示同一顆(ghost,放在主按鈕下方)。
+- 「手機指北針準嗎?」(`a.help`,小連結)只放在 1A 與 1M(有 `DeviceOrientationEvent` 時);結果頁的「看詳細說明」裡再放一次。
 
-#### 1A 說明
+#### 1A 開始量
 
 | 鍵 | 文字 |
 |---|---|
-| `a.title` | 量出大門朝哪個方向 |
-| `a.lead` | 先量大門朝哪邊,App 就能幫你找財位。大約 30 秒。 |
+| `a.title` | 站在大門口,手機平放,頂端朝門外 |
 | `a.step1` | 站在屋內、離大門一大步(約 1 公尺),面向大門。 |
 | `a.step2` | 手機平放在胸前,螢幕朝上,手機頂端朝向大門外。 |
 | `a.step3` | 先拿掉磁吸手機殼,也離鐵門、冰箱、冷氣遠一點。 |
 | `a.start` | 開始量 |
 | `a.starting` | 啟用中… |
-| `a.iosNote` | 按下後,iPhone 會詢問是否允許「動作與方向」,請按「允許」。 |
-| `a.manual` | 不能用指北針?直接選方向 |
+| `a.iosNote` | iPhone 會問要不要允許,請按允許 |
+| `a.manual` | 不能量?自己選方向 |
 | `a.help` | 手機指北針準嗎? |
 
-- 示意圖:內嵌 SVG(`aria-hidden`),一個人站在門內一步,手機平放,箭頭指向門外。
+- 由上到下:標題、示意圖(內嵌 SVG,`aria-hidden`,一個人站在門內一步,手機平放,箭頭指向門外)、大按鈕 `a.start`、只有 iPhone/iPad(`DeviceOrientationEvent.requestPermission` 是函式,而且 `window` 沒有 `ondeviceorientationabsolute`;Android Chrome 有這個事件)才在按鈕下方一行 `a.iosNote`、小連結 `a.manual` 與 `a.help`、「看說明」(`a.step1`–`a.step3` 的清單)。
 - 「開始量」必須在點擊處理函式裡**同步**呼叫 `session.start()`(iOS 權限視窗的要求),之前不可 `await`、不可先重畫。
 - 「手機指北針準嗎?」→ `openCompassHelp(ctx, store.get())`(第 5.4 節)。
 
-#### 1B 對準(`session.getState().phase === 'running'`)
+#### 1B 量測中(`session.getState().phase === 'running'`)
 
 | 鍵 | 文字 |
 |---|---|
-| `b.title` | 慢慢轉身,讓手機頂端對準大門外 |
+| `b.title` | 慢慢轉身,讓頂端對準門外 |
 | `b.pointer` | 手機頂端 |
-| `b.headLabel` | 手機頂端朝向 |
 | `b.reading` | 讀取中… |
-| `b.paren` | ({paren}) |
 | `b.degree` | 約 {deg} 度 |
 | `b.live` | 手機頂端朝向{text} |
-| `b.lock` | 記下這個方向 |
-| `b.stop` | 停止,改成自己選方向 |
+| `b.lock` | 就是這個方向 |
+| `b.stop` | 改成自己選方向 |
 | `b.dialAria` | 方向圈,手機頂端目前朝向{dir}方 |
+| `b.warnWide` | 誤差有點大,離鐵門、電器遠一點 |
+| `b.warnBad` | 誤差太大,離金屬遠一點,畫幾個 8 字 |
+| `b.warnJitter` | 有點晃,手機放平、不要動 |
+| `b.warnJumpy` | 讀數一直跳,離金屬遠一點,畫幾個 8 字 |
+| `b.warnCalib` | 還沒校準,拿著手機畫幾個 8 字 |
+| `b.warnWait` | 正在判斷,手機放平、不要動 |
 
 - 方向圈:`mountDirDial`(第 8.8 節),`set(顯示方位)`;`prefers-reduced-motion` 時不做過渡。
-- 大字(楷體 40px):`common.dir`(只有大方位,例如「南方」);下一行較小的字 `b.paren`(`plainDirection(disp).paren`,在正中間時不顯示);沒有讀數時 `b.reading`。再下一行小字 `b.degree`(不寫磁北/真北,這兩個詞只在說明面板的細節裡解釋)。
-- 高度 ≤ 640px 的螢幕(例如 320×568):方向圈縮到 150px、大字 30px、標題 18px,隱藏「第 1 步,共 3 步」與「手機頂端朝向」小標,間距縮成 8px,讓「記下這個方向」和方向圈同時在第一個畫面(320×568 實測按鈕底部在 527px)。
+- 大字(楷體 40px):`common.dir`(只有大方位,例如「南方」);沒有讀數時 `b.reading`。下一行小字 `b.degree`(不寫磁北/真北,這兩個詞只在說明面板的細節裡解釋)。
+- 高度 ≤ 640px 的螢幕(例如 320×568):方向圈縮到 150px、大字 30px、標題 18px,間距縮成 8px,讓「就是這個方向」和方向圈同時在第一個畫面。
 - 讀屏:另一個 `aria-live="polite"` 的元素,**只在 `plainDirection` 的 `dir8` 或 `level` 改變、而且停住 350ms 後**才更新成 `b.live`。
-- 穩定度列(`role="status"`):3 格訊號條(圖示 + 文字,不只靠顏色),文字 `accuracyView(reading).label`,下一行 `accuracyView(reading).reason`(第 5.7 節)。
-- 姿勢提示:`postureHint(reading)` 有值時以 `.callout.warn` 顯示在穩定度列上方。
-- 「記下這個方向」:按下先看 `session.getState().gate`;不允許時在按鈕下方顯示 `role="alert"` 訊息 `lockBlockedMessage(reason, { startLabel: '開始量' })`,不開始鎖定。姿勢恢復(`gate.allowed` 變回 true)後,這個訊息在下一筆讀數時自動清掉。
-- `phase === 'waiting'`(1.5 秒沒有事件)或 `'failed'`:停掉感測器,進 **1M** 並在最上面顯示原因(見 1M)。
+- 按鈕下方**唯一的一行**(`role="status"`,警告色,沒有字時也固定留一行高,字出現或消失時主按鈕與連結都不跳):
+  - 讀數提醒:讀數正常(`accuracyView(reading).level === 'green'`)時沒有字;`postureHint(reading)` 有值(太斜、螢幕朝下)時顯示它,否則依 `accuracyView(reading).reasonKey` 顯示縮短句(`ios-wide` → `b.warnWide`、`ios-bad` → `b.warnBad`、`jitter` → `b.warnJitter`、`jitter-bad` → `b.warnJumpy`、`uncalibrated` → `b.warnCalib`、`waiting` → `b.warnWait`;完整原因句是 5.7 的 `STABILITY_REASON`,羅盤分頁照舊用完整句)。
+  - 優先序:`c.tooFew` / `c.cancelled` > 讀數提醒 > 按下被擋的原因。按下被擋的原因和讀數提醒是同一件事(例如誤差太大),所以有讀數提醒時畫面上只留讀數提醒那一行。
+- 「就是這個方向」:按下先看 `session.getState().gate`;不允許時不開始鎖定,把 `lockBlockedMessage(reason, { startLabel: '開始量' })` 放進只給讀屏的 `role="alert"`(畫面上依上面的優先序只顯示一行)。姿勢恢復(`gate.allowed` 變回 true)後,這個訊息在下一筆讀數時自動清掉。
+- 小連結 `b.stop`:停掉感測器,進 1M(不顯示原因)。
+- `phase === 'waiting'`(1.5 秒沒有事件)或 `'failed'`:停掉感測器,進 **1M** 並顯示一行原因(見 1M)。
 
 #### 1C 取平均(鎖定中)
 
 | 鍵 | 文字 |
 |---|---|
 | `c.locking` | 請保持不動… {n} 秒 |
-| `c.tooFew` | 樣本不足,請再等一下。請再按一次「記下這個方向」,這次手機保持不動。 |
-| `c.cancelled` | 剛剛中斷了,請再按一次「記下這個方向」。 |
+| `c.tooFew` | 樣本不夠,請再按一次「就是這個方向」,手機保持不動。 |
+| `c.cancelled` | 剛剛中斷了,請再按一次「就是這個方向」。 |
 
-- 主按鈕停用並顯示 `c.locking`,秒數用計時器每 200ms 更新(不用動畫幀,背景時也要走);`reduced-motion` 時不畫進度環,只更新文字。
+- 主按鈕停用並顯示 `c.locking`,秒數用計時器每 200ms 更新(不用動畫幀,背景時也要走);`reduced-motion` 時不畫進度條,只更新文字。
 - 方向圈與大字照常跟著手機轉。
 - `session.lock()` 回 `null` 時,依 `state.note` 顯示(too-few → `c.tooFew`;cancelled → `c.cancelled`;blocked → `lockBlockedMessage`),回到 1B。
 
-#### 1D 量測結果(畫面內 `readings[]`,不存 store,最多 3 筆)
+#### 1D 量完(畫面內 `readings[]`,不存 store,最多 3 筆)
 
 每次鎖定成功(`status` 是 `ok` 或 `unstable`)就把 `{ meanDeg, sigma, lockedAtMs, status, accuracyDeg }` 加進 `readings`(`accuracyDeg` = 鎖定期間 iPhone 估計誤差的最大值,Android 為 null),並計算 `check = combineChecks(readings, settings)`。
 
 | 鍵 | 文字 |
 |---|---|
 | `d.title` | 大門朝:{text} |
+| `d.near` | 剛好在{a}方和{b}方中間,換個位置再量一次 |
+| `d.nearOk` | 剛好在{a}方和{b}方中間,結果僅供參考 |
+| `d.far` | 兩次量的差很多,換個位置再量一次 |
+| `d.unsteady` | 這次不太穩,建議換個位置再量一次 |
+| `d.rough` | 幾次結果差得有點多,僅供參考 |
+| `d.inconsistent` | 幾次結果都不一樣,建議自己選方向 |
+| `d.use` | 下一步 |
+| `d.again` | 再量一次 |
+| `d.useAnyway` | 還是用這個方向 |
+| `d.toManual` | 自己選方向 |
 | `d.degree` | 約 {deg} 度 |
 | `d.item` | 第 {i} 次:{deg} 度 |
 | `d.dropped` | 不採用 |
-| `d.use` | 用這個方向 |
-| `d.again` | 移一步,再量一次 |
 | `d.againHint` | 往左或右移一大步(約 1 公尺),一樣面向大門再量。兩次差不多,就代表附近沒有東西在干擾。 |
-| `d.third` | 再量第 3 次 |
 | `d.thirdHint` | 往屋內走兩三步,離大門遠一點,一樣面向大門外再量一次。 |
-| `d.useAnyway` | 還是用這個結果 |
-| `d.toManual` | 改成自己選方向 |
 | `d.restart` | 全部重量 |
 | `d.saved` | 已記下:大門朝{dir}方 |
 
-自我檢查結論句(`checkVerdictText(check, lockSeconds, { near, dir })`,放在 `.callout`,開頭有 ✓、! 或 i(說明)圖示,不只靠顏色;`near` = `eightImpact(方位, check.uncertaintyDeg).near`,`dir` = 方位名):
+- 標題 `d.title` 的 `{text}` 一律只寫 `common.dir`(「南方」);接近分界由下面那一行說明。
+- 畫面上最多一行結論(`near` = `eightImpact(方位, check.uncertaintyDeg).near`),依序只擇一:
+
+| 狀況 | 一行(警告色) | 主按鈕 | 小連結 |
+|---|---|---|---|
+| `inconsistent` | `d.inconsistent` | `d.toManual` | `d.useAnyway` |
+| `far`(兩次差很多,平均值不可靠) | `d.far` | `d.again` | `d.useAnyway`、`d.toManual` |
+| `single-wide`、`single-unstable`(手機誤差大或手晃;誤差範圍很寬,「剛好在中間」多半不是真的,所以排在接近分界前面) | `d.unsteady` | `d.again` | `d.useAnyway`、`d.toManual` |
+| 接近分界,且量不到 3 次 | `d.near`(`{a}` = 方位,`{b}` = `eight.neighbor`) | `d.again` | `d.useAnyway` |
+| 接近分界,已經量 3 次(不再叫人重量) | `d.nearOk` | `d.use` | — |
+| `warn`(n=3) | `d.rough` | `d.use` | — |
+| 其他(`single-ok`、`single-noacc`、`agree`、`dropped`、`warn` n=2 不接近分界) | 不顯示 | `d.use` | `d.again`(量不到 3 次時) |
+
+- 只量一次而且沒有任何警告時,直接是這個簡短畫面(標題 + 「下一步」),不多一個中間畫面。
+- 「看說明」(預設關閉)裡依序放:`d.degree`、每次讀數清單 `d.item`(不採用的那筆加 `d.dropped` 徽章並劃線)、自我檢查結論框(下表)、「手機差幾度,會不會影響結果?」區塊、下一次怎麼量(量 1 次時 `d.againHint`,量 2 次時 `d.thirdHint`)、量 2 次以上時的 `d.restart` 按鈕。
+- 「再量」保留 `readings`,回到 1B(感測器仍在跑,不重問權限)。「全部重量」清空 `readings` 回到 1B。
+- 「下一步」與「還是用這個方向」:寫入 store(第 6 節,origin `sensor`),停掉感測器,toast `d.saved`;原本就有朝向時 toast 附「復原」(還原整個舊的 `facing` 物件)。之後:有平面圖 → 步驟 3;沒有 → 步驟 2。
+
+自我檢查結論句(`checkVerdictText(check, lockSeconds, { near, dir })`,放在「看說明」裡的 `.callout`,開頭有 ✓、! 或 i(說明)圖示,不只靠顏色;`dir` = 方位名):
 
 | `check.verdict` | 圖示 | 文字 |
 |---|---|---|
@@ -387,8 +412,7 @@
 | `dropped` | ✓ | 第 {k} 次和另外兩次差很多,已經不採用;另外兩次只差 {d} 度,附近沒有明顯干擾。 |
 | `inconsistent` | ! | 三次結果都不太一致,平均值可能不準。建議改成自己選方向,或請老師用實體羅盤確認。 |
 
-- `{acc}` = `check.accuracyDeg` 取整數。不接近分界時,兩次差得有點多也不當成問題(兩次都還在同一個大方位),和下面「大門朝哪一方:不受影響」不會互相矛盾。
-- 標題 `d.title` 的 `{text}`:不接近分界時只寫 `common.dir`(「南方」);接近分界時用 `plainDirection().text`(「南方(很靠近西南方)」)。清單 `d.item` 只寫度數,方位只在標題講一次。
+- `{acc}` = `check.accuracyDeg` 取整數。不接近分界時,兩次差得有點多也不當成問題(兩次都還在同一個大方位),和「大門朝哪一方:不受影響」不會互相矛盾。
 
 `agree`、`dropped` 與 `warn`(n=2,不接近分界)時,**同一個結論框裡**再加一段(`d.systematic`,不用淡色小字):
 
@@ -396,40 +420,26 @@
 |---|---|
 | `d.systematic` | 不過如果整棟大樓鋼筋很多,幾次也可能一起偏;想更放心,可以用地圖對一次(見「手機指北針準嗎?」)。 |
 
-接著顯示「手機差幾度,會不會影響結果?」區塊(`renderDirectionImpact`,第 8.9 節),U = `check.uncertaintyDeg`;財位那一項用「這次的量測當成宅向」的試算狀態跑 `wealthStability`(8.12),還沒有平面圖時顯示「選好格局後會再幫你檢查」。
-
-按鈕(一個主按鈕,其餘次要;「全部重量」一律是 ghost):
-
-| 狀況 | 主按鈕 | 次要 |
-|---|---|---|
-| `single-ok` 且 8 方位不接近分界 | `d.use` | `d.again`(上方顯示 `d.againHint`) |
-| `single-noacc` 且 8 方位不接近分界 | `d.again`(上方顯示 `d.againHint`) | `d.use` |
-| `single-wide`、`single-unstable`,或只量一次且 8 方位接近分界 | `d.again`(上方顯示 `d.againHint`) | `d.useAnyway` |
-| `agree`、`dropped`、`warn`(n=3) | `d.use` | — |
-| `warn`(n=2)且 8 方位不接近分界 | `d.use` | `d.third`(上方顯示 `d.thirdHint`) |
-| `warn`(n=2)且 8 方位接近分界 | `d.third`(上方顯示 `d.thirdHint`) | `d.useAnyway` |
-| `far` | `d.third`(上方顯示 `d.thirdHint`) | `d.toManual`、`d.useAnyway` |
-| `inconsistent` | `d.toManual` | `d.useAnyway` |
-
-- 「再量」保留 `readings`,回到 1B(感測器仍在跑,不重問權限)。「全部重量」清空 `readings` 回到 1B。
-- 「用這個方向」與「還是用這個結果」:寫入 store(第 6 節,origin `sensor`),停掉感測器,toast `d.saved`;原本就有朝向時 toast 附「復原」(還原整個舊的 `facing` 物件)。之後:有平面圖 → 步驟 3;沒有 → 步驟 2。
+「手機差幾度,會不會影響結果?」區塊(`renderDirectionImpact`,第 8.9 節),U = `check.uncertaintyDeg`;財位那一項用「這次的量測當成宅向」的試算狀態跑 `wealthStability`(8.12),還沒有平面圖時顯示「選好格局後會再幫你檢查」。
 
 #### 1M 自己選方向
 
-原因列(`.callout`,只在從失敗轉過來時顯示):
+原因(一行警告色 `.v-easy-one.is-warn`,只在從失敗轉過來時顯示;App 內建瀏覽器優先):
 
 | 鍵 | 條件 | 文字 |
 |---|---|---|
-| `m.noSensor` | 沒有 `DeviceOrientationEvent` | 這台裝置沒有指北針(電腦通常沒有),請直接選大門朝哪個方向。 |
-| `m.noEvents` | `no-events` / `unsupported` / `insecure-context` / `no-sensor` | 偵測不到方位感測器,請直接選大門朝哪個方向。 |
-| `m.denied` | `permission-denied` / `permission-error` | `sensorMessage(status) + DENIED_HELP`(逐字見 5.7),後面接「請直接選大門朝哪個方向。」 |
-| `m.relative` | `relative-not-north` | 這台裝置無法提供指北資料,請直接選大門朝哪個方向。 |
-| `m.inApp` | 上面任一失敗且 `inAppBrowserName(navigator.userAgent)` 有值,**多加**一行 | 你現在是在 {app} 裡面開的網頁,這裡可能不能用指北針。請用 Safari 或 Chrome 打開這個網址再試一次。 |
+| `m.noSensor` | 沒有 `DeviceOrientationEvent` | 這台裝置沒有指北針,請自己選方向。 |
+| `m.noEvents` | `no-events` / `unsupported` / `insecure-context` / `no-sensor` | 讀不到手機指北針,請自己選方向。 |
+| `m.deniedShort` | `permission-denied` / `permission-error` | 沒有允許使用指北針,請自己選方向。 |
+| `m.denied` | 同上,完整說明放在「看說明」裡 | `sensorMessage(status) + DENIED_HELP`(逐字見 5.7),後面接「請直接選大門朝哪個方向。」 |
+| `m.relative` | `relative-not-north` | 這台手機給不出北方,請自己選方向。 |
+| `m.inAppShort` | 上面任一失敗且 `inAppBrowserName(navigator.userAgent)` 有值(取代上面那一行) | 在 {app} 裡可能不能用指北針,請改用 Safari 或 Chrome 開 |
+| `m.inApp` | 同上,完整說明放在「看說明」裡 | 你現在是在 {app} 裡面開的網頁,這裡可能不能用指北針。請用 Safari 或 Chrome 打開這個網址再試一次。 |
 
 | 鍵 | 文字 |
 |---|---|
 | `m.title` | 大門朝哪個方向? |
-| `m.lead` | 站在屋內面向大門,想想門外是哪一邊。 |
+| `m.lead` | 站在門內看出去,門外是哪一邊? |
 | `m.map1` | 不確定的話:打開 Google 地圖,先按右上角的小指北針,讓地圖轉回北在上面。 |
 | `m.map2` | 找到你家,看大門面對的街道在房子的哪一邊。 |
 | `m.center` | 你家 |
@@ -444,14 +454,15 @@
 | `m.degNan` | 只能輸入數字,例如 175 或 175.5 |
 | `m.degRange` | 度數要在 0 到 359.9 之間 |
 | `m.typed` | 已輸入:{deg} 度,是{text} |
-| `m.use` | 用這個方向 |
+| `m.use` | 下一步 |
+| `m.pickFirst` | 先點大門朝的方向 |
 | `m.retrySensor` | 再試一次手機指北針 |
 
-- `m.map1`、`m.map2` 以小清單放在 `m.lead` 下方。
-- 3×3 按鈕格(上北下南,跟地圖一樣):第一排 西北、北、東北;第二排 西、(中間格 `m.center`,不可點)、東;第三排 西南、南、東南。每格高 ≥ 64px(320px 寬時 ≥ 56px),`aria-pressed` 標示選中,`aria-label` 用 `m.cellAria`。
-- 度數輸入放在 `<details>`,標題 `m.degTitle`;用 `parseBearingInput`(`views/compass.js` 既有匯出,唯讀 import)解析,錯誤訊息依 reason 用 `m.degEmpty/m.degNan/m.degRange`(`role="alert"`)。輸入有效後,已選提示改成 `m.typed`,格子取消選取。
-- 主按鈕 `m.use`:還沒選時停用。選格子 → origin `pick8`,顯示方位 = `bearingOfDir8(dir)`;輸入度數 → origin `typed`。寫入後 toast `d.saved`(原本有朝向時附「復原」),下一步同 1D。
-- `m.retrySensor`(ghost)只在有 `DeviceOrientationEvent` 時顯示,回到 1A。
+- 由上到下:標題、一行 `m.lead`、原因(有才顯示)、3×3 按鈕格、已輸入提示、度數輸入摺疊、大按鈕 `m.use`、小連結 `a.help` 與 `m.retrySensor`(只在有 `DeviceOrientationEvent`、而且不是權限被拒(`permission-denied` / `permission-error`)時;按過「不允許」後不重開網頁多半不會再問)、「看說明」(完整的權限/內建瀏覽器說明、`m.map1`、`m.map2` 小清單、`m.note`)。
+- 3×3 按鈕格(上北下南,跟地圖一樣):第一排 西北、北、東北;第二排 西、(中間格 `m.center`,不可點)、東;第三排 西南、南、東南。每格高 ≥ 64px(320px 寬時 ≥ 56px),`aria-pressed` 標示選中,`aria-label` 用 `m.cellAria`。選格子時 `m.picked` 只給讀屏(格子本身已標出選中);輸入度數時才在畫面上顯示 `m.typed`。
+- 度數輸入放在 `<details>`,標題 `m.degTitle`;用 `parseBearingInput`(`views/compass.js` 既有匯出,唯讀 import)解析,錯誤訊息依 reason 用 `m.degEmpty/m.degNan/m.degRange`(`role="alert"`)。輸入有效後格子取消選取。
+- 主按鈕 `m.use`:不停用(淡色停用鈕會讓人以為壞了),還沒選時按下只跳 toast `m.pickFirst`。選格子 → origin `pick8`,顯示方位 = `bearingOfDir8(dir)`;輸入度數 → origin `typed`。寫入後 toast `d.saved`(原本有朝向時附「復原」),下一步同 1D。
+- `m.retrySensor` 回到 1A。
 
 #### 1S 已記下(已有 `facing.bearing`)
 
@@ -465,15 +476,13 @@
 | `s.typed` | 自己輸入的度數:{deg} 度 |
 | `s.other` | 約 {deg} 度 |
 | `s.doorSep` | 完整功能裡另外設定了房子朝向(約 {deg} 度)。這裡看的是大門朝向;在這裡重新量的話,兩個會合成同一個方向。 |
-| `s.next` | 就用這個,下一步 |
+| `s.next` | 下一步 |
 | `s.remeasure` | 重新量 |
 | `s.manual` | 改成自己選方向 |
 
-- 大門方位 = `facing.doorBearing`(完整功能另外設了大門方向時;八宅也是看大門)否則 `facing.bearing`。標題 `s.title` 的 `{text}` 規則同 1D(不接近分界只寫大方位)。
-- 依 `facing.source` 與 `facingCheckOf(facing)` 選小字:大門方向與房子朝向不同 → `s.other`(大門度數),並加 `.callout` `s.doorSep`(`{deg}` = 房子朝向);`sensor` 且 check.n ≥ 2 且 `check.dropped === 1` → `s.sensorDropped`;`sensor` 且 check.n ≥ 2 → `s.sensorMulti`;`sensor` 其他 → `s.sensorOne`;`pick8` → `s.pick8`;`manual` 且 `lockedAtMs == null` → `s.typed`(`{deg}` 先 `roundTenth` 再去掉 `.0`,不會出現 360);其餘 → `s.other`。
-- `pick8` 時加 `.callout`:`EASY_PICK8_NOTE`(copy.js),只出現這一次。
-- 顯示影響區塊(`renderDirectionImpact`,U = 與 `store.input()` 相同的 `facingUncertaintyOf(state)`;`pick8` 時 U = 22.5、不顯示大門那一項;自己輸入度數時 origin `typed`)。
-- 「就用這個,下一步」依有無平面圖到步驟 3 或步驟 2。
+- 畫面:標題 `s.title`(`{text}` 只寫 `common.dir`)、接近分界時一行警告 `d.nearOk`(已經記下的方向不叫人重量,大按鈕仍是「下一步」;要重量用 `s.remeasure`)、大按鈕 `s.next`(依有無平面圖到步驟 3 或步驟 2)、小連結 `s.remeasure`(→ 1A,沒有感測器時 1M)。
+- 大門方位 = `facing.doorBearing`(完整功能另外設了大門方向時;八宅也是看大門)否則 `facing.bearing`。
+- 「看說明」裡:依 `facing.source` 與 `facingCheckOf(facing)` 選的小字(大門方向與房子朝向不同 → `s.other`(大門度數),並加 `.callout` `s.doorSep`(`{deg}` = 房子朝向);`sensor` 且 check.n ≥ 2 且 `check.dropped === 1` → `s.sensorDropped`;`sensor` 且 check.n ≥ 2 → `s.sensorMulti`;`sensor` 其他 → `s.sensorOne`;`pick8` → `s.pick8`;`manual` 且 `lockedAtMs == null` → `s.typed`(`{deg}` 先 `roundTenth` 再去掉 `.0`,不會出現 360);其餘 → `s.other`)、`pick8` 時的 `EASY_PICK8_NOTE`(copy.js)、影響區塊(`renderDirectionImpact`,U = 與 `store.input()` 相同的 `facingUncertaintyOf(state)`;`pick8` 時 U = 22.5、不顯示大門那一項;自己輸入度數時 origin `typed`)、按鈕 `s.manual`(→ 1M)。
 
 ### 5.3 步驟 2:選格局(可跳過)
 
@@ -483,50 +492,54 @@
 
 | 鍵 | 文字 |
 |---|---|
-| `l.title` | 你家大概長什麼樣子? |
-| `l.lead` | 選一個最像的格局,就能在圖上標出財位在哪個角落。大概像就好,不用很準。 |
-| `l.cardAria` | {label}:{desc},{size} |
+| `l.title` | 你家比較像哪一種? |
+| `l.size.studio` | 約 10 坪 |
+| `l.size.two` | 約 19 坪 |
+| `l.size.three` | 約 30 坪 |
+| `l.size.shop` | 約 18 坪 |
+| `l.descItem` | {label}:{desc} |
 | `l.desc.studio` | 客廳加一間小臥室、小廚房、廁所,約 10 坪 |
 | `l.desc.two` | 客廳、廚房、兩間房間、廁所,約 19 坪 |
 | `l.desc.three` | 客廳、餐廳、三間房間加一間書房,約 30 坪 |
 | `l.desc.shop` | 一間店面,後面是倉庫和廁所 |
-| `l.doorTitle` | 大門在哪一邊? |
+| `l.doorTitle` | 站在屋內看大門,門在: |
 | `l.doorLead` | 站在進門的那個空間(通常是客廳)中間,面向有大門的那面牆。大門在這面牆的哪一邊? |
 | `l.left` | 左邊 |
-| `l.center` | 正中間 |
+| `l.center` | 中間 |
 | `l.right` | 右邊 |
 | `l.doorWhy` | `EASY_DOOR_WHY` 或 `EASY_DOOR_SAME`(copy.js) |
 | `l.previewNote` | 圖的上方就是大門那一面,金色是大門。 |
-| `l.next` | 下一步 |
-| `l.skip` | 都不像,先跳過 |
+| `l.next` | 看財位 |
+| `l.pickFirst` | 先選一個最像的 |
+| `l.skip` | 都不像,跳過 |
 | `l.applied` | 已套用「{label}」 |
-| `l.removed` | 已拿掉格局 |
+| `l.removed` | 沒有選格局,只看方向 |
 | `l.cantMove` | 這個格局的大門放不到那個位置,先保留原本的位置。 |
 
-- 範本卡:`TEMPLATES` 去掉 `custom`,每張卡有縮圖(`planPreviewSvg(plan, { size: 'thumb' })`)、`label`、說明 `l.desc.<id>`(和範本實際的房間一致;完整功能的 `desc` 不動)、`size`,`aria-pressed` 標示選中。
-- 選了範本後出現大門位置分段控制(`.seg`,預設「左邊」= 範本原樣)與大預覽(`planPreviewSvg(plan, { size: 'large' })`)。「右邊」= 整張圖左右鏡射(大門在房子正面的右側,客廳也在右邊);「正中間」= 進門那個空間前牆的正中間(`withDoorSide`,8.5)。
-- 分段控制下方的說明:同一個範本的大門放左、中、右三種位置,排第一的財位都在同一個房間的同一個角落(`sameTopForPlans`,8.12)→ `EASY_DOOR_SAME`;否則 → `EASY_DOOR_WHY`。
+- 範本卡:`TEMPLATES` 去掉 `custom`,每張卡只有縮圖(`planPreviewSvg(plan, { size: 'thumb' })`;選中的那張用目前的平面圖,大門位置會跟著變)、`label`、坪數 `l.size.<id>`,`aria-pressed` 標示選中。
+- 選了範本後才出現一行 `l.doorTitle`(題目本身就講明「站在屋內看大門」,左右才不會看反)與大門位置分段控制(`.seg`,`aria-labelledby` 指向那一行,預設「左邊」= 範本原樣)。「右邊」= 整張圖左右鏡射(大門在房子正面的右側,客廳也在右邊);「中間」= 進門那個空間前牆的正中間(`withDoorSide`,8.5)。
+- 「看說明」裡:`l.doorLead`;同一個範本的大門放左、中、右三種位置,排第一的財位都在同一個房間的同一個角落(`sameTopForPlans`,8.12)→ `EASY_DOOR_SAME`,否則 → `EASY_DOOR_WHY`;大預覽(`planPreviewSvg(plan, { size: 'large' })`)與 `l.previewNote`(以上三項只在選了範本後);4 個範本的房間說明(`l.descItem`,`{desc}` = `l.desc.<id>`;完整功能的 `desc` 不動)。
 - **寫入時機**:點範本或改大門位置時立刻寫入:
   ```js
   const res = withDoorSide(buildTemplate(id).plan, doorSide);
   store.update(d => { d.plan = res.plan; d.ui.easyLayout = { template: id, doorSide: res.moved ? doorSide : 'left' }; });
   ```
   `res.moved === false` 時跳 toast `l.cantMove`,分段控制退回「左邊」。原本有平面圖(沒被改過的簡單範本)時,第一次換範本跳 toast `l.applied` 附「復原」。
-- 「下一步」(沒選範本時停用)→ 步驟 3。
-- 「都不像,先跳過」(ghost):目前的 plan 是沒被改過的簡單範本時,設 `plan = null`、`ui.easyLayout = null`,跳 toast `l.removed` 附「復原」;然後 `easyStep = 'result'` 進步驟 3。
-- 「上一步」(ghost)→ 步驟 1(1S)。
+- 大按鈕「看財位」→ 步驟 3。沒選範本時按鈕不停用(淡色停用鈕會讓人以為壞了),按下只跳 toast `l.pickFirst`。
+- 小連結「都不像,跳過」:目前的 plan 是沒被改過的簡單範本時,設 `plan = null`、`ui.easyLayout = null`,跳 toast `l.removed` 附「復原」;然後 `easyStep = 'result'` 進步驟 3。
+- 小連結「上一步」→ 步驟 1(1S)。
 
 #### 2B 已有自己畫的平面圖
 
 | 鍵 | 文字 |
 |---|---|
 | `l.ownTitle` | 你已經畫好平面圖了 |
-| `l.ownLead` | 會直接用你在完整功能裡畫的平面圖。想修改的話,請到完整功能的「平面圖」。 |
-| `l.ownNext` | 下一步 |
+| `l.ownLead` | 會直接用你畫的平面圖。 |
+| `l.ownNext` | 看財位 |
 | `l.ownEdit` | 到完整功能修改 |
 
 - 縮圖 `planPreviewSvg(state.plan, { size: 'large' })`,用 try/catch 包起來,失敗就不顯示。
-- 「到完整功能修改」→ `ctx.go('plan')`。
+- 小連結「到完整功能修改」→ `ctx.go('plan')`。
 
 ### 5.4 共用說明面板「手機指北針準嗎?」
 
@@ -581,13 +594,23 @@ const sum = r && !r.error ? renderEasySummary(r) : null;       // core/copy.js(�
 
 | 鍵 | 文字 |
 |---|---|
-| `r.retest` | 大門的方向剛好在「{a}」和「{b}」兩個方位的分界附近,差幾度結果就可能不同。建議回第 1 步再量一次。 |
-| `r.retestBtn` | 重新量方向 |
-| `r.shaky` | 上次量的時候讀數有點晃,結果僅供參考,建議改天再量一次。 |
+| `r.title` | 你家的財位 |
+| `r.change` | 方向差一點,可能換到{place} |
+| `r.changeSameRoom` | 方向差一點,可能換到同一間的另一個角落 |
+| `r.changeAny` | 方向差一點,財位可能換位置 |
+| `r.changeTier` | 方向差一點,評等可能會變 |
+| `r.near` | 大門剛好在{a}方和{b}方中間,結果可能不同 |
+| `r.nearMore` | 大門的方向剛好在「{a}」和「{b}」兩個方位的分界附近,差幾度結果就可能不同。想更準,可以回第 1 步換個位置再量一次。 |
+| `r.shaky` | 上次量的時候手有點晃,結果僅供參考 |
+| `r.notAdvised` | 這裡目前不建議當財位,要先處理的地方寫在說明裡 |
+| `r.retestBtn` | 重新量 |
+| `r.more` | 看詳細說明 |
 | `r.mapNote` | 金色「財」字就是財位。圖的上方是大門那一面。 |
 | `r.dirNote` | 金色那一塊是比較有利的方位。圖的上方是大門那一面。 |
 | `r.inHouse` | 在房子的{dir}方 |
 | `r.frame` | 前、後、左、右都是以「站在屋內、面向大門」來說。 |
+| `r.frameShort` | 站在屋內、面向大門時: |
+| `r.darkWhere` | 從家裡正中間看,{dir}方那一區 |
 | `r.remedyTitle` | 先處理這一點 |
 | `r.tipsTitle` | 財位佈置的傳統說法 |
 | `r.tipsNote` | 屬民俗性質,請依自己的空間與習慣調整。 |
@@ -606,44 +629,47 @@ const sum = r && !r.error ? renderEasySummary(r) : null;       // core/copy.js(�
 | `r.othersTitle` | 其他可以考慮的位置({n}) |
 | `r.showing` | 圖上標示:{place} |
 | `r.backToBest` | 回到最佳位置 |
-| `r.done` | 完成 |
-| `r.doneToast` | 已幫你記好,下次打開會直接看到結果。 |
 | `r.full` | 看專業版分析(名詞較多) |
 | `r.remeasure` | 重新量方向 |
 | `r.editLayout` | 修改格局 |
-| `r.moreDisclaimers` | 更多說明 |
 | `r.errTitle` | 暫時算不出財位 |
 | `r.errBody` | 目前填的資料算不出結果,資料沒有遺失。可以回到第 1 步重新量,或到完整功能檢查。 |
 | `r.errStep1` | 回到第 1 步 |
 | `r.errPro` | 到完整功能檢查 |
 
 1. 步驟條(第 3 項為目前步驟)。
-2. 誠實提醒(`.callout`,依序):
-   - 排第一的財位會換(`wealthStability(...).status === 'changes'`)→ `.callout.warn`:`renderStabilityNote({ change, place, from, to, origin })`(copy.js;`place` = `placeText(會換成的那一個, plan)`),附 `.btn-sm` `r.retestBtn`(→ 步驟 1 的 1A)。
-   - 否則,上面的「接近分界」為真 → `.callout.warn`:`r.retest`(`{a}` = 目前方位,`{b}` = `sectorOf8(大門方位).neighbor`),附 `.btn-sm` `r.retestBtn`(→ 1A)。
-   - `facing.source === 'sensor'` 且 `facing.sigma > SENSOR_DEFAULTS.lockMaxStdDeg` → `r.shaky`。
-   - 自己選 8 方位不另外放提醒(`EASY_PICK8_NOTE` 只在 1S 出現一次);方向不確定會不會換財位,由第一項判斷(U = 22.5)。
-3. **財位卡**(`.card.wealth`):
-   - 小標(`.card-title`):`sum.title`。
-   - 圖:`model.map` 有值 → `mountMiniPlan(host, { ...model.map, markers: [最佳那一個], selectedId: best.id, sectorLabels: 'dir8' })`(四周標「北、東北…」,不標卦名),下方 `.faint` `r.mapNote`;沒有平面圖(最佳是方位)→ `directionDiagramSvg({ upBearing: 大門的顯示朝向, highlight: best.dir })`,下方 `r.dirNote`。
+2. **財位卡**(`.card.wealth`):
+   - 標題(`.card-title`):`sum.title` 是 `EASY_TITLE.spot` 時寫 `r.title`,否則照 `sum.title`(方位版、沒有特別突出的位置)。
+   - 圖:`model.map` 有值 → `mountMiniPlan(host, { ...model.map, markers: [最佳那一個], selectedId: best.id, sectorLabels: 'dir8', plain: true })`(`plain`:只畫房間、房間名、大門與金色「財」,不畫方位扇形與虛線、中心十字、八方位名稱、指北針、窗;完整功能的縮圖不變);沒有平面圖(最佳是方位)→ `directionDiagramSvg({ upBearing: 大門的顯示朝向, highlight: best.dir })`。圖下平常不寫說明(圖上已有金色「財」字);看其他位置時才顯示 `r.showing` 與 `.btn-sm .btn-ghost` `r.backToBest`。
+   - `placeText(...).usesFrame`(位置用到前後左右)時,大字上方一行小字 `r.frameShort`。
    - 大字(`.card-lead .kai`):`placeText(...)`。
+   - 沒有平面圖(最佳是方位)時,大字下一行 `r.darkWhere`(`{dir}` = 那個方位),講清楚方位是從家裡正中間算的。
+   - 一行 `EASY_USE_TIP`(copy.js,「這樣用:…」):只在 `sum.softTips.length > 0`(沒有平面圖的方位版照原邏輯不顯示)且排第一的不是「不建議」時。
+   - 排第一的評等是「不建議」時:一行 `r.notAdvised`。
+   - 會影響結果的提醒(一行警告色,後面接小連結 `r.retestBtn`「重新量」,只擇一,依序):
+     - 排第一的財位會換(`wealthStability(...).status === 'changes'`):換位置 → `r.change`(`{place}` 只寫房間名 `roomLabel(plan, 會換成的那一個.roomId)`,會換成方位時寫那個方位;會換成同一間房的另一個角落時改用 `r.changeSameRoom`,免得只寫房間名看起來和答案一樣;哪個角落寫在「看詳細說明」的完整句子裡;取不到時 `r.changeAny`);換評等 → `r.changeTier`。旁邊小連結 `r.retestBtn`(→ 步驟 1 的 1A)。
+     - 否則,「接近分界」為真 → `r.near`(`{a}` = 目前方位,`{b}` = `sectorOf8(大門方位).neighbor`),旁邊小連結 `r.retestBtn`;完整的 `r.nearMore` 放在「看詳細說明」。
+     - 否則,`facing.source === 'sensor'` 且 `facing.sigma > SENSOR_DEFAULTS.lockMaxStdDeg` → `r.shaky`。
+     - 自己選 8 方位不另外放提醒(`EASY_PICK8_NOTE` 只在 1S 的說明裡);方向不確定會不會換財位,由第一項判斷(U = 22.5)。
+3. **看詳細說明**(`<details class="v-card-more v-easy-fold">`,標題 `r.more`,預設關閉;打開與否在重畫時保留;看其他位置時自動打開),依序:
    - 一行:`r.inHouse`(最佳是方位時不顯示)+ 三段標籤徽章(`TIER_BADGE[tier]`,文字 `TIER_LABEL[tier]`)。
-   - `placeText` 用到前後左右時,加一行 `.faint` `r.frame`。
+   - `r.mapNote`(有平面圖)或 `r.dirNote`(方位圖);`placeText` 用到前後左右時 `r.frame`。
    - `sum.sentences` 每句一個 `<p>`(排第一的是從某個房間自己的房門算的斜對角時,第一句是 `EASY_METHOD.mingRoom`,講清楚不是從大門算的)。
    - `model.best.checks`:`<ul class="list">`,✓ / ✗ 記號(`.ok` / `.bad`)。
    - `model.best.remedies[0]` 有值時:`.callout`,小標 `r.remedyTitle`,接 `<strong>{headline}</strong>` 與 `<p>{body}</p>`。
-   - `sum.softTips.length > 0` 時:`<details>`,標題 `r.tipsTitle`,內容為 `sum.softTips` 清單與 `.faint` `r.tipsNote`。
-   - `.faint`:`sum.tierNote`。
-4. **想看更完整的分析?**(`.card`,只列第一個符合的項目,依序):
-   - 沒有平面圖 → `r.morePlan` + 按鈕 `r.morePlanBtn`(到步驟 2)。
-   - 沒有 `building.builtYear` → `r.moreYear`,就地輸入:`inputmode="numeric"`,標籤 `r.yearLabel`,placeholder `r.yearPlaceholder`,小字 `r.yearHint`。輸入時用 `parseYearLoose(text, Date.now())`:成功且是民國年 → 即時顯示 `r.yearRoc`;失敗 → `role="alert"` 顯示 `res.message`。按 `r.yearSave` 寫入 `building.builtYear`,toast `r.yearSaved` 附「復原」。
-   - 沒有住戶 → `r.moreResidents` + 按鈕 `r.moreResidentsBtn`(`ctx.go('house')`)。
-   - 三樣都齊 → 整張卡不顯示。
-5. **其他位置**(`model.others.length > 0` 才顯示):`<details>`,標題 `r.othersTitle`。每列是一顆按鈕:`placeText` + 三段標籤徽章。點了:`mini.update({ markers: [該位置], selectedId })` 並把圖捲進畫面,圖下說明改成 `r.showing`,再出現 `.btn-sm .btn-ghost` `r.backToBest`。沒有平面圖時改為切換方位圖的塗色塊。
-6. 主按鈕 `r.done`:流程到這裡結束,捲回頂端並 toast `r.doneToast`。
-7. 次要按鈕列:`r.remeasure`(步驟 1 的 1A,使用者明確要重量)、`r.editLayout`(步驟 2)。
-8. ghost 按鈕 `r.full` → `ctx.go('wealth')`(專業財位頁名詞較多,所以不當主按鈕)。
-9. 頁尾 `.faint`:`model.disclaimers[0]`;`<details>` 標題 `r.moreDisclaimers`,內容 `EASY_DISCLAIMERS`(copy.js 白話版)與 `CARD_DISCLAIMER`。
+   - `sum.softTips.length > 0` 時:小標 `r.tipsTitle`、`sum.softTips` 清單與 `r.tipsNote`。
+   - `sum.tierNote`。
+   - 排第一的財位會換時,完整的 `renderStabilityNote({ change, place, from, to, origin })`(copy.js);大門接近分界時 `r.nearMore`;上次量時手晃但畫面上已有別的提醒時,`r.shaky` 也放在這裡。
+   - **其他位置**(`model.others.length > 0` 才顯示):`<details>`,標題 `r.othersTitle`。每列是一顆按鈕:`placeText` + 三段標籤徽章。點了:`mini.update({ markers: [該位置], selectedId })` 並把圖捲進畫面,圖下說明改成 `r.showing` 與 `r.backToBest`。沒有平面圖時改為切換方位圖的塗色塊。
+   - **想看更完整的分析?**(`.card`,只列第一個符合的項目,依序):
+     - 沒有平面圖 → `r.morePlan` + 按鈕 `r.morePlanBtn`(到步驟 2)。
+     - 沒有 `building.builtYear` → `r.moreYear`,就地輸入:`inputmode="numeric"`,標籤 `r.yearLabel`,placeholder `r.yearPlaceholder`,小字 `r.yearHint`。輸入時用 `parseYearLoose(text, Date.now())`:成功且是民國年 → 即時顯示 `r.yearRoc`;失敗 → `role="alert"` 顯示 `res.message`。按 `r.yearSave` 寫入 `building.builtYear`,toast `r.yearSaved` 附「復原」。
+     - 沒有住戶 → `r.moreResidents` + 按鈕 `r.moreResidentsBtn`(`ctx.go('house')`)。
+     - 三樣都齊 → 整張卡不顯示。
+   - 按鈕 `r.full` → `ctx.go('wealth')`(專業財位頁名詞較多)與小連結 `a.help`。
+   - `model.disclaimers[0]` 與 `EASY_DISCLAIMERS`(copy.js 白話版)。
+4. 兩個並排的小按鈕:`r.remeasure`(步驟 1 的 1A,使用者明確要重量)、`r.editLayout`(步驟 2;還沒有平面圖時字改成 `r.morePlanBtn`「選格局」)。流程到這裡就結束,沒有「完成」按鈕。
+5. 一行小字 `CARD_DISCLAIMER`(copy.js)。
 
 #### 空狀態與錯誤
 - `r.error === 'NO_FACING'`:自動回步驟 1。
@@ -969,6 +995,7 @@ export const EASY_DISCLAIMERS = Object.freeze([
   '要更仔細,請找老師到現場看。',
 ]);
 export const IMPACT_SHORT = Object.freeze({ ok: '對 8 個大方位:不影響。', near: '對 8 個大方位:接近分界,可能影響。' });
+export const EASY_USE_TIP = '這樣用:保持整潔,不放垃圾桶、鏡子';   // 結果頁的一行(375px 寬放得下),由 SOFT_ADVICE 的 tidy(前半句)、noTrash、noMirror 組成
 
 export function renderEasySummary(report)
   // 只從既有 report 衍生,不新增任何風水判斷:
@@ -1148,12 +1175,12 @@ export function sameTopForPlans(state, rawBearing, { left, center, right })
 1. **尺寸與主題**:375×812、320×640、1280×800 各截圖;深色與淺色各一次。320 寬沒有水平捲動、標題列按鈕不被擠掉、3×3 格不換行。主控台 0 錯誤、0 警告。
 2. **觸控目標**:用 `javascript_tool` 列出簡單模式所有 `button, a, input, select, summary, [role=button]` 的 `getBoundingClientRect()`,高度與寬度都 ≥ 44px(3×3 格 ≥ 56px)。
 3. **首次開啟**:清空資料 → 直接看到簡單模式第 1 步,沒有分頁列與標題摘要;網址被補成 `#/easy`。
-4. **Android 樣式量測**:連續送 `window.dispatchEvent(new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 145, beta: 0, gamma: 0, absolute: true }))`(alpha 逆時針,145 = 方位 215)→ 大字「西南方」、括號「(稍微偏南)」→ 記下 → 3 秒 → 1D 顯示 `single-noacc`(主按鈕「移一步,再量一次」)→ 移一步再量(alpha 147)→ `agree`「2 次只差 2 度」→ 用這個方向 → 進步驟 2。
-5. **iOS 樣式**:送 `'deviceorientation'` 事件並以 `Object.defineProperties` 加 `webkitCompassHeading` 與 `webkitCompassAccuracy` = 8 / 18 / 40 / −1 → 依序出現 `ios-ok`、`ios-wide`、`ios-bad`、`uncalibrated` 的原因句;−1 時「記下這個方向」被擋並顯示原因。精度 20、方位 196 時記下 → 1D 為 `single-wide`,影響區塊的大門那一項是「可能受影響」。
+4. **Android 樣式量測**:連續送 `window.dispatchEvent(new DeviceOrientationEvent('deviceorientationabsolute', { alpha: 145, beta: 0, gamma: 0, absolute: true }))`(alpha 逆時針,145 = 方位 215)→ 大字「西南方」、讀數正常時沒有提醒行 → 就是這個方向 → 3 秒 → 1D 標題「大門朝:西南方」、主按鈕「下一步」、小連結「再量一次」(`single-noacc` 的結論句在「看說明」裡)→ 再量一次(alpha 147)→「看說明」裡是 `agree`「2 次只差 2 度」→ 下一步 → 進步驟 2。
+5. **iOS 樣式**:送 `'deviceorientation'` 事件並以 `Object.defineProperties` 加 `webkitCompassHeading` 與 `webkitCompassAccuracy` = 8 / 18 / 40 / −1 → 依序出現 `ios-ok`、`ios-wide`、`ios-bad`、`uncalibrated` 的原因句;−1 時「就是這個方向」被擋並顯示原因。精度 20、方位 196 時記下 → 1D 為 `single-wide`:一行「這次不太穩…」、主按鈕「再量一次」,「看說明」裡影響區塊的大門那一項是「可能受影響」。
 6. **姿勢**:送 beta = 40 → 顯示「手機有點斜,請放平(傾斜 40 度)」且不能記下;放平後擋下的訊息自動消失。
-7. **接近分界**:alpha 使方位 = 201 → 1D 顯示「可能影響」與主按鈕「移一步,再量一次」。
+7. **接近分界**:alpha 使方位 = 201 → 1D 顯示一行「剛好在南方和西南方中間…」與主按鈕「再量一次」。
 8. **格局**:選「2 房 1 廳」,切換左 / 中 / 右,預覽的金色大門跟著移動,「右邊」時大門在房子正面的右側;選「店面單間」時說明改成 `EASY_DOOR_SAME`,「正中間」不出錯。
-9. **結果**:縮圖有「財」,四周是「北、東北…」而不是卦名;位置文字是「某房間的前方/後方左邊/右邊角落」,不含「宮」「明財位」;填年份「94」即時顯示「民國 94 年 = 西元 2005 年」,填好後結果重算;朝向 171 度有年份時出現「排第一的財位可能換成…」提醒;主按鈕是「完成」。
+9. **結果**:縮圖有「財」,四周是「北、東北…」而不是卦名;位置文字是「某房間的前方/後方左邊/右邊角落」,不含「宮」「明財位」;填年份「94」即時顯示「民國 94 年 = 西元 2005 年」,填好後結果重算;朝向 171 度有年份時出現一行「方向差一點,財位可能換到…」提醒;沒有「完成」按鈕。
 10. **重新整理**:回到第 3 步,資料都在。
 11. **切換**:按「完整功能」→ 5 個分頁都在,財位頁的最佳位置與簡單模式相同 → 按「上一頁」回到簡單模式 → 按「簡單模式」鈕回到第 3 步。
 12. **不覆蓋**:在完整功能拖動平面圖的一個房間 → 回簡單模式第 2 步顯示「你已經畫好平面圖了」,平面圖沒被換掉。

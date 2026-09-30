@@ -22,11 +22,11 @@ import { DEFAULT_SETTINGS } from '../../core/settings.js';
 import { DIR8, circularDiff } from '../../core/geo.js';
 import {
   renderReport, renderEasySummary, renderDirectionImpact, renderStabilityNote,
-  EASY_PICK8_NOTE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_DISCLAIMERS, CARD_DISCLAIMER,
+  EASY_PICK8_NOTE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_DISCLAIMERS, CARD_DISCLAIMER, EASY_TITLE, EASY_USE_TIP,
 } from '../../core/copy.js';
 import { parseBearingInput } from './compass.js';
 import { safeReport, buildWealthModel, TIER_LABEL, TIER_BADGE } from './wealth.js';
-import { mountMiniPlan } from '../canvas/miniPlan.js';
+import { mountMiniPlan, roomLabel } from '../canvas/miniPlan.js';
 import { TEMPLATES, buildTemplate } from '../plan/templates.js';
 
 const T = EASY_TEXT;
@@ -37,6 +37,11 @@ const GRID8 = Object.freeze([7, 0, 1, 6, null, 2, 5, 4, 3]);
 /** 感測器還沒開始就被判斷「這台裝置沒有指北針」時的原因碼(畫面內部用) */
 const NO_SENSOR_API = 'no-sensor-api';
 const STEP_NAME = Object.freeze({ facing: 'steps.facing', layout: 'steps.layout', result: 'steps.result' });
+/** 1B 那一行提醒:accuracyView 的 reasonKey → 簡單模式的縮短句(沒列到的就用原本的原因句) */
+const WARN_KEY = Object.freeze({
+  'ios-wide': 'b.warnWide', 'ios-bad': 'b.warnBad', jitter: 'b.warnJitter', 'jitter-bad': 'b.warnJumpy',
+  uncalibrated: 'b.warnCalib', waiting: 'b.warnWait',
+});
 
 export async function mount(root, ctx) {
   const { store } = ctx;
@@ -56,6 +61,7 @@ export async function mount(root, ctx) {
   let lockTimer = 0;
   let lockMsg = '';
   let lockMsgGate = false; // lockMsg 是「姿勢不對、還不能記下」:姿勢恢復後自動清掉
+  let liveWarn = ''; // 1B 目前讀數的一行提醒(正常時是空字串)
   let failStatus = null;
   let failMessage = '';
   // 1M 的選擇(畫面內狀態,重畫時保留)
@@ -66,6 +72,7 @@ export async function mount(root, ctx) {
   // 步驟 3
   let yearText = '';
   let showingId = null;
+  let resultMoreOpen = false; // 結果頁「看詳細說明」有沒有打開(重畫時保留)
   let appliedToastShown = false;
   // DOM 實例與計時器
   let dial = null;
@@ -96,8 +103,6 @@ export async function mount(root, ctx) {
   const hasSeparateDoor = (s) => isNum(s.facing.doorBearing) && isNum(s.facing.bearing) && circularDiff(s.facing.doorBearing, s.facing.bearing) >= 0.05;
   /** 已存朝向的來源:手機量的 / 自己輸入度數(含完整功能輸入的)/ 自己選 8 方位 */
   const originOf = (f) => (f.source === 'pick8' ? 'pick8' : f.source === 'sensor' ? 'sensor' : 'typed');
-  /** 大字方位:平常只講「南方」;接近分界時才加括號說偏向哪邊 */
-  const dirText = (pd, near) => (near ? pd.text : fillText('common.dir', { dir: pd.dir8 }));
   /**
    * 「方向差 U 度,排第一的財位會不會換」(沒有平面圖時先不判斷,回 null)。
    * rawBearing 是宅向(磁北);state 可以是試算用的草稿(例如還沒存的量測結果)。
@@ -109,7 +114,11 @@ export async function mount(root, ctx) {
     if (st.status !== 'changes') return null;
     if (st.change === 'tier') return { status: 'changes', change: 'tier', from: TIER_LABEL[st.center.tier], to: TIER_LABEL[st.alt.tier] };
     const p = placeText(st.alt, s.plan);
-    return { status: 'changes', change: 'place', place: p ? p.text : '' };
+    // 畫面上那一行只講房間(或方位),角落細節在「看詳細說明」的完整句子裡
+    const room = st.alt.kind === 'dark' ? (p ? p.text : '') : roomLabel(s.plan, st.alt.roomId);
+    // 換到同一間房的另一個角落時,只寫房間名會和答案看起來一樣
+    const sameRoom = st.alt.kind !== 'dark' && st.center.kind !== 'dark' && st.alt.roomId != null && st.alt.roomId === st.center.roomId;
+    return { status: 'changes', change: 'place', place: p ? p.text : '', room, sameRoom };
   };
   const sensorBusy = () => step === 'facing' && (sub === '1B' || sub === '1D');
 
@@ -185,7 +194,6 @@ export async function mount(root, ctx) {
     const pd = plainDirection(disp);
     if (dial) dial.set(disp);
     if (refs.big) refs.big.textContent = pd ? fillText('common.dir', { dir: pd.dir8 }) : T['b.reading'];
-    if (refs.paren) refs.paren.textContent = pd && pd.paren ? fillText('b.paren', { paren: pd.paren }) : '';
     if (refs.deg) refs.deg.textContent = pd ? fillText('b.degree', { deg: pd.deg }) : '';
     // 「請放平」這類擋下記下的訊息,姿勢恢復後就清掉,不要和目前的狀態互相矛盾
     if (lockMsgGate && lockMsg && !locking && st.gate && st.gate.allowed) {
@@ -193,16 +201,10 @@ export async function mount(root, ctx) {
       lockMsgGate = false;
       updateLockUI();
     }
+    // 讀數正常時什麼都不顯示;有問題時只顯示一行短句(姿勢不對優先,其次是穩定度原因的縮短版)
     const av = accuracyView(st.reading);
-    if (refs.bars) refs.bars.forEach((b, i) => b.classList.toggle('is-on', i < av.bars));
-    if (refs.stab) refs.stab.dataset.level = av.level;
-    if (refs.stabLabel) refs.stabLabel.textContent = av.label;
-    if (refs.stabReason) refs.stabReason.textContent = av.reason;
-    if (refs.posture) {
-      const hint = postureHint(st.reading);
-      refs.posture.textContent = hint;
-      refs.posture.hidden = !hint;
-    }
+    liveWarn = postureHint(st.reading) || (av.level === 'green' ? '' : T[WARN_KEY[av.reasonKey]] || av.reason);
+    updateNote();
     // 讀屏:只在換格(方位或偏向程度改變)而且停住 350ms 後才念
     const key = pd ? `${pd.dir8}|${pd.level}` : '';
     if (key !== announceKey) {
@@ -235,10 +237,21 @@ export async function mount(root, ctx) {
       }
     }
     if (refs.progress) refs.progress.hidden = !locking || reduced;
-    if (refs.lockMsg) {
-      refs.lockMsg.textContent = lockMsg;
-      refs.lockMsg.hidden = !lockMsg;
-    }
+    if (refs.lockMsg) refs.lockMsg.textContent = lockMsg;
+    updateNote();
+  }
+
+  /**
+   * 1B 按鈕下方唯一的一行:「樣本不夠/中斷了」優先;姿勢或讀數有問題時只講那一行
+   * (按下被擋的原因和它是同一件事,不再重複一行);其餘才顯示被擋的原因。
+   * 完整的被擋訊息另外給讀屏(refs.lockMsg,role="alert")。
+   */
+  function updateNote() {
+    const el = refs.note;
+    if (!el) return;
+    const text = lockMsg && !lockMsgGate ? lockMsg : (liveWarn || lockMsg);
+    if (el.textContent !== text) el.textContent = text;
+    el.classList.toggle('is-empty', !text);
   }
 
   function doLock() {
@@ -362,12 +375,28 @@ export async function mount(root, ctx) {
   const title = (text) => h('h2', { class: 'v-easy-title', tabindex: '-1' }, text);
   const bigBtn = (text, onclick, extra = {}) => h('button', { type: 'button', class: 'btn btn-primary btn-block v-easy-big', onclick, ...extra }, text);
   const btn = (text, onclick, cls = 'btn') => h('button', { type: 'button', class: `${cls} v-easy-btn`, onclick }, text);
+  /** 小連結(按鈕外觀是文字連結,觸控範圍仍 ≥ 44px) */
+  const link = (text, onclick, fk = null) => h('button', { type: 'button', class: 'btn btn-ghost v-easy-link', 'data-fk': fk, onclick }, text);
+  const links = (...items) => {
+    const list = items.flat().filter(Boolean);
+    return list.length ? h('div', { class: 'v-easy-links' }, list) : null;
+  };
+  /** 一行短句;warn = 會影響結果的提醒(警告色,前面加「!」,不只靠顏色) */
+  const oneLine = (text, warn = false) => h('p', { class: warn ? 'v-easy-one is-warn' : 'v-easy-one' },
+    warn ? h('span', { class: 'v-easy-icon', 'aria-hidden': 'true' }, '!') : null, text);
+  /** 「看說明」摺疊區(預設關閉):數字、檢查、例外情況都收在這裡 */
+  const fold = (children, { summary = T['common.more'], open = false, ontoggle = null, cls = '' } = {}) => {
+    const body = [children].flat(Infinity).filter(Boolean);
+    if (!body.length) return null;
+    return h('details', { class: `v-card-more v-easy-fold${cls ? ` ${cls}` : ''}`, open: open ? true : null, ontoggle },
+      h('summary', { 'data-fk': 'fold' }, summary),
+      h('div', { class: 'v-easy-foldbody' }, body));
+  };
   const helpBtn = () => (hasSensorApi
     ? h('button', {
-      type: 'button', class: 'btn btn-ghost v-easy-btn v-easy-help', 'data-fk': 'help',
+      type: 'button', class: 'btn btn-ghost v-easy-link v-easy-help', 'data-fk': 'help',
       onclick: (e) => openCompassHelp(ctx, store.get(), { opener: e.currentTarget }),
-    },
-      h('span', { class: 'v-easy-help-i', 'aria-hidden': 'true' }, 'i'), T['a.help'])
+    }, T['a.help'])
     : null);
   const calloutOf = (icon, text, warn) => h('div', { class: warn ? 'callout warn v-easy-callout' : 'callout v-easy-callout' },
     icon ? h('span', { class: 'v-easy-icon', 'aria-hidden': 'true' }, icon) : null,
@@ -396,9 +425,7 @@ export async function mount(root, ctx) {
         : h('span', { class: 'v-easy-stepbtn is-disabled', 'aria-current': current ? 'step' : null, 'aria-disabled': 'true' }, inner);
       return h('li', { class: cls }, node);
     });
-    return h('nav', { class: 'v-easy-steps', 'aria-label': T['steps.label'] },
-      h('ol', null, items),
-      h('p', { class: 'v-easy-stepcount' }, fillText('steps.count', { n: idx + 1 })));
+    return h('nav', { class: 'v-easy-steps', 'aria-label': T['steps.label'] }, h('ol', null, items));
   }
 
   /** 進入步驟 1 時要顯示哪個子畫面(explicit = 使用者明確要重量) */
@@ -434,18 +461,18 @@ export async function mount(root, ctx) {
     + '</svg>';
 
   function view1A() {
-    const iosAsk = Boolean(win && win.DeviceOrientationEvent && typeof win.DeviceOrientationEvent.requestPermission === 'function');
+    // 只有 iPhone/iPad 會跳權限視窗:要有 requestPermission,而且沒有 Android Chrome 才有的 deviceorientationabsolute
+    const iosAsk = Boolean(win && win.DeviceOrientationEvent && typeof win.DeviceOrientationEvent.requestPermission === 'function'
+      && !('ondeviceorientationabsolute' in win));
     const startBtn = bigBtn(T['a.start'], startSensor);
     refs.startBtn = startBtn;
     const out = [
       title(T['a.title']),
-      h('p', { class: 'v-easy-lead' }, T['a.lead']),
       h('div', { class: 'v-easy-ill', html: ILLUSTRATION }),
-      h('ol', { class: 'v-easy-howto' }, [T['a.step1'], T['a.step2'], T['a.step3']].map((t) => h('li', null, t))),
-      iosAsk ? h('p', { class: 'hint v-easy-note' }, T['a.iosNote']) : null,
       startBtn,
-      btn(T['a.manual'], () => { stopSensor(); failStatus = null; show('1M'); }),
-      helpBtn(),
+      iosAsk ? h('p', { class: 'v-easy-note v-easy-center' }, T['a.iosNote']) : null,
+      links(link(T['a.manual'], () => { stopSensor(); failStatus = null; show('1M'); }, 'manual'), helpBtn()),
+      fold(h('ol', { class: 'v-easy-howto' }, [T['a.step1'], T['a.step2'], T['a.step3']].map((t) => h('li', null, t)))),
     ];
     queueMicrotask(updateStartButton);
     return out;
@@ -454,38 +481,27 @@ export async function mount(root, ctx) {
   function view1B() {
     const dialHost = h('div', { class: 'v-easy-dial' });
     dial = mountDirDial(dialHost, { size: 240, pointerLabel: T['b.pointer'] });
-    const bars = [0, 1, 2].map(() => h('span', { class: 'v-easy-bar' }));
-    refs.bars = bars;
     refs.big = h('div', { class: 'v-easy-dir kai' }, T['b.reading']);
-    refs.paren = h('div', { class: 'v-easy-paren' });
     refs.deg = h('div', { class: 'v-easy-deg' });
     refs.live = h('div', { class: 'sr-only', 'aria-live': 'polite' });
-    refs.posture = h('div', { class: 'callout warn v-easy-callout', hidden: true });
-    refs.stabLabel = h('span', { class: 'v-easy-stab-label' });
-    refs.stabReason = h('p', { class: 'v-easy-stab-reason' });
-    refs.stab = h('div', { class: 'v-easy-stab', role: 'status' },
-      h('div', { class: 'v-easy-stab-head' }, h('span', { class: 'v-easy-bars', 'aria-hidden': 'true' }, bars), refs.stabLabel),
-      refs.stabReason);
     refs.lockBtn = bigBtn(T['b.lock'], doLock);
     refs.progress = h('div', { class: 'v-easy-progress', hidden: true, 'aria-hidden': 'true' }, h('span'));
-    refs.lockMsg = h('p', { class: 'v-easy-alert', role: 'alert', hidden: true });
+    // 按鈕下方固定留一行高:讀數有問題(太斜、手晃、誤差大、還沒校準、螢幕朝下、還沒讀到)或按下被擋時才有字,
+    // 出現或消失都不會把「就是這個方向」擠上擠下
+    refs.note = h('p', { class: 'v-easy-one is-warn v-easy-center v-easy-note1 is-empty', role: 'status' });
+    refs.lockMsg = h('p', { class: 'sr-only', role: 'alert' });
+    liveWarn = '';
     announceKey = '';
     const out = [
       title(T['b.title']),
       dialHost,
-      h('div', { class: 'v-easy-readout' },
-        h('div', { class: 'v-easy-headlabel' }, T['b.headLabel']),
-        refs.big,
-        refs.paren,
-        refs.deg),
+      h('div', { class: 'v-easy-readout' }, refs.big, refs.deg),
       refs.live,
-      refs.posture,
-      refs.stab,
       refs.lockBtn,
       refs.progress,
+      refs.note,
       refs.lockMsg,
-      btn(T['b.stop'], () => { stopSensor(); failStatus = null; show('1M'); }, 'btn btn-ghost'),
-      helpBtn(),
+      links(link(T['b.stop'], () => { stopSensor(); failStatus = null; show('1M'); }, 'stop')),
     ];
     queueMicrotask(() => { updateLive(); updateLockUI(); });
     return out;
@@ -518,46 +534,74 @@ export async function mount(root, ctx) {
       chk: check,
     });
     const toManual = () => { stopSensor(); failStatus = null; show('1M'); };
-    const hint = (key) => h('p', { class: 'hint v-easy-note' }, T[key]);
     const v = check.verdict;
-    let actions;
-    if (v === 'single-ok' && !near) {
-      actions = [bigBtn(T['d.use'], use), hint('d.againHint'), btn(T['d.again'], measureAgain)];
-    } else if (v === 'single-noacc' && !near) {
-      // 手機不回報自己的誤差:穩不代表準,主按鈕改成移一步再量
-      actions = [hint('d.againHint'), bigBtn(T['d.again'], measureAgain), btn(T['d.use'], use)];
-    } else if (v === 'single-ok' || v === 'single-noacc' || v === 'single-wide' || v === 'single-unstable') {
-      actions = [hint('d.againHint'), bigBtn(T['d.again'], measureAgain), btn(T['d.useAnyway'], use)];
-    } else if (v === 'warn' && check.n < 3 && !near) {
-      actions = [bigBtn(T['d.use'], use), hint('d.thirdHint'), btn(T['d.third'], measureAgain)];
-    } else if (v === 'warn' && check.n < 3) {
-      actions = [hint('d.thirdHint'), bigBtn(T['d.third'], measureAgain), btn(T['d.useAnyway'], use)];
+    const canAgain = check.n < 3; // 已經量 3 次:不再建議多量(要重來用「看說明」裡的「全部重量」)
+    // 畫面上最多一行結論:幾次都不一致 > 兩次差很多 > 這次不太穩 > 接近兩個方位中間 > 三次差得有點多;一般情況不顯示
+    // (兩次差很多、手機誤差大或手晃時,平均值本身就不可靠,先講這個並給「自己選方向」;
+    //  這時誤差範圍很寬,「剛好在兩個方位中間」多半不是真的)
+    let line = null;
+    let warnLine = false;
+    let mode = 'ok'; // ok:主按鈕「下一步」;retry:主按鈕「再量一次」;retry-bad:再加「自己選方向」;manual:主按鈕「自己選方向」
+    if (v === 'inconsistent') {
+      line = T['d.inconsistent'];
+      mode = 'manual';
     } else if (v === 'far') {
-      actions = [hint('d.thirdHint'), bigBtn(T['d.third'], measureAgain), btn(T['d.toManual'], toManual), btn(T['d.useAnyway'], use)];
-    } else if (v === 'inconsistent') {
-      actions = [bigBtn(T['d.toManual'], toManual), btn(T['d.useAnyway'], use)];
-    } else {
-      actions = [bigBtn(T['d.use'], use)];
+      line = T['d.far'];
+      mode = 'retry-bad';
+    } else if (v === 'single-wide' || v === 'single-unstable') {
+      line = T['d.unsteady'];
+      mode = 'retry-bad';
+    } else if (near) {
+      // 已經量 3 次就不再叫人重量,只說結果僅供參考
+      line = fillText(canAgain ? 'd.near' : 'd.nearOk', { a: eight.dir8, b: eight.neighbor });
+      warnLine = true;
+      mode = canAgain ? 'retry' : 'ok';
+    } else if (v === 'warn' && check.n >= 3) {
+      line = T['d.rough'];
+      warnLine = true;
     }
+    let actions;
+    if (mode === 'manual') {
+      actions = [bigBtn(T['d.toManual'], toManual), links(link(T['d.useAnyway'], use, 'use'))];
+    } else if (mode === 'retry') {
+      actions = [bigBtn(T['d.again'], measureAgain), links(link(T['d.useAnyway'], use, 'use'))];
+    } else if (mode === 'retry-bad') {
+      actions = [bigBtn(T['d.again'], measureAgain), links(link(T['d.useAnyway'], use, 'use'), link(T['d.toManual'], toManual, 'manual'))];
+    } else {
+      actions = [bigBtn(T['d.use'], use), links(canAgain ? link(T['d.again'], measureAgain, 'again') : null)];
+    }
+    const hintKey = check.n >= 3 ? null : check.n === 2 ? 'd.thirdHint' : 'd.againHint';
     return [
-      title(fillText('d.title', { text: dirText(pd, near) })),
-      h('p', { class: 'v-easy-deg' }, fillText('d.degree', { deg: pd.deg })),
-      h('ol', { class: 'v-easy-readings' }, items),
-      verdict ? verdictCallout(verdict) : null,
-      impactBlock({ disp, U, origin: 'sensor', s: draft, rawBearing: check.meanDeg }),
+      title(fillText('d.title', { text: fillText('common.dir', { dir: pd.dir8 }) })),
+      line ? oneLine(line, warnLine || mode !== 'ok') : null,
       actions,
-      btn(T['d.restart'], () => { readings = []; check = null; measureAgain(); }, 'btn btn-ghost'),
-      helpBtn(),
+      fold([
+        h('p', { class: 'v-easy-deg' }, fillText('d.degree', { deg: pd.deg })),
+        h('ol', { class: 'v-easy-readings' }, items),
+        verdict ? verdictCallout(verdict) : null,
+        impactBlock({ disp, U, origin: 'sensor', s: draft, rawBearing: check.meanDeg }),
+        hintKey ? h('p', { class: 'v-easy-note' }, T[hintKey]) : null,
+        readings.length > 1 ? btn(T['d.restart'], () => { readings = []; check = null; measureAgain(); }, 'btn btn-sm') : null,
+      ]),
     ];
   }
 
-  function failLines() {
-    if (!failStatus) return [];
-    if (failStatus === NO_SENSOR_API) return [T['m.noSensor']];
+  /** 1M 最上面那一行原因(只有一行;完整說明在「看說明」) */
+  function failLine() {
+    if (!failStatus) return null;
+    if (failStatus === NO_SENSOR_API) return T['m.noSensor'];
+    const app = inAppBrowserName(win && win.navigator ? win.navigator.userAgent : '');
+    if (app) return fillText('m.inAppShort', { app });
+    if (failStatus === 'permission-denied' || failStatus === 'permission-error') return T['m.deniedShort'];
+    if (failStatus === 'relative-not-north') return T['m.relative'];
+    return T['m.noEvents'];
+  }
+
+  /** 1M「看說明」裡的完整原因(權限被拒的設定步驟、App 內建瀏覽器) */
+  function failDetails() {
+    if (!failStatus || failStatus === NO_SENSOR_API) return [];
     const lines = [];
     if (failStatus === 'permission-denied' || failStatus === 'permission-error') lines.push(fillText('m.denied', { message: failMessage }));
-    else if (failStatus === 'relative-not-north') lines.push(T['m.relative']);
-    else lines.push(T['m.noEvents']);
     const app = inAppBrowserName(win && win.navigator ? win.navigator.userAgent : '');
     if (app) lines.push(fillText('m.inApp', { app }));
     return lines;
@@ -568,10 +612,13 @@ export async function mount(root, ctx) {
     const useBtn = bigBtn(T['m.use'], () => {
       if (mTyped != null) saveFacing({ displayedDeg: mTyped, origin: 'typed' });
       else if (mPick != null) saveFacing({ displayedDeg: bearingOfDir8(mPick), origin: 'pick8' });
+      else ctx.toast(T['m.pickFirst']);
     });
     const cells = [];
     const sync = () => {
       for (const c of cells) c.el.setAttribute('aria-pressed', mTyped == null && mPick === c.dir ? 'true' : 'false');
+      // 選格子時格子本身就標出來了,「已選」只念給讀屏聽;輸入度數時才顯示在畫面上
+      picked.classList.toggle('sr-only', mTyped == null);
       if (mTyped != null) {
         const pd = plainDirection(mTyped);
         picked.textContent = fillText('m.typed', { deg: mTyped, text: pd.text });
@@ -580,7 +627,6 @@ export async function mount(root, ctx) {
       } else {
         picked.textContent = '';
       }
-      useBtn.disabled = mTyped == null && mPick == null;
       err.textContent = mErr ? T[mErr] : '';
       err.hidden = !mErr;
       input.setAttribute('aria-invalid', mErr ? 'true' : 'false');
@@ -612,25 +658,30 @@ export async function mount(root, ctx) {
     });
     input.value = mText;
     const deg = h('details', { class: 'v-card-more v-easy-degbox', open: mText !== '' ? true : null },
-      h('summary', null, T['m.degTitle']),
+      h('summary', { 'data-fk': 'deg-summary' }, T['m.degTitle']),
       h('div', { class: 'field' },
         h('label', { for: inputId }, T['m.degLabel']),
         input,
         h('div', { class: 'hint', id: `${inputId}-hint` }, T['m.degHint']),
         err));
     sync();
+    const reason = failLine();
+    const denied = failStatus === 'permission-denied' || failStatus === 'permission-error';
     return [
-      failLines().map((t) => calloutOf('!', t, true)),
       title(T['m.title']),
-      h('p', { class: 'v-easy-lead' }, T['m.lead']),
-      h('ul', { class: 'v-easy-maphelp' }, h('li', null, T['m.map1']), h('li', null, T['m.map2'])),
+      h('p', { class: 'v-easy-sub' }, T['m.lead']),
+      reason ? oneLine(reason, true) : null,
       grid,
       picked,
-      h('p', { class: 'faint v-easy-small' }, T['m.note']),
       deg,
       useBtn,
-      hasSensorApi ? btn(T['m.retrySensor'], () => { failStatus = null; show('1A'); }, 'btn btn-ghost') : null,
-      helpBtn(),
+      // 按過「不允許」後(尤其 iPhone)不重開網頁多半不會再問,這時不放「再試一次」
+      links(helpBtn(), hasSensorApi && !denied ? link(T['m.retrySensor'], () => { failStatus = null; show('1A'); }, 'retry') : null),
+      fold([
+        failDetails().map((t) => h('p', { class: 'v-easy-note' }, t)),
+        h('ul', { class: 'v-easy-maphelp' }, h('li', null, T['m.map1']), h('li', null, T['m.map2'])),
+        h('p', { class: 'v-easy-note' }, T['m.note']),
+      ]),
     ];
   }
 
@@ -654,15 +705,18 @@ export async function mount(root, ctx) {
     else small = fillText('s.other', { deg: pd.deg });
     const houseDeg = plainDirection(displayedFacing(state));
     return [
-      title(fillText('s.title', { text: dirText(pd, Boolean(e8 && e8.near)) })),
-      h('p', { class: 'v-easy-deg' }, small),
-      separate && houseDeg ? calloutOf(null, fillText('s.doorSep', { deg: houseDeg.deg }), false) : null,
-      f.source === 'pick8' ? calloutOf(null, EASY_PICK8_NOTE, false) : null,
-      impactBlock({ disp, U, origin, s: state, rawBearing: f.bearing }),
+      title(fillText('s.title', { text: fillText('common.dir', { dir: pd.dir8 }) })),
+      // 已經記下的方向:不叫人重量(大按鈕是「下一步」),只說結果僅供參考;要重量用「重新量」
+      e8 && e8.near ? oneLine(fillText('d.nearOk', { a: e8.dir8, b: e8.neighbor }), true) : null,
       bigBtn(T['s.next'], () => goStep(state.plan ? 'result' : 'layout')),
-      h('div', { class: 'v-easy-row' },
-        btn(T['s.remeasure'], () => { show(facingEntrySub(true)); }),
-        btn(T['s.manual'], () => { failStatus = null; show('1M'); })),
+      links(link(T['s.remeasure'], () => { show(facingEntrySub(true)); }, 'remeasure')),
+      fold([
+        h('p', { class: 'v-easy-deg' }, small),
+        separate && houseDeg ? calloutOf(null, fillText('s.doorSep', { deg: houseDeg.deg }), false) : null,
+        f.source === 'pick8' ? calloutOf(null, EASY_PICK8_NOTE, false) : null,
+        impactBlock({ disp, U, origin, s: state, rawBearing: f.bearing }),
+        btn(T['s.manual'], () => { failStatus = null; show('1M'); }, 'btn btn-sm'),
+      ]),
     ];
   }
 
@@ -681,6 +735,8 @@ export async function mount(root, ctx) {
 
   /** 範本說明:簡單模式用自己的短句(與範本實際的房間一致),沒有就用範本原本的 */
   const tplDesc = (t) => (Object.prototype.hasOwnProperty.call(T, `l.desc.${t.id}`) ? T[`l.desc.${t.id}`] : t.desc);
+  /** 卡片上的大小:簡單模式用坪數,沒有就用範本原本的尺寸 */
+  const tplSize = (t) => (Object.prototype.hasOwnProperty.call(T, `l.size.${t.id}`) ? T[`l.size.${t.id}`] : t.size);
 
   function viewLayout() {
     const state = store.get();
@@ -691,35 +747,39 @@ export async function mount(root, ctx) {
       try { svg = planPreviewSvg(state.plan, { size: 'large' }); } catch { svg = ''; }
       return [
         title(T['l.ownTitle']),
-        h('p', { class: 'v-easy-lead' }, T['l.ownLead']),
+        h('p', { class: 'v-easy-sub' }, T['l.ownLead']),
         svg ? h('div', { class: 'v-easy-preview', html: svg }) : null,
         bigBtn(T['l.ownNext'], () => goStep('result')),
-        btn(T['l.ownEdit'], () => ctx.go('plan')),
+        links(link(T['l.ownEdit'], () => ctx.go('plan'), 'own-edit')),
       ];
     }
     const current = state.plan && layout ? layout.template : null;
     const side = current ? layout.doorSide : 'left';
-    const cards = h('div', { class: 'v-easy-tpls' }, TEMPLATES.filter((t) => t.id !== 'custom').map((t) => {
+    const tpls = TEMPLATES.filter((t) => t.id !== 'custom');
+    const cards = h('div', { class: 'v-easy-tpls' }, tpls.map((t) => {
       let thumb = '';
-      try { thumb = planPreviewSvg(buildTemplate(t.id).plan, { size: 'thumb', label: t.label }); } catch { thumb = ''; }
+      // 選中的那張用目前的平面圖(大門左/中/右會跟著變)
+      try { thumb = planPreviewSvg(current === t.id ? state.plan : buildTemplate(t.id).plan, { size: 'thumb', label: t.label }); } catch { thumb = ''; }
       return h('button', {
         type: 'button', class: 'v-easy-tpl', 'data-fk': `tpl-${t.id}`,
         'aria-pressed': current === t.id ? 'true' : 'false',
-        'aria-label': fillText('l.cardAria', { label: t.label, desc: tplDesc(t), size: t.size }),
         onclick: () => applyLayout(t.id, current ? side : 'left'),
       },
         h('span', { class: 'v-easy-tpl-thumb', 'aria-hidden': 'true', html: thumb }),
         h('span', { class: 'v-easy-tpl-name' }, t.label),
-        h('span', { class: 'v-easy-tpl-desc' }, tplDesc(t)));
+        h('span', { class: 'v-easy-tpl-size' }, tplSize(t)));
     }));
     let door = null;
+    const more = [];
     if (current) {
       const tpl = TEMPLATES.find((t) => t.id === current);
-      const seg = h('div', { class: 'seg v-easy-seg', role: 'group', 'aria-label': T['l.doorTitle'] },
+      const qId = 'v-easy-door-q';
+      const seg = h('div', { class: 'seg v-easy-seg', role: 'group', 'aria-labelledby': qId },
         DOOR_SIDES.map((s) => h('button', {
           type: 'button', 'data-fk': `door-${s}`, 'aria-pressed': s === side ? 'true' : 'false',
           onclick: () => { if (s !== side) applyLayout(current, s); },
         }, T[`l.${s}`])));
+      door = h('section', { class: 'v-easy-door' }, h('p', { class: 'v-easy-doorq', id: qId }, T['l.doorTitle']), seg);
       let svg = '';
       try { svg = planPreviewSvg(state.plan, { size: 'large', label: tpl ? tpl.label : undefined }); } catch { svg = ''; }
       // 三種大門位置算出來排第一的財位都一樣時,直接講明,免得使用者以為換邊沒作用是選錯了
@@ -729,23 +789,21 @@ export async function mount(root, ctx) {
         const plans = Object.fromEntries(DOOR_SIDES.map((sd) => [sd, withDoorSide(built.plan, sd).plan]));
         same = sameTopForPlans(state, state.facing.bearing, plans);
       } catch { same = null; }
-      door = h('section', { class: 'v-easy-door' },
-        h('h3', { class: 'v-easy-h3' }, T['l.doorTitle']),
-        h('p', { class: 'v-easy-small' }, T['l.doorLead']),
-        seg,
-        h('p', { class: 'faint v-easy-small' }, same ? EASY_DOOR_SAME : EASY_DOOR_WHY),
+      more.push(
+        h('p', { class: 'v-easy-note' }, T['l.doorLead']),
+        h('p', { class: 'v-easy-note' }, same ? EASY_DOOR_SAME : EASY_DOOR_WHY),
         svg ? h('div', { class: 'v-easy-preview', html: svg }) : null,
-        h('p', { class: 'faint v-easy-small' }, T['l.previewNote']));
+        h('p', { class: 'v-easy-note' }, T['l.previewNote']));
     }
+    more.push(h('ul', { class: 'v-easy-maphelp' }, tpls.map((t) => h('li', null, fillText('l.descItem', { label: t.label, desc: tplDesc(t) })))));
     return [
       title(T['l.title']),
-      h('p', { class: 'v-easy-lead' }, T['l.lead']),
       cards,
       door,
-      bigBtn(T['l.next'], () => goStep('result'), { disabled: current ? null : true }),
-      h('div', { class: 'v-easy-row' },
-        btn(T['l.skip'], skipLayout, 'btn btn-ghost'),
-        btn(T['common.back'], () => goStep('facing', '1S'), 'btn btn-ghost')),
+      // 還沒選也可以按(淡色停用鈕會讓人以為壞了):沒選時輕聲提醒先選一個
+      bigBtn(T['l.next'], () => { if (current) goStep('result'); else ctx.toast(T['l.pickFirst']); }),
+      links(link(T['l.skip'], skipLayout, 'skip'), link(T['common.back'], () => goStep('facing', '1S'), 'back')),
+      fold(more),
     ];
   }
 
@@ -835,28 +893,30 @@ export async function mount(root, ctx) {
     const origin = originOf(state.facing);
     const U = savedUncertainty(state);
     const tops = r.summary.wealthTop || [];
-    const notes = [];
-    const retestNote = (text) => h('div', { class: 'callout warn v-easy-callout v-easy-retest' },
-      h('span', { class: 'v-easy-icon', 'aria-hidden': 'true' }, '!'),
-      h('div', null,
-        h('p', null, text),
-        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => goStep('facing', facingEntrySub(true)) }, T['r.retestBtn'])));
-    // 方向差 U 度時排第一的財位會不會換(自己選的 8 方位用半格寬):會換就提醒,比「接近分界」更具體
+    const retest = () => goStep('facing', facingEntrySub(true));
+    // 會影響結果的提醒只放一行(依序:方向差一點排第一的財位會換 > 大門接近兩個方位中間 > 上次量時手晃);
+    // 完整的句子放進「看詳細說明」。自己選的 8 方位用半格寬判斷會不會換。
     const stab = wealthImpact(state, state.facing.bearing, U);
     const e8 = origin === 'pick8' ? null : eightImpact(doorDisp, U);
+    const shaky = state.facing.source === 'sensor' && isNum(state.facing.sigma) && state.facing.sigma > SENSOR_DEFAULTS.lockMaxStdDeg;
+    const warnRow = (text) => h('div', { class: 'v-easy-warnrow' }, oneLine(text, true), link(T['r.retestBtn'], retest, 'retest'));
+    let warn = null;
+    const moreNotes = [];
     if (stab && stab.status === 'changes') {
-      notes.push(retestNote(renderStabilityNote({ change: stab.change, place: stab.place, from: stab.from, to: stab.to, origin })));
+      warn = warnRow(stab.change === 'tier' ? T['r.changeTier'] : stab.sameRoom ? T['r.changeSameRoom'] : stab.room ? fillText('r.change', { place: stab.room }) : T['r.changeAny']);
+      moreNotes.push(renderStabilityNote({ change: stab.change, place: stab.place, from: stab.from, to: stab.to, origin }));
     } else if (e8 && e8.near) {
       const sec = sectorOf8(doorDisp);
-      notes.push(retestNote(fillText('r.retest', { a: sec.dir8, b: sec.neighbor })));
+      warn = warnRow(fillText('r.near', { a: sec.dir8, b: sec.neighbor }));
+      moreNotes.push(fillText('r.nearMore', { a: sec.dir8, b: sec.neighbor }));
     }
-    if (state.facing.source === 'sensor' && isNum(state.facing.sigma) && state.facing.sigma > SENSOR_DEFAULTS.lockMaxStdDeg) {
-      notes.push(calloutOf('!', T['r.shaky'], true));
-    }
+    if (shaky && !warn) warn = oneLine(T['r.shaky'], true);
+    else if (shaky) moreNotes.push(T['r.shaky']);
 
     const best = model.best;
     const parts = easyResultParts(best, sum);
-    const cardBody = [h('h2', { class: 'card-title v-easy-title', tabindex: '-1' }, sum.title)];
+    const cardTitle = sum.title === EASY_TITLE.spot ? T['r.title'] : sum.title;
+    const cardBody = [h('h2', { class: 'card-title v-easy-title', tabindex: '-1' }, cardTitle)];
     const pictureHost = h('div', { class: 'v-easy-pic' });
     const caption = h('div', { class: 'faint v-easy-caption', 'aria-live': 'polite' });
     let bestMarker = null;
@@ -867,13 +927,14 @@ export async function mount(root, ctx) {
       bestMarker = model.map.markers.find((m) => m.id === best.id) || null;
     }
     const entryPlace = (i) => placeText(tops[i], state.plan);
+    /** 圖下說明:平常不顯示(圖上已有金色「財」字);看其他位置時才說明圖上標的是哪裡,並給「回到最佳位置」 */
     const setCaption = (id) => {
       clear(caption);
       const i = [best, ...model.others].findIndex((e) => e && e.id === id);
-      if (!best || id === best.id || i < 0) {
-        caption.append(h('span', null, T[useMap ? 'r.mapNote' : 'r.dirNote']));
-        return;
-      }
+      caption.hidden = !best || id === best.id || i < 0;
+      // 圖下多一行說明時縮圖縮小一點,底下的按鈕才不會被擠出第一個畫面
+      if (useMap) pictureHost.classList.toggle('is-small', !caption.hidden);
+      if (caption.hidden) return;
       const p = entryPlace(i);
       caption.append(
         h('span', null, fillText('r.showing', { place: p ? p.text : '' })),
@@ -902,8 +963,9 @@ export async function mount(root, ctx) {
       if (id !== best.id && pictureHost.scrollIntoView) pictureHost.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' });
     };
 
+    const more = []; // 「看詳細說明」的內容
     if (sum.status === 'none' || !best) {
-      cardBody.push(sum.sentences.map((t) => h('p', null, t)));
+      cardBody.push(sum.sentences.map((t) => h('p', { class: 'v-easy-sub' }, t)), warn);
     } else {
       const place = entryPlace(0);
       const hasPic = useMap || (best.isDark && best.dir);
@@ -911,12 +973,22 @@ export async function mount(root, ctx) {
         if (!useMap) pictureHost.innerHTML = directionDiagramSvg({ upBearing: diagramUp, highlight: best.dir });
         cardBody.push(pictureHost, caption);
       }
+      const notAdvised = best.tier === 'notAdvised';
       cardBody.push(
+        // 前後左右是以「站在屋內、面向大門」來說:這句要看得到,不然左右容易看反
+        place && place.usesFrame ? h('p', { class: 'v-easy-note v-easy-frame' }, T['r.frameShort']) : null,
         h('p', { class: 'card-lead kai v-easy-place' }, place ? place.text : best.headline),
+        // 沒有平面圖(方位版):說清楚這個方位是從家裡正中間算的
+        !useMap && best.isDark && tops[0] && tops[0].dir8 ? oneLine(fillText('r.darkWhere', { dir: tops[0].dir8 })) : null,
+        sum.softTips.length && !notAdvised ? oneLine(EASY_USE_TIP) : null,
+        notAdvised ? oneLine(T['r.notAdvised']) : null,
+        warn);
+      more.push(
         h('div', { class: 'row tight v-easy-where' },
           !best.isDark && best.dir ? h('span', null, fillText('r.inHouse', { dir: best.dir })) : null,
           h('span', { class: TIER_BADGE[best.tier] }, TIER_LABEL[best.tier])),
-        place && place.usesFrame ? h('p', { class: 'faint v-easy-small' }, T['r.frame']) : null,
+        hasPic ? h('p', { class: 'v-easy-note' }, T[useMap ? 'r.mapNote' : 'r.dirNote']) : null,
+        place && place.usesFrame ? h('p', { class: 'v-easy-note' }, T['r.frame']) : null,
         parts.sentences.map((t) => h('p', null, t)),
         parts.checks.length
           ? h('ul', { class: 'list v-easy-checks' }, parts.checks.map((c) => h('li', null,
@@ -930,11 +1002,12 @@ export async function mount(root, ctx) {
             h('p', null, parts.remedy.body))
           : null,
         sum.softTips.length
-          ? h('details', { class: 'v-card-more' }, h('summary', null, T['r.tipsTitle']),
-            h('div', null, h('ul', { class: 'v-easy-tips' }, sum.softTips.map((t) => h('li', null, t))), h('p', { class: 'faint v-easy-small' }, T['r.tipsNote'])))
+          ? h('section', { class: 'v-easy-tipsbox' }, h('h3', { class: 'v-easy-h3' }, T['r.tipsTitle']),
+            h('ul', { class: 'v-easy-tips' }, sum.softTips.map((t) => h('li', null, t))), h('p', { class: 'v-easy-note' }, T['r.tipsNote']))
           : null,
-        h('p', { class: 'faint v-easy-small' }, sum.tierNote));
+        h('p', { class: 'v-easy-note' }, sum.tierNote));
     }
+    for (const t of moreNotes) more.push(calloutOf('!', t, true));
 
     const others = best && model.others.length
       ? h('details', { class: 'v-card-more v-easy-others', open: showingId ? true : null },
@@ -948,31 +1021,31 @@ export async function mount(root, ctx) {
       : null;
 
     const discl = model.disclaimers || [];
-    const out = [
-      notes,
-      h('section', { class: 'card wealth v-easy-best' }, cardBody),
-      moreCard(state),
+    more.push(
       others,
-      bigBtn(T['r.done'], () => {
-        // 流程到這裡就結束了:捲回頂端讓使用者再看一次財位,並說明資料已經記好
-        root.scrollTo({ top: 0, left: 0, behavior: reduced ? 'auto' : 'smooth' });
-        ctx.toast(T['r.doneToast']);
-      }),
-      h('div', { class: 'v-easy-row' },
-        btn(T['r.remeasure'], () => goStep('facing', facingEntrySub(true))),
-        btn(T['r.editLayout'], () => goStep('layout'))),
-      btn(T['r.full'], () => ctx.go('wealth'), 'btn btn-ghost'),
+      moreCard(state),
+      h('div', { class: 'v-easy-links v-easy-start' }, btn(T['r.full'], () => ctx.go('wealth'), 'btn btn-sm'), helpBtn()),
       h('footer', { class: 'faint v-easy-foot' },
         discl[0] ? h('p', null, discl[0]) : null,
-        h('details', { class: 'v-card-more' }, h('summary', null, T['r.moreDisclaimers']),
-          h('div', null, EASY_DISCLAIMERS.map((t) => h('p', null, t)), h('p', null, CARD_DISCLAIMER)))),
+        EASY_DISCLAIMERS.map((t) => h('p', null, t))));
+    const out = [
+      h('section', { class: 'card wealth v-easy-best' }, cardBody),
+      fold(more, {
+        summary: T['r.more'], open: resultMoreOpen || Boolean(showingId), cls: 'v-easy-resultmore',
+        ontoggle: (e) => { resultMoreOpen = e.currentTarget.open; },
+      }),
+      h('div', { class: 'v-easy-row v-easy-bottom' },
+        btn(T['r.remeasure'], () => goStep('facing', facingEntrySub(true)), 'btn btn-sm'),
+        btn(T[state.plan ? 'r.editLayout' : 'r.morePlanBtn'], () => goStep('layout'), 'btn btn-sm')),
+      h('p', { class: 'faint v-easy-foot v-easy-center' }, CARD_DISCLAIMER),
     ];
 
     // 縮圖要等節點進了畫面(量得到寬度)才掛
     queueMicrotask(() => {
       if (destroyed || !best) return;
       if (useMap && pictureHost.isConnected && bestMarker) {
-        mini = mountMiniPlan(pictureHost, { ...model.map, markers: [bestMarker], selectedId: best.id, sectorLabels: 'dir8' });
+        // plain:簡單模式只畫房間、大門和金色「財」(不畫方位虛線、中心十字、八方位名稱、指北針、窗)
+        mini = mountMiniPlan(pictureHost, { ...model.map, markers: [bestMarker], selectedId: best.id, sectorLabels: 'dir8', plain: true });
       }
       const keep = showingId && [best, ...model.others].some((e) => e && e.id === showingId) ? showingId : best.id;
       setCaption(keep);

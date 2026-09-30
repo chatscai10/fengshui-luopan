@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { analyzeHouse } from '../src/core/analyze.js';
 import {
   renderReport, scrubText, TIER_SENTENCE, BORDERLINE_SENTENCE, EASY_METHOD, EASY_TITLE, EASY_NONE_SENTENCE, TIER_NOTE,
-  EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, EASY_DISCLAIMERS, IMPACT_SHORT, renderEasySummary, renderDirectionImpact,
+  EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, EASY_DISCLAIMERS, IMPACT_SHORT, EASY_USE_TIP, renderEasySummary, renderDirectionImpact,
   renderStabilityNote, compassHonesty,
 } from '../src/core/copy.js';
 import { SOFT_ADVICE } from '../src/core/wealth/constants.js';
@@ -316,9 +316,24 @@ test('compassHonesty:磁偏角未知時寫「4 到 5」;城市名稱、簡單模
 
 // ─────────────── 常數與文字規則 ───────────────
 
+test('EASY_USE_TIP:結果頁一行「這樣用:」取自 SOFT_ADVICE 的整潔、垃圾桶、鏡子三條', () => {
+  assert.equal(EASY_USE_TIP, '這樣用:保持整潔,不放垃圾桶、鏡子');
+  // 375px 寬、15px 字一行放得下(中文與全形 1、英數與半形標點約 0.55)
+  const width = [...EASY_USE_TIP].reduce((w, ch) => w + (/[ -~]/.test(ch) ? 0.55 : 1), 0);
+  assert.ok(width <= 19, `EASY_USE_TIP 一行放不下: ${EASY_USE_TIP}`);
+  const byId = Object.fromEntries(SOFT_ADVICE.map((a) => [a.id, a.text]));
+  // 每一條的重點詞都在這一行裡(改了 SOFT_ADVICE 的原文,這一行會跟著變,這裡會抓到)
+  for (const w of ['整潔', '垃圾桶', '鏡子']) assert.ok(EASY_USE_TIP.includes(w), w);
+  assert.ok(byId.tidy.includes('整潔') && byId.noTrash.includes('垃圾桶') && byId.noMirror.includes('鏡子'));
+  // 只是生活上的整理建議:沒有術語、恐嚇詞、分數
+  for (const w of TERM_BLACKLIST) assert.ok(!EASY_USE_TIP.includes(w), w);
+  for (const w of SCARY) assert.ok(!EASY_USE_TIP.includes(w), w);
+  assert.deepEqual(findScoreLeaks([EASY_USE_TIP]), []);
+});
+
 test('新常數的文字與規格 8.9 相同', () => {
   const block = SPEC.slice(SPEC.indexOf('### 8.9'), SPEC.indexOf('### 8.10'));
-  for (const s of [...Object.values(TIER_SENTENCE), BORDERLINE_SENTENCE, ...Object.values(EASY_METHOD), ...Object.values(EASY_TITLE), EASY_NONE_SENTENCE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, ...EASY_DISCLAIMERS, ...Object.values(IMPACT_SHORT)]) {
+  for (const s of [...Object.values(TIER_SENTENCE), BORDERLINE_SENTENCE, ...Object.values(EASY_METHOD), ...Object.values(EASY_TITLE), EASY_NONE_SENTENCE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, ...EASY_DISCLAIMERS, ...Object.values(IMPACT_SHORT), EASY_USE_TIP]) {
     assert.ok(block.includes(`'${s}'`), s);
   }
   // TIER_NOTE 改成「不保證任何結果」(規格原句「不是保證」會被 scrubText 改寫,也違反「保證只出現在不保證」的規則)
@@ -329,7 +344,7 @@ test('新常數的文字與規格 8.9 相同', () => {
 test('所有新字串通過 scrubText 後不變', () => {
   const strings = [
     ...Object.values(TIER_SENTENCE), BORDERLINE_SENTENCE, ...Object.values(EASY_METHOD), ...Object.values(EASY_TITLE),
-    EASY_NONE_SENTENCE, TIER_NOTE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, ...EASY_DISCLAIMERS, ...Object.values(IMPACT_SHORT),
+    EASY_NONE_SENTENCE, TIER_NOTE, EASY_DOOR_WHY, EASY_DOOR_SAME, EASY_PICK8_NOTE, ...EASY_DISCLAIMERS, ...Object.values(IMPACT_SHORT), EASY_USE_TIP,
   ];
   for (const trueMode of [false, true]) {
     for (const d of [-5.03, null, 2.51]) {
