@@ -8,6 +8,7 @@ import {
   boundaryOptsFromSettings,
 } from '../geo.js';
 import { PALACES, FLY_ORDER, TI_TABLES, PATTERN_BY_DIRECTIONS, PATTERN_NAMES, palaceOfStar } from './tables.js';
+import { mod9 } from '../nine.js';
 
 /**
  * 錯誤碼(Error.message 以碼開頭,後接冒號): 沿用 geo 的 INVALID_BEARING、UNKNOWN_MOUNTAIN、INVALID_OPTION(未知設定鍵);
@@ -41,8 +42,7 @@ export function assertPalace(palace) {
   if (!PALACES.includes(palace)) fail('INVALID_PALACE', `宮位必須是 ${PALACES.join('')} 之一: ${show(palace)}`);
 }
 
-/** 1..9 循環。 */
-export const mod9 = (n) => ((((n - 1) % 9) + 9) % 9) + 1;
+export { mod9 };
 
 // ─────────────────────────── 飛布與二次轉換 ───────────────────────────
 

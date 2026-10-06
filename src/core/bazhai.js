@@ -21,6 +21,7 @@
 // INVALID_UTC_OFFSET、YEAR_OUT_OF_RANGE。
 
 import { resolveSettings, DEFAULT_SETTINGS } from './settings.js';
+import { mod9 } from './nine.js';
 import {
   GUA,
   DIR8,
@@ -243,6 +244,8 @@ function settingsOf(overrides) {
   try {
     s = resolveSettings(overrides ?? {});
   } catch (e) {
+    // 已經帶碼的錯誤不要疊第二層碼。
+    if (/^[A-Z][A-Z0-9_]+: /.test(e.message)) throw e;
     throw new Error(`INVALID_SETTING: ${e.message}`);
   }
   if (!YEAR_BOUNDARIES.includes(s.yearBoundary)) fail('INVALID_SETTING', `yearBoundary 不認得: ${show(s.yearBoundary)}`);
@@ -288,8 +291,6 @@ export function wealthOrder(gua, settings = {}) {
 }
 
 // ─────────────────────────── 命卦 ───────────────────────────
-
-const mod9 = (x) => ((((x - 1) % 9) + 9) % 9) + 1;
 
 /**
  * 由風水年(已依年界換算)與性別算命卦。男 mod9(2-Y)、女 mod9(Y+4),0 視為 9;

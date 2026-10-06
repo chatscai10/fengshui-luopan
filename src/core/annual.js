@@ -10,6 +10,7 @@
 // INVALID_SETTING 設定值不合法。INVALID_BEARING 來自 geo。calendar 的 YEAR_OUT_OF_RANGE 會原樣穿出。
 
 import { resolveSettings } from './settings.js';
+import { mod9 } from './nine.js';
 import {
   BRANCHES, SUPPORTED_YEARS, formatCST, fengshuiYear, yearGanzhi, monthOf, monthTable, nineYun, lichunFlags,
 } from './calendar.js';
@@ -52,6 +53,7 @@ function settingsOf(overrides) {
   try {
     s = resolveSettings(overrides ?? {});
   } catch (e) {
+    if (/^[A-Z][A-Z0-9_]+: /.test(e.message)) throw e; // 已帶碼的不再疊一層
     throw new Error(`INVALID_SETTING: ${e.message}`);
   }
   if (!SANSHA_ARC_SETTINGS.includes(s.sanshaArc)) fail('INVALID_SETTING', `sanshaArc=${show(s.sanshaArc)}`);
@@ -74,11 +76,10 @@ function branchIndexOf(b) {
   return i;
 }
 
-/** 1..9 循環,0 與 9 的倍數回 9(洛書數)。 */
+/** 1..9 循環,0 與 9 的倍數回 9(洛書數)。非整數丟 INVALID_STAR(公開契約)。 */
 export function wrap9(n) {
   if (!Number.isInteger(n)) fail('INVALID_STAR', `wrap9 需要整數,收到 ${show(n)}`);
-  const r = ((n % 9) + 9) % 9;
-  return r === 0 ? 9 : r;
+  return mod9(n);
 }
 
 /** 地支 index 對應的山(24 山表中地支山在偶數 index,規格 2.1.1)。 */

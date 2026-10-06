@@ -51,6 +51,11 @@ export const DEFAULT_SETTINGS = Object.freeze({
 
 /** 合併使用者覆寫;未知鍵直接丟錯,避免拼錯開關名稱而默默失效。 */
 export function resolveSettings(overrides = {}) {
+  // 非物件(數字、陣列、null)在 Object.keys 下不會丟錯,會靜默回傳整份預設值,讓打錯的呼叫端以為設定生效。
+  // 訊息帶錯誤碼:geo / calendar 的匯出函式有一致性契約(只能丟「大寫碼: 訊息」或「未知的設定鍵」)。
+  if (overrides === null || typeof overrides !== 'object' || Array.isArray(overrides)) {
+    throw new Error(`INVALID_SETTING: 設定必須是物件,收到 ${overrides === null ? 'null' : Array.isArray(overrides) ? '陣列' : typeof overrides}`);
+  }
   for (const k of Object.keys(overrides)) {
     if (!Object.hasOwn(DEFAULT_SETTINGS, k)) throw new Error(`未知的設定鍵: ${k}`);
   }

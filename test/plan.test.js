@@ -4,6 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { assertRunnerCatches, assertDeepApprox, GUA } from './helpers/harness.js';
+import { jsonProblems } from './helpers/analyze.js';
 import {
   SPEC_TEXT,
   mulberry32,
@@ -556,6 +557,26 @@ describe('sectorShares 多房間與輸出結構', () => {
     }
     assert.equal(res.palaces.坎.length, 2);
     closeRel(res.palaces.坎[0].pct, 0.5, 1e-9);
+  });
+
+  it('極細長房間: 每一宮的 pct 都是有限的 0..1(退化面積不可讓 NaN 進輸出)', () => {
+    // 10 公分寬的走道切過八宮,交截面積極小;面積加總若下溢成 0,除出來的 pct 會是 NaN。
+    const p = makePlan({
+      outline: RECT_10x8,
+      planUpBearing: 0,
+      rooms: [
+        { id: 'sliver', type: 'other', polygon: rectPoly(0, 3.95, 10, 0.1) },
+        { id: 'main', type: 'living', polygon: rectPoly(0, 0, 10, 8) },
+      ],
+    });
+    const res = plan.sectorShares(p);
+    for (const g of GUA) {
+      for (const e of res.palaces[g]) {
+        assert.ok(Number.isFinite(e.pct), `${g} ${e.roomId} pct 必須有限`);
+        assert.ok(e.pct >= 0 && e.pct <= 1 + 1e-12, `${g} ${e.roomId} pct=${e.pct}`);
+      }
+    }
+    assert.deepEqual(jsonProblems(res), []);
   });
 
   it('面積並列時 mainUse 取 rooms 陣列中較前者(與房間順序一致,不受浮點雜訊影響)', () => {

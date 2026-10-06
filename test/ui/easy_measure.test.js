@@ -86,7 +86,7 @@ test('combineChecks:n=2 門檻邊界(= 5 算一致、= 15 算有點多)', () => 
   assert.equal(combineChecks(R(355, 10)).verdict, 'warn');
 });
 
-test('combineChecks:uncertaintyDeg = max(基準, 2σ, 差距);lockedAtMs 取最後一筆', () => {
+test('combineChecks:uncertaintyDeg = max(基準, 2σ, 差距);lockedAtMs 取「實際採用的最後一筆」', () => {
   const c = combineChecks([{ meanDeg: 10, sigma: 1, status: 'ok', lockedAtMs: 1 }, { meanDeg: 17, sigma: 1, status: 'ok', lockedAtMs: 99 }]);
   assert.equal(c.uncertaintyDeg, 7);
   assert.equal(c.lockedAtMs, 99);
@@ -98,6 +98,12 @@ test('combineChecks:uncertaintyDeg = max(基準, 2σ, 差距);lockedAtMs 取最�
   const d = combineChecks([{ meanDeg: 196, sigma: 1, status: 'ok', lockedAtMs: 1 }, { meanDeg: 198, sigma: 1, status: 'ok', lockedAtMs: 2 }, { meanDeg: 230, sigma: 6, status: 'unstable', lockedAtMs: 3 }]);
   assert.equal(d.sigmaMax, 1);
   assert.equal(d.uncertaintyDeg, 5);
+  // 被排除的是最後一筆時,lockedAtMs 不可回那個沒被算進平均的時間戳(否則 store 會把
+  // 「差距」與「鎖定時刻」綁在不同一次量測上,自我檢查的失效判斷就失準)。
+  assert.equal(d.lockedAtMs, 2, 'lockedAtMs 必須是採用的最後一筆,不是陣列尾端');
+  const first = combineChecks([{ meanDeg: 250, sigma: 1, status: 'ok', lockedAtMs: 1 }, { meanDeg: 200, sigma: 1, status: 'ok', lockedAtMs: 2 }, { meanDeg: 202, sigma: 1, status: 'ok', lockedAtMs: 3 }]);
+  assert.equal(first.dropped, 0);
+  assert.equal(first.lockedAtMs, 3, '離群值在前面時仍取採用的最後一筆');
 });
 
 test('combineChecks:iPhone 自己估計的誤差算進 U(手機說 ±20 度時,150 度一定是「接近分界」)', () => {

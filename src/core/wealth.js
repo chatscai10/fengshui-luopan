@@ -234,6 +234,9 @@ function zoneOpeningsOf(plan, info, s) {
     if (info.rect) return { wall: o.wall, start: o.pos - o.width / 2, end: o.pos + o.width / 2, type: o.kind };
     const p = openingCenter(plan, o.id, s).point;
     const e = edgeOfPoint(info.ring, p);
+    // 開口經 validatePlan 驗過在外接框的牆上,但凹形房間的內壁可能與外接框共線卻不在同一條邊上,
+    // 這時 edgeOfPoint 找不到邊;回 edgeIndex: -1 讓 cornerZoneStatus 判為不合法而非裸讀 null 崩潰。
+    if (e === null) return { edgeIndex: -1, start: 0, end: 0, type: o.kind };
     return { edgeIndex: e.edgeIndex, start: e.t - o.width / 2, end: e.t + o.width / 2, type: o.kind };
   });
 }

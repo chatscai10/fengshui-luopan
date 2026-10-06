@@ -60,6 +60,8 @@ function settingsOf(overrides) {
   try {
     return resolveSettings(overrides ?? {});
   } catch (e) {
+    // resolveSettings 可能已經自己帶碼(例如非物件);不要疊成「INVALID_SETTING: INVALID_SETTING: …」。
+    if (/^[A-Z][A-Z0-9_]+: /.test(e.message)) throw e;
     throw new Error(`INVALID_SETTING: ${e.message}`);
   }
 }
@@ -232,8 +234,11 @@ function parseOffsetMs(utcOffset) {
   }
   if (utcOffset === 'Z') return 0;
   const m = typeof utcOffset === 'string' ? /^([+-])(\d{2}):?(\d{2})$/.exec(utcOffset) : null;
-  if (!m || Number(m[2]) > 14 || Number(m[3]) > 59) fail('INVALID_UTC_OFFSET', `需為 '+08:00' 形式,收到 ${String(utcOffset)}`);
-  return (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) * 60000;
+  if (!m) fail('INVALID_UTC_OFFSET', `需為 '+08:00' 形式,收到 ${String(utcOffset)}`);
+  // 現行世界時區極限是 +14:00(吉里巴斯);只擋小時會放行 +14:59,與 analyze 的 ±840 分鐘上限不一致。
+  const totalMinutes = Number(m[2]) * 60 + Number(m[3]);
+  if (Number(m[3]) > 59 || totalMinutes > 840) fail('INVALID_UTC_OFFSET', `需在 ±14:00 內,收到 ${String(utcOffset)}`);
+  return (m[1] === '-' ? -1 : 1) * totalMinutes * 60000;
 }
 
 /**

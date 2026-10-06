@@ -1,6 +1,7 @@
 // 暗財位與流年財位各層(規格 2.6.4、2.6.8、2.6.9): 八宅大門財位、本命財位、玄空財位格、流年財星、職業別、五行催旺、九運水火提示。
 // 只吃 bazhai、xuankong、annual 的真實輸出,不重算它們的規則。
 import { resolveSettings } from '../settings.js';
+import { mod9 as wrap9 } from '../nine.js';
 import { DIR8, dirOfGua, guaOfDir } from '../geo.js';
 import { starWeights, starsOf, wealthOrder, zhaiFromFacing, STAR_NAMES } from '../bazhai.js';
 import { PALACES, qiDist, qiLabel } from '../xuankong.js';
@@ -12,13 +13,13 @@ const fail = (code, msg) => {
 };
 const show = (v) => (typeof v === 'string' ? JSON.stringify(v) : String(v));
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
-const wrap9 = (n) => ((((n - 1) % 9) + 9) % 9) + 1;
 
 /** 設定解析,未知鍵與 bazhai、annual 拋出的設定錯誤統一成 INVALID_SETTING。 */
 export function settingsOf(overrides) {
   try {
     return resolveSettings(overrides ?? {});
   } catch (e) {
+    if (/^[A-Z][A-Z0-9_]+: /.test(e.message)) throw e; // 已帶碼的不再疊一層
     throw new Error(`INVALID_SETTING: ${e.message}`);
   }
 }
@@ -107,6 +108,7 @@ export function xuankongWealthCells(chart, currentYun) {
   if (!Number.isInteger(currentYun) || currentYun < 1 || currentYun > 9) fail('INVALID_YUN', `currentYun 必須是 1..9 的整數: ${show(currentYun)}`);
   const cell = (tier, star, note) => {
     const sector = PALACES.find((p) => chart.palaces[p].xiang === star);
+    if (sector === undefined) fail('INVALID_INPUT', `chart.palaces 的向盤找不到星 ${show(star)}(盤面必須是 1..9 各一次)`);
     const c = chart.palaces[sector];
     const side = sector === chart.facePalace ? 'front' : sector === chart.sitPalace ? 'back' : 'other';
     return {

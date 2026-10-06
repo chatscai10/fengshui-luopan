@@ -395,6 +395,26 @@ describe('缺輸入降級(不丟錯,原因寫成 Finding)', () => {
     const ming = out.sections.find((s) => s.id === 'ming');
     assert.ok(ming.cards.some((c) => c.headline.startsWith('本人: ')), 'subject 換成住戶名字');
   });
+  it('兩位住戶同時踩到同一條住戶層級警告: 兩則都要留,不可被 id 去重吃掉', () => {
+    // 立春臨界的 Finding 帶 subject,去重鍵必須含 subject,否則第二個人整張卡片會消失。
+    const r = analyzeHouse(goldenInput({
+      residents: [
+        { id: 'p1', name: '甲', gender: 'M', birth: '2026-02-04 04:02' },
+        { id: 'p2', name: '乙', gender: 'F', birth: '2026-02-04 04:03' },
+      ],
+    }));
+    const hits = r.findings.filter((f) => f.id === 'bz.ming.near_lichun');
+    assert.equal(hits.length, 2, '兩位住戶各一則');
+    assert.deepEqual(hits.map((f) => f.subject).sort(), ['p1', 'p2']);
+    const out = renderReport(r);
+    const ming = out.sections.find((s) => s.id === 'ming');
+    assert.equal(ming.cards.filter((c) => /立春/.test(c.headline)).length, 2, '畫面也要兩張卡');
+  });
+  it('同一則 Finding 由多個模組重複產生時仍只留一則(沒有 subject 的鍵不變)', () => {
+    const r = analyzeHouse(goldenInput());
+    const ids = r.findings.map((f) => `${f.id}::${f.subject}`);
+    assert.equal(new Set(ids).size, ids.length, 'findings 的 id + subject 必須唯一');
+  });
   it('太極點落在外框之外、房間超出外框等平面圖警告進 Finding', () => {
     const plan = goldenPlan({ rooms: [{ id: 'living', type: 'living', polygon: [[0, 0], [12, 0], [12, 5], [0, 5]] }] });
     const r = analyzeHouse(goldenInput({ plan: { ...plan, openings: [{ id: 'd1', kind: 'entrance', roomId: 'living', wall: 'bottom', pos: 1.0, width: 0.9 }] } }));

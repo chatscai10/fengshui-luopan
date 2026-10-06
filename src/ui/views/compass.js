@@ -658,11 +658,15 @@ export async function mount(root, ctx) {
       : (sensorMessage(status) || sensorMessage('no-events')));
   }
   let relativeCount = 0;
+  let noSensorCount = 0;
   const RELATIVE_FAIL_AFTER = 10;
+  // 剛授權後最初幾筆事件可能還沒有角度;連續多筆才判定這台裝置沒有指北針(sensorSession 用同一個 30 的門檻)。
+  const NO_SENSOR_FAIL_AFTER = 30;
   function onReading(r) {
     if (destroyed) return;
     lastReading = r;
     if (r.status !== 'relative-not-north') relativeCount = 0;
+    if (r.status !== 'no-sensor') noSensorCount = 0;
     if (r.status === 'ok' && isNum(r.smoothedDeg)) {
       if (st.sensor.phase !== 'running') { st.sensor.phase = 'running'; st.sensor.message = ''; }
       // 提示優先序: 螢幕朝下 > 太傾斜 > 訊號紅燈(禁止鎖定的原因要讓人看得懂)
@@ -681,8 +685,12 @@ export async function mount(root, ctx) {
         return;
       }
     } else if (r.status === 'no-sensor') {
-      st.sensor.phase = 'waiting';
-      st.sensor.message = sensorMessage('no-events');
+      // 一筆空事件(常見於剛授權、感測器還沒熱)不代表沒有指北針,連續多筆才切 waiting。
+      noSensorCount += 1;
+      if (noSensorCount >= NO_SENSOR_FAIL_AFTER) {
+        st.sensor.phase = 'waiting';
+        st.sensor.message = sensorMessage('no-events');
+      }
     } else {
       // uncalibrated / invalid / tilt-too-large / degenerate: 顯示訊息,盤面停在最後一個好讀數
       st.sensor.message = sensorMessage(r.status) || '';
@@ -808,6 +816,9 @@ export async function mount(root, ctx) {
         measureUncertainty: settingsNow().measureUncertainty,
         unstableText: sensorMessage('unstable'),
       });
+    } else if (res.status === 'unstable') {
+      // 讀數互相抵消、算不出平均(極少見):沒有這條就落到 else,畫面完全沒回饋,像按了沒反應。
+      st.sensor.lockNote = sensorMessage('too-few');
     }
     renderSensor();
     scheduleReadout();

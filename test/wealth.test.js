@@ -1384,6 +1384,28 @@ describe('analyzeWealth', () => {
     assert.equal(r.findings.find((f) => f.id === 'wealth.ming.living.V5').confidence, 'low');
     assert.ok(!r.candidates.some((c) => c.corner === 'V3'), '凹角不當候選');
   });
+  it('L 型房間的開口: 落在凹口內壁的那一段仍判得出角區(不可因找不到邊就崩或靜默失效)', () => {
+    // 凹口內壁與外接框共線:開口的 edgeIndex 只能靠 edgeOfPoint 從點回推,不是現成的 wall 名。
+    const L = [[0, 0], [6, 0], [6, 3], [3, 3], [3, 6], [0, 6]];
+    const plan = makePlan({
+      outline: L,
+      rooms: [{ id: 'living', type: 'living', polygon: L }],
+      planUpBearing: 0,
+      openings: [
+        { id: 'd1', kind: 'entrance', roomId: 'living', wall: 'bottom', pos: 5, width: 0.9 },
+        // 多邊形右段內壁 x=3, y=3..6 → 開口貼在該內壁上(bbox 的左牆)
+        { id: 'w1', kind: 'window', roomId: 'living', wall: 'left', pos: 4.5, width: 0.8 },
+      ],
+      mainDoor: 'd1',
+    });
+    const r = W.analyzeWealth(S1_INPUT({ plan }));
+    const cs = r.candidates.filter((c) => c.roomId === 'living');
+    assert.ok(cs.length > 0, '候選仍算得出來');
+    for (const c of cs) {
+      assert.ok(Number.isFinite(c.rawScore) || c.rawScore === null);
+      assert.ok(!Number.isNaN(c.score), `${c.id} score 不可為 NaN`);
+    }
+  });
   it('太極點模式(D55): plan 沒指定時吃 settings.taijiMode,凹形平面 centroid 與 bbox 讓角落落入不同方位', () => {
     const L = [[0, 0], [6, 0], [6, 3], [3, 3], [3, 6], [0, 6]];
     const mk = (taiji) => makePlan({ outline: L, rooms: [{ id: 'living', type: 'living', polygon: L }], planUpBearing: 0, openings: [{ id: 'd1', kind: 'entrance', roomId: 'living', wall: 'bottom', pos: 5, width: 0.9 }], taiji });

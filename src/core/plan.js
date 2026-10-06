@@ -753,7 +753,9 @@ export function sectorShares(plan, settings = {}) {
       // 面積差在浮點雜訊內視為並列,依房間順序,避免對稱平面的 mainUse 隨機翻轉
       entries.sort((a, b) => (Math.abs(a.area - b.area) <= 1e-9 * Math.max(a.area, b.area) ? a.idx - b.idx : b.area - a.area));
       const listed = entries.reduce((sum, e) => sum + e.area, 0);
-      palaces[gua] = entries.map((e) => ({ roomId: e.roomId, area: e.area, pct: e.area / listed }));
+      // entries 每筆都 > noise(非負),listed 理論上必為正;仍擋一道,避免任何退化面積讓 NaN 進輸出(API.md 的數值契約)。
+      const listedOk = Number.isFinite(listed) && listed > 0;
+      palaces[gua] = entries.map((e) => ({ roomId: e.roomId, area: e.area, pct: listedOk ? e.area / listed : 0 }));
       palaceArea[gua] = rooms.reduce((sum, r) => sum + shares[r.id][gua], 0);
       mainUse[gua] = entries.length ? entries[0].roomId : null;
     }

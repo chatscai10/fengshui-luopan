@@ -79,7 +79,9 @@ export function combineChecks(readings, settings = {}) {
   const sigmaMax = sigmas.length ? Math.max(...sigmas) : null;
   const accs = used.map((i) => accOf(readings[i])).filter((a) => a !== null);
   const accuracyDeg = accs.length ? Math.max(...accs) : null;
-  const last = readings[n - 1];
+  // lockedAtMs 要對應「實際採用的最後一次」;直接取 readings[n-1] 在 dropped 兩個方向都可能綁錯次
+  // (被排除的那次若在尾端,會回一個沒被算進平均的時間戳)。
+  const last = readings[Math.max(...used)];
   return {
     n,
     used,

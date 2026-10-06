@@ -598,10 +598,12 @@ export function analyzeHouse(input, settingsOverrides = {}, opts = {}) {
   for (const w of wealth.meta.warnings) warnings.add(w);
   if (!wealth.meta.hasResidents) warnings.add('noResidents');
 
-  // ── 彙整 ──
+  // 彙整:去重鍵含 subject,否則同一住戶層級的 Finding(如立春臨界)會被第二個人覆蓋掉。
   const merged = new Map();
   for (const f of [...findings, ...bz.findings, ...(xuankong ? xuankong.findings : []), ...annual.findings, ...wealth.findings]) {
-    if (!merged.has(f.id)) merged.set(f.id, { ...f, subject: f.subject ?? null });
+    const subject = f.subject ?? null;
+    const dedupKey = subject === null ? f.id : `${f.id}::${subject}`;
+    if (!merged.has(dedupKey)) merged.set(dedupKey, { ...f, subject });
   }
   const allFindings = [...merged.values()];
 
@@ -685,7 +687,8 @@ function pickWealthTop(wealth, profile) {
       score: c.score,
     }));
   }
-  const energyCap = cap - 100 * profile.G;
+  // 暗財位用「扣掉幾何分量後的上限」當分母;缺資料時 cap 可能被扣到 <= 0,保底 1 避免全部被判 notAdvised。
+  const energyCap = Math.max(1, cap - 100 * profile.G);
   return Object.values(wealth.sectors)
     .map((s, i) => ({ s, i }))
     .sort((a, b) => b.s.energy - a.s.energy || a.i - b.i)
