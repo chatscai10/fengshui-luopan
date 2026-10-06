@@ -12,6 +12,7 @@ import { badgeClass, renderInfoCard, TIER_LABEL, sanitizePage, safeReport } from
 import {
   buildChartGridModel, buildAnnualGridModel, renderStarGrid, drawStarGrid, gridToText,
 } from '../canvas/starGrid.js';
+import { buildPlacementCards, buildPlacementBlock } from '../../core/placement.js';
 import { cssVar, KAI_STACK, UI_STACK } from '../canvas/canvasUtil.js';
 
 // ─────────────────────────── 資料模型(純函式) ───────────────────────────
@@ -130,6 +131,7 @@ const SECTION_HINT = Object.freeze({
   xuankong: '玄空飛星:每個方位有山星、向星、運星三個數字,旺衰以今天所屬的運來看。進階內容,可以只看星盤圖。',
   annual: '今年每個方位飛到的星,以及太歲、三煞、五黃、二黑的位置。每年立春換一次。',
   rooms: '依玄空盤推算各種房間適合放的位置。這些是推論,沒有直接的古籍依據。',
+  placement: '床位、書桌工作區、廚房爐灶與室內格局避忌的配置方針。',
   traditional: '流傳較廣但流派看法不一,或只有少數流派主張的說法。',
 });
 
@@ -560,6 +562,20 @@ export async function mount(root, ctx) {
         note: cautions ? '需要留意' : null,
       }));
     }
+
+    // 重點擺設方針 (床位、書桌、廚房爐灶與避忌提示)
+    const placeBlock = buildPlacementBlock(report);
+    if (placeBlock && placeBlock.cards && placeBlock.cards.length) {
+      const pCautions = placeBlock.cards.filter((c) => c.level === 'caution').length;
+      add(collapsible('placement', '室內重點擺設與禁忌', [
+        h('p', { class: 'sub v-report-hint' }, SECTION_HINT.placement),
+        cardList(placeBlock.cards),
+      ], {
+        count: `${placeBlock.cards.length} 則`,
+        note: pCautions ? '需要留意' : null,
+      }));
+    }
+
     const ap = model.appendix;
     add(collapsible('appendix', '附錄:採用的設定、資料來源與免責', [
       h('h3', { class: 'v-card-head' }, '這次採用的設定'),

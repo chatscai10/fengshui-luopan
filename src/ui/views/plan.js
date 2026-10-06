@@ -778,23 +778,81 @@ export async function mount(root, ctx) {
   }
 
   function openAddRoom() {
-    const list = h('div', { class: 'v-plan-menu' });
     let sheet = null;
+    const formWrap = h('div', { class: 'v-plan-add-dialog stack' });
+
+    // 長寬輸入
+    const curType = { val: ROOM_TYPE_ORDER[0] };
+    const defaultDims = () => ROOM_DEFAULT_SIZE[curType.val] || [3.5, 3.2];
+    const wIn = h('input', { type: 'number', inputmode: 'decimal', min: '0.6', max: '40', step: '0.1', value: String(defaultDims()[0]), id: 'v-plan-add-w' });
+    const dIn = h('input', { type: 'number', inputmode: 'decimal', min: '0.6', max: '40', step: '0.1', value: String(defaultDims()[1]), id: 'v-plan-add-d' });
+    const nameIn = h('input', { type: 'text', placeholder: '選填,例如 主臥、工作室', maxlength: '12', id: 'v-plan-add-name' });
+    const areaHint = h('span', { class: 'hint' });
+
+    const updateAreaHint = () => {
+      const w = Number(wIn.value) || 0;
+      const d = Number(dIn.value) || 0;
+      const a = w * d;
+      const ping = a * 0.3025;
+      areaHint.textContent = (w > 0 && d > 0) ? `面積約 ${Math.round(a * 10) / 10} 平方公尺(約 ${Math.round(ping * 10) / 10} 坪)` : '';
+    };
+    wIn.addEventListener('input', updateAreaHint);
+    dIn.addEventListener('input', updateAreaHint);
+    updateAreaHint();
+
+    // 類型快速選擇按鈕清單
+    const typeGrid = h('div', { class: 'grid2 v-plan-type-grid' });
+    const typeButtons = [];
     for (const t of ROOM_TYPE_ORDER) {
-      list.append(h('button', {
-        type: 'button', class: 'btn btn-block',
+      const btn = h('button', {
+        type: 'button',
+        class: `btn btn-sm ${t === curType.val ? 'btn-primary' : 'btn-ghost'}`,
         onclick: () => {
-          if (sheet) sheet.close();
-          const res = applyEdit((p) => addRoom(p, t));
-          if (res && res.room) {
-            S.selection = { type: 'room', id: res.room.id };
-            S.mode = 'edit';
-            toast(`已新增「${ROOM_TYPE_LABEL[t]}」,拖曳它到想要的位置`);
-          }
+          curType.val = t;
+          for (const b of typeButtons) b.className = `btn btn-sm ${b.dataset.type === t ? 'btn-primary' : 'btn-ghost'}`;
+          const [defW, defD] = defaultDims();
+          wIn.value = String(defW);
+          dIn.value = String(defD);
+          updateAreaHint();
         },
-      }, ROOM_TYPE_LABEL[t]));
+      }, ROOM_TYPE_LABEL[t]);
+      btn.dataset.type = t;
+      typeButtons.push(btn);
+      typeGrid.append(btn);
     }
-    sheet = openSheet({ title: '新增哪一種房間?', content: list });
+
+    const submit = () => {
+      const w = Number(wIn.value);
+      const d = Number(dIn.value);
+      const name = nameIn.value.trim();
+      const res = applyEdit((p) => addRoom(p, curType.val, { w, d, name }));
+      if (res && res.error) {
+        toast(res.error);
+        return;
+      }
+      if (sheet) sheet.close();
+      if (res && res.room) {
+        S.selection = { type: 'room', id: res.room.id };
+        S.mode = 'edit';
+        toast(`已新增「${name || ROOM_TYPE_LABEL[curType.val]}」,可自由拖曳組合對齊`);
+      }
+    };
+
+    formWrap.append(
+      h('div', { class: 'field' },
+        h('label', null, '空間功能類別'),
+        typeGrid),
+      h('div', { class: 'grid2' },
+        h('div', { class: 'field' }, h('label', { for: 'v-plan-add-w' }, '自訂寬度 (公尺)'), wIn),
+        h('div', { class: 'field' }, h('label', { for: 'v-plan-add-d' }, '自訂長度/深度 (公尺)'), dIn)),
+      areaHint,
+      h('div', { class: 'field' },
+        h('label', { for: 'v-plan-add-name' }, '自訂名稱 (選填)'),
+        nameIn),
+      h('button', { type: 'button', class: 'btn btn-primary btn-block', onclick: submit }, '加入格局並自動組合'),
+    );
+
+    sheet = openSheet({ title: '新增格局區塊 (自訂長寬組合)', content: formWrap });
   }
 
   /** 選門窗種類,再到牆上點位置(或已有點就直接放) */

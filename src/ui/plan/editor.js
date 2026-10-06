@@ -575,12 +575,28 @@ export function findFreeSpot(plan, w, d, type = 'other') {
   return { x0, y0: snap(ob.y0), x1: round3(x0 + w), y1: round3(snap(ob.y0) + d) };
 }
 
-export function addRoom(plan, type) {
+export function addRoom(plan, type, customSize = null) {
   if (!ROOM_TYPE_LABEL[type]) return { error: '不認得這種房間' };
   if (planRooms(plan).length >= 40) return { error: '房間太多了,最多 40 間' };
-  const [w, d] = ROOM_DEFAULT_SIZE[type];
+  let [w, d] = ROOM_DEFAULT_SIZE[type];
+  if (customSize && typeof customSize === 'object') {
+    const cw = Number(customSize.w);
+    const cd = Number(customSize.d);
+    if (!Number.isFinite(cw) || !Number.isFinite(cd) || cw < MIN_ROOM || cd < MIN_ROOM) {
+      return { error: `房間寬與深都至少要 ${MIN_ROOM} 公尺` };
+    }
+    if (cw > MAX_ROOM || cd > MAX_ROOM) {
+      return { error: `房間寬與深不能超過 ${MAX_ROOM} 公尺` };
+    }
+    w = round3(cw);
+    d = round3(cd);
+  }
   const rect = findFreeSpot(plan, w, d, type);
   const room = { id: uniqueRoomId(plan), type, polygon: polygonOfRect(rect) };
+  if (customSize && customSize.name && typeof customSize.name === 'string') {
+    const clean = customSize.name.trim().slice(0, 12);
+    if (clean) room.name = clean;
+  }
   if (!Array.isArray(plan.rooms)) plan.rooms = [];
   plan.rooms.push(room);
   fitOutline(plan);

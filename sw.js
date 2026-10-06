@@ -1,7 +1,7 @@
 // sw.js - 放在網站根目錄(和 index.html 同層)。scope 自動等於它所在資料夾,
 // 例如 https://chatscai10.github.io/fengshui-luopan/ ,所以所有路徑都用相對路徑,不要寫開頭的 "/"。
 // 發版前執行 node tools/gen-sw.mjs:自動重寫 VERSION(內容雜湊)與 PRECACHE 清單,舊快取會在 activate 時被清掉。
-const VERSION = 'bf578ab838';
+const VERSION = '91050b7381';
 const CACHE = `fengshui-${VERSION}`;
 
 const PRECACHE = [
@@ -33,6 +33,7 @@ const PRECACHE = [
   'src/core/luopan.js',
   'src/core/luopan/data.js',
   'src/core/nine.js',
+  'src/core/placement.js',
   'src/core/plan.js',
   'src/core/sensor-core.js',
   'src/core/sensor.js',
