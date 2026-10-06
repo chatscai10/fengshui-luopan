@@ -979,7 +979,7 @@ score(L) = 100 * clamp(0,1, wG*G + wXK*XK + wH*H + wP*P + wY*Y) * env(L)
   "taiji": { "mode": "centroid", "manual": null } }
 ```
 
-`kind`: `entrance`(大門)、`door`(室內門)、`window`、`floorWindow`(落地窗)、`balconyDoor`;`room.type`: living、bedroom、kitchen、toilet、study、entry、balcony、stair、other;`wall.kind`: solid、glass、partial(未頂天櫃體)。`planUpBearing` 用當下 `northMode` 的基準。
+`kind`: `entrance`(大門)、`door`(室內門)、`window`、`floorWindow`(落地窗)、`balconyDoor`;`room.type`: living、bedroom、kitchen、toilet、study、entry、balcony、stair、altar、dining、storage、other;`wall.kind`: solid、glass、partial(未頂天櫃體)。`plan.furniture[]`(選配):每件 `{id, kind, roomId, x, y, w, d, facing}`,`kind`: bed、desk、stove、sofa、altar、fridge、fishTank、tv(與 `FURNITURE_KINDS` 一致);`x/y` 為左下角平面座標、`w/d` 尺寸(公尺,≤6)、`facing` 為羅盤方位角(度)。家具重疊或中心落在房間外只給警告,不擋分析。`planUpBearing` 用當下 `northMode` 的基準。
 
 #### 2.7.2 太極點(D55)
 

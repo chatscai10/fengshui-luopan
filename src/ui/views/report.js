@@ -7,6 +7,7 @@ import { zhPunct } from '../punct.js';
 import { renderReport } from '../../core/copy.js';
 import { DEFAULT_SETTINGS } from '../../core/settings.js';
 import { DIR8, DECLINATION_MODEL } from '../../core/geo.js';
+import { taijiPoint } from '../../core/plan.js';
 import { AUSPICIOUS_STARS } from '../../core/bazhai.js';
 import { badgeClass, renderInfoCard, TIER_LABEL, sanitizePage, safeReport } from './wealth.js';
 import {
@@ -564,7 +565,15 @@ export async function mount(root, ctx) {
     }
 
     // 重點擺設方針 (床位、書桌、廚房爐灶與避忌提示)
-    const placeBlock = buildPlacementBlock(report);
+    const plState = state || {};
+    let taiji = null;
+    let up = null;
+    try {
+      const enginePlan = ctx.store.input().plan;
+      if (enginePlan && Number.isFinite(enginePlan.planUpBearing)) up = enginePlan.planUpBearing;
+      if (enginePlan) taiji = taijiPoint(enginePlan, plState.settings || {}).point;
+    } catch { /* 方位未知就只做通則分析 */ }
+    const placeBlock = buildPlacementBlock(report, { plan: plState.plan, taiji, up });
     if (placeBlock && placeBlock.cards && placeBlock.cards.length) {
       const pCautions = placeBlock.cards.filter((c) => c.level === 'caution').length;
       add(collapsible('placement', '室內重點擺設與禁忌', [

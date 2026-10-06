@@ -6,9 +6,9 @@ import { fitCanvas, cssVar, KAI_STACK, UI_STACK } from './canvasUtil.js';
 import { makeView, bearingOfVector, vectorOfBearing, wedgePolygon } from '../plan/coords.js';
 import { GUA, DIR8, guaAt } from '../../core/geo.js';
 import {
-  planRooms, planOpenings, contentBounds, roomRect, openingGeom, handlePoints, HANDLES, rectOfPolygon,
+  planRooms, planOpenings, planFurniture, contentBounds, roomRect, openingGeom, handlePoints, HANDLES, rectOfPolygon,
 } from '../plan/editor.js';
-import { roomDisplayName } from '../plan/labels.js';
+import { roomDisplayName, FURNITURE_LABEL } from '../plan/labels.js';
 
 const TAU = Math.PI * 2;
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -372,9 +372,97 @@ function drawRoomLabels(ctx, view, st, pal, boxes) {
   }
 }
 
+function drawFurniture(ctx, view, st, pal) {
+  const sel = st.selection && st.selection.type === 'furniture' ? st.selection.id : null;
+  for (const f of planFurniture(st.plan)) {
+    if (!isNum(f.x) || !isNum(f.y) || !isNum(f.w) || !isNum(f.d)) continue;
+    const [px0, py0] = view.toPx([f.x, f.y + f.d]);
+    const [px1, py1] = view.toPx([f.x + f.w, f.y]);
+    const w = px1 - px0;
+    const h = py1 - py0;
+    if (w < 2 || h < 2) continue;
+    const selected = f.id === sel;
+    ctx.save();
+    // 底色:半透明,壓在房間色上還看得出房間類型
+    ctx.fillStyle = alphaColor(pal.gold, selected ? 0.34 : 0.16);
+    ctx.strokeStyle = selected ? pal.goldBright : alphaColor(pal.goldBright, 0.7);
+    ctx.lineWidth = selected ? 1.8 : 1.2;
+    ctx.beginPath();
+    const r = Math.min(4, w / 4, h / 4);
+    ctx.moveTo(px0 + r, py0);
+    ctx.lineTo(px1 - r, py0);
+    ctx.quadraticCurveTo(px1, py0, px1, py0 + r);
+    ctx.lineTo(px1, py1 - r);
+    ctx.quadraticCurveTo(px1, py1, px1 - r, py1);
+    ctx.lineTo(px0 + r, py1);
+    ctx.quadraticCurveTo(px0, py1, px0, py1 - r);
+    ctx.lineTo(px0, py0 + r);
+    ctx.quadraticCurveTo(px0, py0, px0 + r, py0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // 朝向:羅盤方位角 → 畫面方向(圖面上方 = planUpBearing,畫布 y 翻轉)
+    if (isNum(f.facing) && w > 14 && h > 14) {
+      const cx = (px0 + px1) / 2;
+      const cy = (py0 + py1) / 2;
+      const rel = isNum(st.up) ? (f.facing - st.up) : f.facing; // 相對圖面上方的角度
+      const rad = (rel * Math.PI) / 180;
+      const dx = Math.sin(rad);
+      const dy = -Math.cos(rad);
+      const len = Math.min(w, h) * 0.34;
+      ctx.strokeStyle = pal.goldBright;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(cx - dx * len * 0.5, cy - dy * len * 0.5);
+      ctx.lineTo(cx + dx * len * 0.5, cy + dy * len * 0.5);
+      ctx.stroke();
+      // 箭頭
+      const hx = cx + dx * len * 0.5;
+      const hy = cy + dy * len * 0.5;
+      const px = -dy;
+      const py = dx;
+      ctx.beginPath();
+      ctx.moveTo(hx, hy);
+      ctx.lineTo(hx - dx * 5 + px * 3, hy - dy * 5 + py * 3);
+      ctx.lineTo(hx - dx * 5 - px * 3, hy - dy * 5 - py * 3);
+      ctx.closePath();
+      ctx.fillStyle = pal.goldBright;
+      ctx.fill();
+    }
+    // 名稱(夠大才畫)
+    const label = FURNITURE_LABEL[f.kind] || '家具';
+    const short = label.split(/[ (（]/)[0];
+    if (w > 34 && h > 18) {
+      ctx.fillStyle = pal.text;
+      ctx.font = `11px ${UI_STACK}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(fitText(ctx, short, w - 6, 11, 8), (px0 + px1) / 2, (py0 + py1) / 2);
+    }
+    ctx.restore();
+  }
+}
+
 function drawSelection(ctx, view, st, pal) {
   const sel = st.selection;
-  if (!sel || sel.type !== 'room') return;
+  if (!sel) return;
+  if (sel.type === 'furniture') {
+    const f = planFurniture(st.plan).find((x) => x.id === sel.id);
+    if (!f) return;
+    const [px0, py0] = view.toPx([f.x, f.y + f.d]);
+    const [px1, py1] = view.toPx([f.x + f.w, f.y]);
+    ctx.save();
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = st.invalid ? pal.cinnabar : pal.goldBright;
+    ctx.strokeRect(px0 - 1.5, py0 - 1.5, px1 - px0 + 3, py1 - py0 + 3);
+    if (st.invalid) {
+      ctx.fillStyle = alphaColor(pal.cinnabar, 0.2);
+      ctx.fillRect(px0, py0, px1 - px0, py1 - py0);
+    }
+    ctx.restore();
+    return;
+  }
+  if (sel.type !== 'room') return;
   const room = planRooms(st.plan).find((r) => r.id === sel.id);
   if (!room || !validPoly(room.polygon)) return;
   ctx.save();
@@ -745,6 +833,7 @@ export function drawPlan(canvas, st) {
   drawRooms(ctx, view, st, pal);
   const icons = [];
   drawOpenings(ctx, view, st, pal, boxes, icons);
+  drawFurniture(ctx, view, st, pal);
   drawSectors(ctx, view, st, pal);
   drawRoomLabels(ctx, view, st, pal, boxes);
   drawSectorLabels(ctx, view, st, pal, W, H, boxes);

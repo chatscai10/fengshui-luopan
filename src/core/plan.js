@@ -16,12 +16,15 @@ import { resolveSettings } from './settings.js';
 import { GUA, guaAt, normalizeBearing, circularDelta, toTrue, toMagnetic } from './geo.js';
 
 export const PLAN_SCHEMA = 'fengshui.plan/1';
-export const ROOM_TYPES = Object.freeze(['living', 'bedroom', 'kitchen', 'toilet', 'study', 'entry', 'balcony', 'stair', 'other']);
+export const ROOM_TYPES = Object.freeze(['living', 'bedroom', 'kitchen', 'toilet', 'study', 'entry', 'balcony', 'stair', 'altar', 'dining', 'storage', 'other']);
 export const OPENING_KINDS = Object.freeze(['entrance', 'door', 'window', 'floorWindow', 'balconyDoor']);
+export const FURNITURE_KINDS = Object.freeze(['bed', 'desk', 'stove', 'sofa', 'altar', 'fridge', 'fishTank', 'tv']);
 export const WALL_KINDS = Object.freeze(['solid', 'glass', 'partial']);
 /** 開口所在的牆(2.6.2): bottom(y 最小) top(y 最大) left(x 最小) right(x 最大)。 */
 export const WALL_NAMES = Object.freeze(['bottom', 'top', 'left', 'right']);
 export const TAIJI_MODES = Object.freeze(['centroid', 'bbox', 'manual']);
+/** 家具尺寸上限(公尺):超過視為貼錯數字 */
+export const MAX_FURNITURE = 6;
 const NORTH_MODES = Object.freeze(['magnetic', 'true']);
 
 // 幾何容差(公尺): 一般平面圖座標到公分,1e-9 遠小於任何有意義的差距,又大於浮點雜訊。
@@ -516,6 +519,63 @@ function inspect(plan, s, level) {
       const b = placed[j];
       if (a.roomId === b.roomId && a.wall === b.wall && Math.min(a.hi, b.hi) - Math.max(a.lo, b.lo) > EPS) {
         warn('openingsOverlap', b.path, `${b.path} 與 ${a.path} 在同一面牆上重疊`);
+      }
+    }
+  }
+
+  // 家具擺設(床、桌、灶、沙發、神位、冰箱、魚缸、電視櫃)
+  if (plan.furniture != null) {
+    if (!Array.isArray(plan.furniture)) {
+      err('furniture.notArray', 'furniture', 'furniture 必須是陣列');
+    } else {
+      const furIds = new Set();
+      Array.from(plan.furniture).forEach((f, i) => {
+        const path = `furniture[${i}]`;
+        if (!isObj(f)) {
+          err('furniture.notObject', path, `${path} 必須是物件`);
+          return;
+        }
+        if (typeof f.id !== 'string' || f.id === '') {
+          err('furniture.id', `${path}.id`, `${path}.id 必須是非空字串: ${show(f.id)}`);
+        } else if (furIds.has(f.id)) {
+          err('furniture.duplicateId', `${path}.id`, `家具 id 重複: ${f.id}`);
+        } else {
+          furIds.add(f.id);
+        }
+        if (!FURNITURE_KINDS.includes(f.kind)) {
+          err('furniture.kind', `${path}.kind`, `${path}.kind 未知: ${show(f.kind)}`);
+        }
+        if (!isNum(f.x) || !isNum(f.y)) {
+          err('furniture.pos', path, `${path} 的 x/y 必須是有限數字`);
+        }
+        if (!isNum(f.w) || !isNum(f.d) || f.w <= 0 || f.d <= 0) {
+          err('furniture.size', path, `${path} 的 w/d 必須是大於 0 的有限數字`);
+        } else if (f.w > MAX_FURNITURE || f.d > MAX_FURNITURE) {
+          err('furniture.tooLarge', path, `${path} 的尺寸不能超過 ${MAX_FURNITURE} 公尺`);
+        }
+        if (f.facing != null && !isNum(f.facing)) {
+          err('furniture.facing', `${path}.facing`, `${path}.facing 必須是有限數字(羅盤方位角)`);
+        }
+        // 家具要在某一間房間內(貼邊算內);找不到房間只是警告,不擋分析
+        if (isNum(f.x) && isNum(f.y) && isNum(f.w) && isNum(f.d) && out.rooms.length) {
+          const cx = f.x + f.w / 2;
+          const cy = f.y + f.d / 2;
+          const inRoom = out.rooms.some((rm) => rm.ring && classifyRing(rm.ring, [cx, cy]) !== 'outside');
+          if (!inRoom) warn('furnitureOutsideRooms', path, `${path} 的中心不在任何房間內`);
+        }
+      });
+      // 家具互相重疊只警告(可以拖曳修復)
+      const rects = Array.from(plan.furniture)
+        .filter((f) => isObj(f) && isNum(f.x) && isNum(f.y) && isNum(f.w) && isNum(f.d))
+        .map((f, i) => ({ i, id: f.id, x0: f.x, y0: f.y, x1: f.x + f.w, y1: f.y + f.d }));
+      for (let i = 0; i < rects.length; i += 1) {
+        for (let j = i + 1; j < rects.length; j += 1) {
+          const a = rects[i];
+          const b = rects[j];
+          if (Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) > EPS && Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) > EPS) {
+            warn('furnitureOverlap', `furniture[${b.i}]`, `家具 ${show(b.id)} 與 ${show(a.id)} 重疊`);
+          }
+        }
       }
     }
   }

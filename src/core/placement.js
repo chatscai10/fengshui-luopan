@@ -325,9 +325,113 @@ export function buildPlacementCards(placements) {
 }
 
 /**
- * 產出結構化的擺放摘要區塊
+ * 將平面圖上的家具與八方位對照,逐件給出方位吉凶與注意事項。
+ * @param {object} placements analyzePlacements 的結果
+ * @param {object} plan 平面圖(含 furniture[])
+ * @param {object} opt { taiji:[x,y], up:number|null } 太極點與圖面上方的羅盤方位
+ * @returns {object[]} 每件家具的診斷
  */
-export function buildPlacementBlock(report) {
+export function analyzeFurniture(placements, plan, { taiji = null, up = null } = {}) {
+  if (!placements || !plan || !Array.isArray(plan.furniture)) return [];
+  const out = [];
+  for (const f of plan.furniture) {
+    if (!f || typeof f !== 'object' || !Number.isFinite(f.x) || !Number.isFinite(f.y)) continue;
+    const cx = f.x + (Number(f.w) || 0) / 2;
+    const cy = f.y + (Number(f.d) || 0) / 2;
+    let dir = null;
+    let gua = null;
+    if (Array.isArray(taiji) && Number.isFinite(up)) {
+      const dx = cx - taiji[0];
+      const dy = cy - taiji[1];
+      if (Math.hypot(dx, dy) > 1e-6) {
+        const b = ((up + (Math.atan2(dx, dy) * 180) / Math.PI) % 360 + 360) % 360;
+        const idx = Math.floor(((b + 22.5) % 360) / 45) % 8;
+        dir = DIR8[idx];
+        gua = GUA[idx];
+      }
+    }
+    const star = dir && gua ? starOf(placements.meta.targetGua, gua) : null;
+    const cautions = [];
+    // 門沖:家具中心在任何門窗(含大門)直徑範圍內且距離 < 0.3m
+    if (Array.isArray(plan.openings)) {
+      for (const o of plan.openings) {
+        if (!o || (o.kind !== 'entrance' && o.kind !== 'door')) continue;
+        const room = (plan.rooms || []).find((r) => r.id === o.roomId);
+        if (!room || !Array.isArray(room.polygon)) continue;
+        const xs = room.polygon.map((p) => p[0]);
+        const ys = room.polygon.map((p) => p[1]);
+        const ox = Math.min(...xs);
+        const oy = Math.min(...ys);
+        const px = o.wall === 'left' ? ox : o.wall === 'right' ? Math.max(...xs) : ox + (o.pos || 0);
+        const py = o.wall === 'bottom' ? oy : o.wall === 'top' ? Math.max(...ys) : oy + (o.pos || 0);
+        const d = Math.hypot(cx - px, cy - py);
+        if (d < 0.4) cautions.push(`距離${o.kind === 'entrance' ? '大門' : '房門'}過近(門沖)`);
+      }
+    }
+    // 廁所共牆:本家具與任何衛浴房間共牆且貼近
+    const toiletRooms = (plan.rooms || []).filter((r) => r.type === 'toilet');
+    for (const tr of toiletRooms) {
+      const xs = tr.polygon.map((p) => p[0]);
+      const ys = tr.polygon.map((p) => p[1]);
+      const tx0 = Math.min(...xs), ty0 = Math.min(...ys), tx1 = Math.max(...xs), ty1 = Math.max(...ys);
+      const overlapX = Math.min(f.x + (f.w || 0), tx1) - Math.max(f.x, tx0);
+      const overlapY = Math.min(f.y + (f.d || 0), ty1) - Math.max(f.y, ty0);
+      if ((overlapX > -0.1 && overlapX < 0.1 && overlapY > 0.1) || (overlapY > -0.1 && overlapY < 0.1 && overlapX > 0.1)) {
+        cautions.push('與衛浴廁所共牆,注意水氣與雜訊');
+        break;
+      }
+    }
+    // 廚房水火:爐灶與冰箱距離過近
+    if (f.kind === 'stove') {
+      const fridge = plan.furniture.find((x) => x && x.kind === 'fridge');
+      if (fridge) {
+        const fd = Math.hypot(cx - (fridge.x + (fridge.w || 0) / 2), cy - (fridge.y + (fridge.d || 0) / 2));
+        if (fd < 0.9) cautions.push('爐灶與冰箱距離過近(水火相剋)');
+      }
+    }
+    out.push({
+      id: f.id,
+      kind: f.kind,
+      dir,
+      gua,
+      star,
+      x: f.x,
+      y: f.y,
+      w: f.w,
+      d: f.d,
+      facing: Number.isFinite(f.facing) ? f.facing : null,
+      cautions,
+    });
+  }
+  return out;
+}
+
+/**
+ * 將家具診斷轉成報告卡片
+ */
+export function buildFurnitureCards(items) {
+  return (items || []).map((it) => {
+    const label = FURNITURE_KIND_LABEL[it.kind] || '家具';
+    const starLine = it.star ? `落在${it.dir}方(屬${it.gua}宮,此方位吉星為「${it.star}」)` : '方位未知(需先量好朝向)';
+    const cautionLine = it.cautions.length ? `注意:${it.cautions.join('。')}。` : '';
+    return {
+      id: `furniture.${it.id}`,
+      headline: `${label}位置分析`,
+      badges: ['實體擺設', it.star ? '已對照方位' : '方位待補'],
+      body: `${label}中心${starLine}。${cautionLine}`,
+      level: it.cautions.length ? 'caution' : 'good',
+    };
+  });
+}
+
+const FURNITURE_KIND_LABEL = Object.freeze({
+  bed: '床鋪', desk: '辦公桌/書桌', stove: '爐灶', sofa: '主沙發', altar: '神位/佛龕', fridge: '電冰箱', fishTank: '魚缸/動水', tv: '電視櫃',
+});
+
+/**
+ * 產出結構化的擺放摘要區塊。plan/taiji/up 有給時,連家具逐件分析一起產出。
+ */
+export function buildPlacementBlock(report, { plan = null, taiji = null, up = null } = {}) {
   if (!report) return null;
   const resident = report.bazhai && report.bazhai.residents && report.bazhai.residents[0];
   const mingGua = resident ? resident.ming && resident.ming.gua : null;
@@ -340,8 +444,11 @@ export function buildPlacementBlock(report) {
     annual,
   });
 
+  const furnitureItems = analyzeFurniture(placements, plan, { taiji, up });
+
   return {
     placements,
-    cards: buildPlacementCards(placements),
+    cards: [...buildPlacementCards(placements), ...buildFurnitureCards(furnitureItems)],
+    furnitureItems,
   };
 }

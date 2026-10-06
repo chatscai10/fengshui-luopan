@@ -355,7 +355,7 @@ test('改類型與名稱:控制字元與過長會被清掉,空字串回到預設
   assert.ok(!/[\u0000-\u001f]/.test(nm));
   setRoomName(p, 'bed2', '   ');
   assert.equal('name' in p.rooms.find((r) => r.id === 'bed2'), false);
-  assert.equal(roomDisplayName(p, p.rooms.find((r) => r.id === 'bed2')), '書房');
+  assert.equal(roomDisplayName(p, p.rooms.find((r) => r.id === 'bed2')), '書房/工作區');
   assert.ok(setRoomName(p, 'nope', 'x').error);
   // 改成陽台 → 不再算進外框
   const q = two();

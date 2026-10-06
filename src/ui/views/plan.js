@@ -11,6 +11,7 @@ import {
   snap, planRooms, planOpenings, roomRect, isAxisRect, hitRoom, hitOpening, hitHandle, wallCandidates,
   moveRect, resizeRect, applyRoomRect, addRoom, removeRoom, setRoomType, setRoomName,
   placeOpening, moveOpening, resizeOpening, setMainDoor, changeOpeningKind, removeOpening,
+  planFurniture, hitFurniture, addFurniture, moveFurniture, resizeFurniture, rotateFurniture, setFurnitureFacing, removeFurniture,
   setTaijiManual, setTaijiAuto, checkEditedPlan, createHistory, MIN_ROOM, MAX_ROOM,
 } from '../plan/editor.js';
 import { TEMPLATES, buildTemplate } from '../plan/templates.js';
@@ -18,8 +19,9 @@ import { LAYERS, normalizeLayer, layerCells, wealthMarkers, sectorDetails, secto
 import { summarizePlan } from '../plan/summary.js';
 import {
   ROOM_TYPE_LABEL, ROOM_TYPE_ORDER, OPENING_LABEL, OPENING_ADD_ORDER, WALL_LABEL, roomDisplayName, roomNameMap,
+  FURNITURE_LABEL, FURNITURE_ORDER, FURNITURE_DEFAULT_SIZE,
 } from '../plan/labels.js';
-import { GUA } from '../../core/geo.js';
+import { GUA, DIR8 } from '../../core/geo.js';
 
 const ICON = { undo: icons.undo, redo: icons.redo, fit: icons.fit };
 
@@ -71,6 +73,7 @@ export async function mount(root, ctx) {
     themeKey: '',
     preview: null,           // 拖曳中的暫時平面圖
     invalid: false,
+    placeFurn: null,         // 等待點圖放入家具的種類
     taijiPreview: null,
     lockBounds: null,
     view: null,
@@ -626,14 +629,18 @@ export async function mount(root, ctx) {
     let sig = 'none';
     let room = null;
     let op = null;
+    let fur = null;
     if (sel && sel.type === 'room') {
       room = planRooms(d.plan).find((r) => r.id === sel.id);
       if (room) { const rc = roomRect(room); sig = `room|${room.id}|${room.type}|${room.name || ''}|${rc.x0},${rc.y0},${rc.x1},${rc.y1}|${d.roomNames.get(room.id)}`; }
     } else if (sel && sel.type === 'opening') {
       op = planOpenings(d.plan).find((o) => o.id === sel.id);
       if (op) sig = `op|${op.id}|${op.kind}|${op.width}|${op.pos}|${op.roomId}|${op.wall}`;
+    } else if (sel && sel.type === 'furniture') {
+      fur = planFurniture(d.plan).find((f) => f.id === sel.id);
+      if (fur) sig = `fur|${fur.id}|${fur.kind}|${fur.x},${fur.y},${fur.w},${fur.d}|${fur.facing}`;
     }
-    sig += `|L${planRooms(d.plan).map((r) => r.id).join(',')};${planOpenings(d.plan).map((o) => o.id).join(',')}`;
+    sig += `|L${planRooms(d.plan).map((r) => r.id).join(',')};${planOpenings(d.plan).map((o) => o.id).join(',')};${planFurniture(d.plan).map((f) => f.id).join(',')}`;
     if (box.dataset.sig === sig) return;
     if (box.dataset.sig && box.contains(document.activeElement) && box.dataset.sig.split('|')[1] === sig.split('|')[1]) {
       // 使用者正在這個面板打字,不要重畫掉輸入框(換選取才重畫)
@@ -647,11 +654,13 @@ export async function mount(root, ctx) {
     if (pickerHadFocus) { const again = box.querySelector('.v-plan-picker-sel'); if (again) again.focus(); }
     box.append(h('div', { class: 'row v-plan-addrow' },
       h('button', { type: 'button', class: 'btn btn-sm', onclick: openAddRoom }, '＋ 新增房間'),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => openAddOpening(null) }, '＋ 新增門窗')));
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: () => openAddOpening(null) }, '＋ 新增門窗'),
+      h('button', { type: 'button', class: 'btn btn-sm', onclick: openAddFurniture }, '＋ 新增家具')));
 
     if (room) box.append(roomPanel(d, room));
     else if (op) box.append(openingPanel(d, op));
-    else box.append(h('p', { class: 'sub' }, '還沒選東西。點一下房間、門或窗,就能在這裡改名稱、大小或刪除。'));
+    else if (fur) box.append(furniturePanel(d, fur));
+    else box.append(h('p', { class: 'sub' }, '還沒選東西。點一下房間、門窗或家具,就能在這裡改名稱、大小、朝向或刪除。'));
   }
 
   /** 用選單選房間或門窗:不靠點圖面也能操作(鍵盤與讀屏使用者的入口) */
@@ -659,11 +668,13 @@ export async function mount(root, ctx) {
     const sel = S.selection;
     const rooms = planRooms(d.plan);
     const ops = planOpenings(d.plan);
+    const furns = planFurniture(d.plan);
     const cur = sel ? `${sel.type}:${sel.id}` : '';
     const select = h('select', { class: 'v-plan-picker-sel', 'aria-label': '選擇要編輯的房間或門窗' },
       h('option', { value: '' }, '(沒有選取)'),
       rooms.length ? h('optgroup', { label: '房間' }, rooms.map((r) => h('option', { value: `room:${r.id}` }, d.roomNames.get(r.id) || '房間'))) : null,
-      ops.length ? h('optgroup', { label: '門窗' }, ops.map((o) => h('option', { value: `opening:${o.id}` }, `${OPENING_LABEL[o.kind] || '門窗'}(${d.roomNames.get(o.roomId) || '房間'}${WALL_LABEL[o.wall] || ''})`))) : null);
+      ops.length ? h('optgroup', { label: '門窗' }, ops.map((o) => h('option', { value: `opening:${o.id}` }, `${OPENING_LABEL[o.kind] || '門窗'}(${d.roomNames.get(o.roomId) || '房間'}${WALL_LABEL[o.wall] || ''})`))) : null,
+      furns.length ? h('optgroup', { label: '家具' }, furns.map((f) => h('option', { value: `furniture:${f.id}` }, `${FURNITURE_LABEL[f.kind] || '家具'}(${d.roomNames.get(f.roomId) || '房間'})`))) : null);
     select.value = cur;
     if (select.value !== cur) select.value = '';
     select.addEventListener('change', () => {
@@ -871,6 +882,68 @@ export async function mount(root, ctx) {
       }, k === 'entrance' ? '大門(整間房子只會有一個)' : OPENING_LABEL[k]));
     }
     sheet = openSheet({ title: atPoint ? '在這裡放什麼?' : '新增門窗', content: list });
+  }
+
+  /** 選家具種類,再到圖上點位置放入 */
+  function openAddFurniture() {
+    const list = h('div', { class: 'v-plan-menu' });
+    let sheet = null;
+    list.append(h('p', { class: 'sub' }, '選好種類後,在圖上點一下房間裡面的位置。放入後可以拖曳微調、旋轉與調整尺寸。'));
+    for (const k of FURNITURE_ORDER) {
+      const [w, d] = FURNITURE_DEFAULT_SIZE[k] || [1, 0.6];
+      list.append(h('button', {
+        type: 'button', class: 'btn btn-block',
+        onclick: () => {
+          if (sheet) sheet.close();
+          S.placeFurn = k;
+          S.mode = 'edit';
+          toast(`在圖上點一下房間裡面,放入「${FURNITURE_LABEL[k]}」(按 Esc 取消)`);
+          scheduleRefresh();
+        },
+      }, `${FURNITURE_LABEL[k]}(${w}×${d}m)`));
+    }
+    sheet = openSheet({ title: '放入家具', content: list });
+  }
+
+  /** 家具的編輯面板:尺寸、朝向、旋轉、刪除 */
+  function furniturePanel(d, fur) {
+    const roomName = d.roomNames.get(fur.roomId) || '房間';
+    const wIn = h('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '0.3', max: '6', value: String(fur.w), 'aria-label': '寬(公尺)' });
+    const dIn = h('input', { type: 'number', inputmode: 'decimal', step: '0.1', min: '0.3', max: '6', value: String(fur.d), 'aria-label': '深(公尺)' });
+    const dirSel = h('select', { 'aria-label': '朝向' }, DIR8.map((dir) => h('option', { value: dir }, dir)));
+    const bearingOf = (dir) => (['北', '東北', '東', '東南', '南', '西南', '西', '西北'].indexOf(dir)) * 45;
+    const dirOfBearing = (b) => DIR8[Math.round((((b % 360) + 360) % 360) / 45) % 8];
+    const liveFur = () => planFurniture(store.get().plan || {}).find((f) => f && f.id === fur.id) || fur;
+    dirSel.value = dirOfBearing(fur.facing || 0);
+    dirSel.addEventListener('change', () => {
+      applyEdit((p) => setFurnitureFacing(p, fur.id, bearingOf(dirSel.value)));
+    });
+    const applySize = () => {
+      const nw = Number(wIn.value);
+      const nd = Number(dIn.value);
+      const res = applyEdit((p) => resizeFurniture(p, fur.id, nw, nd));
+      if (res && res.error) {
+        toast(res.error);
+        const cur = liveFur();
+        wIn.value = String(cur.w);
+        dIn.value = String(cur.d);
+      }
+    };
+    wIn.addEventListener('change', applySize);
+    dIn.addEventListener('change', applySize);
+    return h('div', { class: 'v-plan-sel' },
+      h('div', { class: 'card-title' }, `已選:${FURNITURE_LABEL[fur.kind] || '家具'}`),
+      h('p', { class: 'sub' }, `在「${roomName}」裡面,平面位置 (${fur.x}, ${fur.y}) 公尺。拖曳可移動,方向箭頭是它的朝向。`),
+      h('div', { class: 'grid2' },
+        h('div', { class: 'field' }, h('label', null, '寬(公尺)'), wIn),
+        h('div', { class: 'field' }, h('label', null, '深(公尺)'), dIn)),
+      h('div', { class: 'field' }, h('label', null, '朝向(面向哪個方位)'), dirSel),
+      h('div', { class: 'row' },
+        h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { if (applyEdit((p) => rotateFurniture(p, fur.id, 90))) toast('已旋轉 90 度'); } }, '旋轉 90°'),
+        h('button', {
+          type: 'button', class: 'btn btn-sm btn-danger',
+          onclick: () => { if (applyEdit((p) => removeFurniture(p, fur.id))) { S.selection = null; toastWithUndo('已移除家具'); } },
+        }, '移除家具')));
   }
 
   function placeAt(kind, pt, preferRoomId, wide) {
@@ -1144,6 +1217,7 @@ export async function mount(root, ctx) {
     if (S.photo && S.photoMove) { drag.kind = 'photo'; return; }
     if (S.mode !== 'edit') return; // 看方位模式:其餘都是平移或點一下
     if (S.placeKind) return;       // 等待點牆:平移或點一下
+    if (S.placeFurn) return;       // 等待點圖放家具:平移或點一下
     // 3. 選取中房間的手把
     const tm = tolM(tolPx + 2);
     if (S.selection && S.selection.type === 'room') {
@@ -1158,6 +1232,14 @@ export async function mount(root, ctx) {
     if (oid) {
       S.selection = { type: 'opening', id: oid };
       Object.assign(drag, { kind: 'openingMove', openingId: oid });
+      scheduleRefresh();
+      return;
+    }
+    // 4.5 家具(蓋在房間上面,先於房間命中)
+    const fid = hitFurniture(d.plan, pt, tolM(tolPx));
+    if (fid) {
+      S.selection = { type: 'furniture', id: fid };
+      Object.assign(drag, { kind: 'furnMove', furnId: fid });
       scheduleRefresh();
       return;
     }
@@ -1246,6 +1328,13 @@ export async function mount(root, ctx) {
         if (!res.error) S.preview = draft;
         break;
       }
+      case 'furnMove': {
+        const draft = clone(d.plan);
+        const res = moveFurniture(draft, drag.furnId, pt);
+        drag.ok = !res.error;
+        if (!res.error) { S.preview = draft; S.invalid = false; }
+        break;
+      }
       default:
         break;
     }
@@ -1290,6 +1379,12 @@ export async function mount(root, ctx) {
           applyEdit((pl) => moveOpening(pl, drag.openingId, pt));
           break;
         }
+        case 'furnMove': {
+          const view = S.view || currentView();
+          const pt = view.fromPx(p.x, p.y);
+          applyEdit((pl) => moveFurniture(pl, drag.furnId, pt));
+          break;
+        }
         default:
           break;
       }
@@ -1310,6 +1405,16 @@ export async function mount(root, ctx) {
       }
     } else if (S.placeKind) {
       placeAt(S.placeKind, pt, S.selection && S.selection.type === 'room' ? S.selection.id : null, true);
+    } else if (S.placeFurn) {
+      const kind = S.placeFurn;
+      const res = applyEdit((pl) => addFurniture(pl, kind, pt));
+      if (res && res.error) {
+        toast(res.error);
+      } else if (res && res.furniture) {
+        S.selection = { type: 'furniture', id: res.furniture.id };
+        S.placeFurn = null;
+        toast(`已放入「${FURNITURE_LABEL[kind] || '家具'}」,拖曳可移到正確位置`);
+      }
     } else if (drag.kind === 'roomPending') {
       // 已選中的房間再點它的牆 → 加門窗選單
       if (drag.wasSelected) {
@@ -1354,7 +1459,10 @@ export async function mount(root, ctx) {
     if (mq.addEventListener) { mq.addEventListener('change', onScheme); cleanups.push(() => mq.removeEventListener('change', onScheme)); }
   }
   // 等待點牆放門窗時,按 Esc 取消
-  const onKey = (e) => { if (e.key === 'Escape' && S.placeKind && !document.querySelector('.sheet')) { S.placeKind = null; scheduleRefresh(); } };
+  const onKey = (e) => {
+    if (e.key !== 'Escape' || document.querySelector('.sheet')) return;
+    if (S.placeKind || S.placeFurn) { S.placeKind = null; S.placeFurn = null; scheduleRefresh(); }
+  };
   document.addEventListener('keydown', onKey);
   cleanups.push(() => document.removeEventListener('keydown', onKey));
   const onWinResize = () => { measure(); scheduleRefresh(); };

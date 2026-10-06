@@ -11,7 +11,8 @@
 
 import { validatePlan } from '../../core/plan.js';
 import {
-  ROOM_TYPE_LABEL, ROOM_TYPE_ORDER, ROOM_DEFAULT_SIZE, OPENING_LABEL, OPENING_DEFAULT_WIDTH, roomDisplayName,
+  ROOM_TYPE_LABEL, ROOM_TYPE_ORDER, ROOM_DEFAULT_SIZE, OPENING_LABEL, OPENING_DEFAULT_WIDTH,
+  FURNITURE_LABEL, FURNITURE_DEFAULT_SIZE, roomDisplayName,
 } from './labels.js';
 
 export const GRID = 0.1;         // 吸附格距(公尺)
@@ -634,6 +635,128 @@ export function setRoomName(plan, id, name) {
   return { ok: true };
 }
 
+// ───────────────────────── 家具擺設 ─────────────────────────
+
+export function planFurniture(plan) {
+  return plan && Array.isArray(plan.furniture) ? plan.furniture.filter((f) => f && typeof f === 'object') : [];
+}
+
+/** 命中哪件家具(矩形內部, tol 公尺容差);重疊時取面積小的。沒有回 null */
+export function hitFurniture(plan, p, tol = 0) {
+  if (!isPt(p)) return null;
+  let best = null;
+  for (const f of planFurniture(plan)) {
+    if (!isNum(f.x) || !isNum(f.y) || !isNum(f.w) || !isNum(f.d)) continue;
+    const r = { x0: f.x, y0: f.y, x1: f.x + f.w, y1: f.y + f.d };
+    if (rectContains(r, p, tol)) {
+      const a = rectArea(r);
+      if (!best || a < best.a) best = { id: f.id, a };
+    }
+  }
+  return best ? best.id : null;
+}
+
+const FURNITURE_PREFIX = { bed: 'fb', desk: 'fd', stove: 'fs', sofa: 'fsf', altar: 'fa', fridge: 'ff', fishTank: 'fk', tv: 'ft' };
+
+/**
+ * 放一件家具(中心放在 p,吸附格點)。p 不在任何房間內時回錯誤。
+ * @returns {{ok:true, furniture:object}|{error:string}}
+ */
+export function addFurniture(plan, kind, p) {
+  if (!FURNITURE_LABEL[kind]) return { error: '不認得這種家具' };
+  if (!isPt(p)) return { error: '請點在房間裡面' };
+  if (planFurniture(plan).length >= 60) return { error: '家具太多了,最多 60 件' };
+  const rid = hitRoom(plan, p);
+  if (!rid) return { error: '請點在房間裡面' };
+  const [w, d] = FURNITURE_DEFAULT_SIZE[kind] || [1, 0.6];
+  const cx = snap(p[0]);
+  const cy = snap(p[1]);
+  const x0 = round3(cx - w / 2);
+  const y0 = round3(cy - d / 2);
+  const used = new Set(planFurniture(plan).map((f) => f.id));
+  const furniture = {
+    id: uniqueId(FURNITURE_PREFIX[kind] || 'fu', used),
+    kind,
+    roomId: rid,
+    x: x0,
+    y: y0,
+    w,
+    d,
+    facing: 0,
+  };
+  if (!Array.isArray(plan.furniture)) plan.furniture = [];
+  plan.furniture.push(furniture);
+  return { ok: true, furniture };
+}
+
+/** 平移家具(左下角吸附格點);會自動更新所屬房間 */
+export function moveFurniture(plan, id, p) {
+  const f = planFurniture(plan).find((x) => x.id === id);
+  if (!f) return { error: '找不到這件家具' };
+  if (!isPt(p)) return { error: '位置不正確' };
+  // 以中心對齊 p
+  f.x = round3(clamp(snap(p[0] - f.w / 2), -MAX_COORD, MAX_COORD));
+  f.y = round3(clamp(snap(p[1] - f.d / 2), -MAX_COORD, MAX_COORD));
+  const rid = hitRoom(plan, [f.x + f.w / 2, f.y + f.d / 2]);
+  if (rid) f.roomId = rid;
+  return { ok: true, furniture: f };
+}
+
+/** 調整家具尺寸(以中心為準重算左下角) */
+export function resizeFurniture(plan, id, w, d) {
+  const f = planFurniture(plan).find((x) => x.id === id);
+  if (!f) return { error: '找不到這件家具' };
+  const nw = Number(w);
+  const nd = Number(d);
+  if (!isNum(nw) || !isNum(nd) || nw < 0.3 || nd < 0.3) return { error: '家具尺寸至少 0.3 公尺' };
+  if (nw > 6 || nd > 6) return { error: '家具最大 6 公尺' };
+  const cx = f.x + f.w / 2;
+  const cy = f.y + f.d / 2;
+  f.w = round3(nw);
+  f.d = round3(nd);
+  f.x = round3(clamp(snap(cx - f.w / 2), -MAX_COORD, MAX_COORD));
+  f.y = round3(clamp(snap(cy - f.d / 2), -MAX_COORD, MAX_COORD));
+  const rid = hitRoom(plan, [f.x + f.w / 2, f.y + f.d / 2]);
+  if (rid) f.roomId = rid;
+  return { ok: true, furniture: f };
+}
+
+/** 旋轉家具(長寬互換)+ 改朝向(羅盤方位角,度) */
+export function rotateFurniture(plan, id, facingDelta = 90) {
+  const f = planFurniture(plan).find((x) => x.id === id);
+  if (!f) return { error: '找不到這件家具' };
+  const cx = f.x + f.w / 2;
+  const cy = f.y + f.d / 2;
+  if (Math.abs(facingDelta - 90) < 1e-9) {
+    const nw = f.d;
+    const nd = f.w;
+    f.w = round3(nw);
+    f.d = round3(nd);
+    f.x = round3(cx - f.w / 2);
+    f.y = round3(cy - f.d / 2);
+  }
+  f.facing = Math.round((((f.facing || 0) + facingDelta) % 360) + 360) % 360;
+  return { ok: true, furniture: f };
+}
+
+/** 改朝向(羅盤方位角) */
+export function setFurnitureFacing(plan, id, deg) {
+  const f = planFurniture(plan).find((x) => x.id === id);
+  if (!f) return { error: '找不到這件家具' };
+  const v = Number(deg);
+  if (!isNum(v)) return { error: '朝向要填度數(0-359)' };
+  f.facing = ((Math.round(v) % 360) + 360) % 360;
+  return { ok: true, furniture: f };
+}
+
+export function removeFurniture(plan, id) {
+  if (!Array.isArray(plan.furniture)) return { error: '找不到這件家具' };
+  const n = plan.furniture.length;
+  plan.furniture = plan.furniture.filter((f) => f.id !== id);
+  if (plan.furniture.length === n) return { error: '找不到這件家具' };
+  return { ok: true };
+}
+
 // ───────────────────────── 太極點 ─────────────────────────
 
 /** 手動指定太極點(切成 manual 模式) */
@@ -661,6 +784,7 @@ const PROBLEM_TEXT = [
   ['opening.roomId', '有門或窗找不到所屬的房間'],
   ['opening', '門窗資料有問題(位置、寬度或種類不正確)'],
   ['wall', '牆的資料有問題'],
+  ['furniture', '家具的資料有問題(位置、尺寸或種類不正確)'],
   ['mainDoor', '標示的大門找不到'],
   ['taiji', '太極點的位置不正確'],
 ];
@@ -670,6 +794,8 @@ const WARNING_TEXT = {
   openingsOverlap: '有門窗在同一面牆上重疊了',
   mainDoorNotEntrance: '大門標示和門的種類對不上',
   taijiOutsideOutline: '太極點落在外框之外',
+  furnitureOutsideRooms: '有家具不在任何房間裡',
+  furnitureOverlap: '有家具互相重疊',
 };
 
 /** validatePlan 的回報轉白話 */

@@ -1034,7 +1034,8 @@ describe('純函式與可序列化', () => {
 describe('公開常數', () => {
   it('列舉值與規格 2.7.1 一致', () => {
     assert.deepEqual([...plan.OPENING_KINDS], ['entrance', 'door', 'window', 'floorWindow', 'balconyDoor']);
-    assert.deepEqual([...plan.ROOM_TYPES], ['living', 'bedroom', 'kitchen', 'toilet', 'study', 'entry', 'balcony', 'stair', 'other']);
+    assert.deepEqual([...plan.ROOM_TYPES], ['living', 'bedroom', 'kitchen', 'toilet', 'study', 'entry', 'balcony', 'stair', 'altar', 'dining', 'storage', 'other']);
+    assert.deepEqual([...plan.FURNITURE_KINDS], ['bed', 'desk', 'stove', 'sofa', 'altar', 'fridge', 'fishTank', 'tv']);
     assert.deepEqual([...plan.WALL_KINDS], ['solid', 'glass', 'partial']);
     assert.deepEqual([...plan.WALL_NAMES], ['bottom', 'top', 'left', 'right']);
     assert.deepEqual([...plan.TAIJI_MODES], ['centroid', 'bbox', 'manual']);
@@ -1042,10 +1043,11 @@ describe('公開常數', () => {
     // 規格文字確實列出這些列舉
     for (const k of plan.OPENING_KINDS) assert.ok(SPEC_TEXT.includes(k), k);
     for (const k of plan.ROOM_TYPES) assert.ok(SPEC_TEXT.includes(k), k);
+    for (const k of plan.FURNITURE_KINDS) assert.ok(SPEC_TEXT.includes(k), k);
   });
 
   it('常數凍結,不可被外部改動', () => {
-    for (const c of [plan.OPENING_KINDS, plan.ROOM_TYPES, plan.WALL_KINDS, plan.WALL_NAMES, plan.TAIJI_MODES]) assert.ok(Object.isFrozen(c));
+    for (const c of [plan.OPENING_KINDS, plan.ROOM_TYPES, plan.FURNITURE_KINDS, plan.WALL_KINDS, plan.WALL_NAMES, plan.TAIJI_MODES]) assert.ok(Object.isFrozen(c));
   });
 
   it('預設 measureUncertainty 與 settings 一致(不硬寫魔術值)', () => {
