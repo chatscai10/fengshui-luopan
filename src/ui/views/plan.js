@@ -15,13 +15,22 @@ import {
   setTaijiManual, setTaijiAuto, checkEditedPlan, createHistory, MIN_ROOM, MAX_ROOM,
 } from '../plan/editor.js';
 import { TEMPLATES, buildTemplate } from '../plan/templates.js';
-import { LAYERS, normalizeLayer, layerCells, wealthMarkers, sectorDetails, sectorTag, sectorName } from '../plan/layers.js';
+import { LAYERS, normalizeLayer, layerCells, wealthMarkers, sectorDetails, sectorTag, sectorName, furnitureKindLabel } from '../plan/layers.js';
 import { summarizePlan } from '../plan/summary.js';
 import {
   ROOM_TYPE_LABEL, ROOM_TYPE_ORDER, OPENING_LABEL, OPENING_ADD_ORDER, WALL_LABEL, roomDisplayName, roomNameMap,
   FURNITURE_LABEL, FURNITURE_ORDER, FURNITURE_DEFAULT_SIZE,
 } from '../plan/labels.js';
 import { GUA, DIR8 } from '../../core/geo.js';
+import { analyzeFurniture } from '../../core/placement.js';
+
+/** 給 analyzeFurniture 的最小 placements 物件(report 沒有財位/命卦時退用宅卦) */
+function placementsOf(report) {
+  const resident = report && report.bazhai && report.bazhai.residents && report.bazhai.residents[0];
+  const mingGua = resident ? resident.ming && resident.ming.gua : null;
+  const zhaiGua = report && report.bazhai && report.bazhai.house ? report.bazhai.house.gua : null;
+  return { meta: { targetGua: mingGua || zhaiGua || '坎' }, annual: (report && report.summary && report.summary.year) || null };
+}
 
 const ICON = { undo: icons.undo, redo: icons.redo, fit: icons.fit };
 
@@ -120,9 +129,18 @@ export async function mount(root, ctx) {
     const palaces = reportOk && report.planShares ? report.planShares.palaces : null;
     const roomNames = roomNameMap(plan);
     const check = plan ? checkEditedPlan(plan) : { ok: true, message: '', warnings: [] };
+    // 家具逐件方位診斷(要量好朝向、有太極點才算得出方位)
+    let furnitureItems = [];
+    if (plan && planFurniture(plan).length) {
+      try {
+        furnitureItems = analyzeFurniture(placementsOf(report), plan, { taiji, up });
+      } catch { furnitureItems = []; }
+    }
     D = {
       state, plan, check, report, noFacing, reportOk, enginePlan, up, taiji, taijiMode, layer, sectorsVisible, lc, palaces, roomNames,
       markers: sectorsVisible && layer === 'wealth' ? wealthMarkers(report) : [],
+      furnitureItems,
+      furnitureWarn: new Set(furnitureItems.filter((f) => f.cautions && f.cautions.length).map((f) => f.id)),
     };
     return D;
   }
@@ -245,6 +263,7 @@ export async function mount(root, ctx) {
       roomNames: roomNameMap(plan),
       showHandles: S.mode === 'edit' && !S.drag,
       invalid: S.invalid,
+      furnitureWarn: d.furnitureWarn,
     });
   }
 
@@ -1073,7 +1092,7 @@ export async function mount(root, ctx) {
     const gua = GUA[k];
     S.hl = k;
     scheduleRefresh();
-    const det = sectorDetails(d.report, renderedOf(d.report), gua, { palaces: d.palaces, roomNames: d.roomNames, layerId: d.layer });
+    const det = sectorDetails(d.report, renderedOf(d.report), gua, { palaces: d.palaces, roomNames: d.roomNames, layerId: d.layer, furniture: d.furnitureItems });
     const body = h('div', { class: 'v-plan-sheet stack' });
 
     body.append(h('div', null,
@@ -1090,6 +1109,18 @@ export async function mount(root, ctx) {
           h('div', null,
             h('div', { class: 'row tight' }, h('strong', null, l.label), h('span', { class: TONE_BADGE[l.tone] || 'badge' }, TONE_TEXT[l.tone] || '一般')),
             h('div', { class: 'sub' }, l.text)))))));
+    }
+
+    if (det.furniture && det.furniture.length) {
+      body.append(h('div', null,
+        h('div', { class: 'card-title' }, '這個方位的家具'),
+        h('ul', { class: 'list v-plan-furn' }, det.furniture.map((f) => h('li', null,
+          h('div', { class: 'row tight' },
+            h('strong', null, furnitureKindLabel(f.kind)),
+            f.cautions && f.cautions.length ? h('span', { class: 'badge badge--warn' }, '需要留意') : h('span', { class: 'badge badge--good' }, '無特別避忌')),
+          f.cautions && f.cautions.length
+            ? h('div', { class: 'sub' }, f.cautions.join(';'))
+            : null)))));
     }
 
     if (det.cards.length) {

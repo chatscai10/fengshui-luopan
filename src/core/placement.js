@@ -5,7 +5,6 @@
 import { GUA, DIR8, dirOfGua, guaOfDir } from './geo.js';
 import { starOf, USAGE_MATRIX } from './bazhai.js';
 import { SOFT_ADVICE } from './wealth/constants.js';
-
 export const PLACEMENT_SCHEMA = 'fengshui.placement/2';
 
 const RATING_WEIGHT = Object.freeze({
@@ -188,6 +187,7 @@ export function analyzePlacements({ mingGua = null, zhaiGua = null, xuankong = n
       targetGua,
       isPersonal,
     },
+    annual: annual || null,
     bed: {
       title: '床位與床頭朝向安排',
       bestDirections: bedHeads.filter((x) => x.rating === 'best' || x.rating === 'good').slice(0, 3),
@@ -365,7 +365,29 @@ export function analyzeFurniture(placements, plan, { taiji = null, up = null } =
         const px = o.wall === 'left' ? ox : o.wall === 'right' ? Math.max(...xs) : ox + (o.pos || 0);
         const py = o.wall === 'bottom' ? oy : o.wall === 'top' ? Math.max(...ys) : oy + (o.pos || 0);
         const d = Math.hypot(cx - px, cy - py);
-        if (d < 0.4) cautions.push(`距離${o.kind === 'entrance' ? '大門' : '房門'}過近(門沖)`);
+        if (d < 0.45) {
+          const doorName = o.kind === 'entrance' ? '大門' : '房門';
+          cautions.push(`正對${doorName}(門沖),氣流直貫;建議設置玄關矮櫃、屏風或長門簾化解`);
+        }
+      }
+    }
+    // 背窗檢測:床頭、辦公桌背後 0.5 公尺內緊鄰外窗
+    if (f.kind === 'bed' || f.kind === 'desk') {
+      const windows = (plan.openings || []).filter((o) => o && (o.kind === 'window' || o.kind === 'floorWindow'));
+      for (const w of windows) {
+        const room = (plan.rooms || []).find((r) => r.id === w.roomId);
+        if (!room || !Array.isArray(room.polygon)) continue;
+        const xs = room.polygon.map((p) => p[0]);
+        const ys = room.polygon.map((p) => p[1]);
+        const ox = Math.min(...xs);
+        const oy = Math.min(...ys);
+        const wx = w.wall === 'left' ? ox : w.wall === 'right' ? Math.max(...xs) : ox + (w.pos || 0);
+        const wy = w.wall === 'bottom' ? oy : w.wall === 'top' ? Math.max(...ys) : oy + (w.pos || 0);
+        const dist = Math.hypot(cx - wx, cy - wy);
+        if (dist < 0.6) {
+          cautions.push(`後方緊靠窗戶(背窗無靠),缺乏安定感;建議移靠實牆或加裝常閉厚窗簾`);
+          break;
+        }
       }
     }
     // 廁所共牆:本家具與任何衛浴房間共牆且貼近
@@ -377,17 +399,24 @@ export function analyzeFurniture(placements, plan, { taiji = null, up = null } =
       const overlapX = Math.min(f.x + (f.w || 0), tx1) - Math.max(f.x, tx0);
       const overlapY = Math.min(f.y + (f.d || 0), ty1) - Math.max(f.y, ty0);
       if ((overlapX > -0.1 && overlapX < 0.1 && overlapY > 0.1) || (overlapY > -0.1 && overlapY < 0.1 && overlapX > 0.1)) {
-        cautions.push('與衛浴廁所共牆,注意水氣與雜訊');
+        cautions.push('與衛浴廁所共牆,濕氣與管線雜訊較重;床頭/神位建議換至乾淨實牆面');
         break;
       }
     }
-    // 廚房水火:爐灶與冰箱距離過近
+    // 廚房水火:爐灶與冰箱距離過近(算的是兩者邊緣的淨間距,不是中心距離)
     if (f.kind === 'stove') {
-      const fridge = plan.furniture.find((x) => x && x.kind === 'fridge');
+      const fridge = plan.furniture.find((x) => x && x.kind === 'fridge' && Number.isFinite(x.x) && Number.isFinite(x.y));
       if (fridge) {
-        const fd = Math.hypot(cx - (fridge.x + (fridge.w || 0) / 2), cy - (fridge.y + (fridge.d || 0) / 2));
-        if (fd < 0.9) cautions.push('爐灶與冰箱距離過近(水火相剋)');
+        const gapX = Math.max(0, Math.max(f.x, fridge.x) - Math.min(f.x + (f.w || 0), fridge.x + (fridge.w || 0)));
+        const gapY = Math.max(0, Math.max(f.y, fridge.y) - Math.min(f.y + (f.d || 0), fridge.y + (fridge.d || 0)));
+        const gap = Math.hypot(gapX, gapY);
+        if (gap < 0.6) cautions.push(`爐灶與冰箱相距約 ${Math.round(gap * 100) / 100} 公尺(水火相剋,建議留 60 公分以上)`);
       }
+    }
+    // 動水魚缸落凶星或五黃二黑
+    if (f.kind === 'fishTank' && placements.annual) {
+      if (dir === placements.annual.wuhuang) cautions.push('流水魚缸落在流年五黃大煞位,動水容易催動凶氣;建議流年移位');
+      if (dir === placements.annual.erhei) cautions.push('流水魚缸落在流年二黑病符位,動水多擾;建議流年換位');
     }
     out.push({
       id: f.id,
@@ -407,19 +436,66 @@ export function analyzeFurniture(placements, plan, { taiji = null, up = null } =
 }
 
 /**
+ * 家具種類 → 查哪一張用途表。回傳 null 表示這種家具只看方位不評吉凶(冰箱、電視櫃屬設備)。
+ * 表名對應 bazhai.USAGE_MATRIX;'auspicious' 表示四吉位為宜(神位)。
+ */
+const FURNITURE_MATRIX = Object.freeze({
+  bed: 'bedHead',
+  desk: 'desk',
+  stove: 'stoveSeat',
+  sofa: 'living',
+  altar: 'auspicious',
+  fishTank: null,
+  fridge: null,
+  tv: null,
+});
+
+const AUSPICIOUS = Object.freeze(['生氣', '延年', '天醫', '伏位']);
+const RATING_PHRASE = Object.freeze({
+  best: '最適合',
+  good: '適合',
+  ok: '尚可',
+  avoid: '傳統上建議避開',
+  worst: '傳統上最需要避開',
+});
+
+/**
+ * 依家具種類與所在方位的星,給出這件家具的方位評語(白話一句)。
+ * @returns {string|null} 沒有可用評比時回 null
+ */
+export function furnitureVerdict(kind, star) {
+  if (!star) return null;
+  const key = FURNITURE_MATRIX[kind];
+  if (!key) return null;
+  if (key === 'auspicious') {
+    return AUSPICIOUS.includes(star) ? `${star}吉方,適合安座` : `${star}屬凶方,傳統上不宜安座`;
+  }
+  const rule = USAGE_MATRIX[key] && USAGE_MATRIX[key][star];
+  if (!rule) return null;
+  const phrase = RATING_PHRASE[rule.rating] || '一般';
+  return `${star}位・${phrase}${rule.note ? `(${rule.note})` : ''}`;
+}
+
+/**
  * 將家具診斷轉成報告卡片
  */
 export function buildFurnitureCards(items) {
   return (items || []).map((it) => {
     const label = FURNITURE_KIND_LABEL[it.kind] || '家具';
-    const starLine = it.star ? `落在${it.dir}方(屬${it.gua}宮,此方位吉星為「${it.star}」)` : '方位未知(需先量好朝向)';
-    const cautionLine = it.cautions.length ? `注意:${it.cautions.join('。')}。` : '';
+    const verdict = furnitureVerdict(it.kind, it.star);
+    const dirLine = it.star
+      ? `落在${it.dir}方(${it.gua}宮),此方位對外為「${it.star}」`
+      : '方位待補(需先量好房子朝向)';
+    const lines = [`${label}中心${dirLine}。`];
+    if (verdict) lines.push(`就這件家具而言:${verdict}。`);
+    if (it.cautions.length) lines.push(`需留意:${it.cautions.join(';')}。`);
+    const bad = verdict && /避開|不宜/.test(verdict);
     return {
       id: `furniture.${it.id}`,
       headline: `${label}位置分析`,
-      badges: ['實體擺設', it.star ? '已對照方位' : '方位待補'],
-      body: `${label}中心${starLine}。${cautionLine}`,
-      level: it.cautions.length ? 'caution' : 'good',
+      badges: ['實體擺設', it.star ? '已對照方位' : '方位待補', bad ? '方位需調整' : '方位合宜'].filter(Boolean),
+      body: lines.join(''),
+      level: (it.cautions.length || bad) ? 'caution' : 'good',
     };
   });
 }

@@ -3,8 +3,16 @@
 // 純函式,不碰 DOM。
 
 import { GUA, DIR8 } from '../../core/geo.js';
+import { FURNITURE_LABEL } from './labels.js';
 
 export const STAR_NAME = Object.freeze({ 1: '一白', 2: '二黑', 3: '三碧', 4: '四綠', 5: '五黃', 6: '六白', 7: '七赤', 8: '八白', 9: '九紫' });
+
+/** 家具種類的白話名(取標籤主名,去掉括號說明) */
+export function furnitureKindLabel(kind) {
+  const raw = FURNITURE_LABEL[kind] || '家具';
+  return raw.split(/[ (（]/)[0];
+}
+
 const GOOD_BAZHAI = Object.freeze(['生氣', '延年', '天醫', '伏位']);
 
 /** 圖層清單。id 存在 store.ui.layer;label 是畫面上的字 */
@@ -140,9 +148,9 @@ const tierPhrase = (tone) => (tone === 'good' ? '傳統上視為吉位' : '傳�
  * @param {string} gua 卦名
  * @param {{palaces?:object, roomNames?:Map<string,string>, layerId?:string}} ctx
  */
-export function sectorDetails(report, rendered, gua, { palaces = null, roomNames = new Map(), layerId = 'wealth' } = {}) {
+export function sectorDetails(report, rendered, gua, { palaces = null, roomNames = new Map(), layerId = 'wealth', furniture = null } = {}) {
   const k = GUA.indexOf(gua);
-  const out = { gua, title: sectorName(gua), rooms: [], lines: [], cards: [] };
+  const out = { gua, title: sectorName(gua), rooms: [], lines: [], cards: [], furniture: [] };
   if (k < 0 || !isObj(report) || report.error) return out;
 
   // 這個方位落在哪些房間
@@ -207,6 +215,20 @@ export function sectorDetails(report, rendered, gua, { palaces = null, roomNames
   const wc = layerCells(report, 'wealth');
   if (wc.ok && wc.cells[gua].label) {
     out.lines.push({ layer: 'wealth', label: '財位', text: `在你家八個方位裡,財星條件算「${wc.cells[gua].label}」(只是這個家內部的相對比較)`, tone: wc.cells[gua].tone });
+  }
+
+  // 家具:落在這個方位的有哪些(由呼叫端傳入診斷清單)
+  if (Array.isArray(furniture) && furniture.length) {
+    const here = furniture.filter((f) => f && f.gua === gua);
+    if (here.length) {
+      out.lines.push({
+        layer: 'furniture',
+        label: '家具擺設',
+        text: `這個方位有 ${here.length} 件家具:${here.map((f) => `${furnitureKindLabel(f.kind)}${f.cautions && f.cautions.length ? '(需留意)' : ''}`).join('、')}`,
+        tone: here.some((f) => f.cautions && f.cautions.length) ? 'warn' : 'neutral',
+      });
+      out.furniture = here;
+    }
   }
 
   // 卡片:這個方位的候選財位卡 + 玄空各宮卡(標題以「X宮(」開頭)

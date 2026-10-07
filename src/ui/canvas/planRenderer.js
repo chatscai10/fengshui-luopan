@@ -374,6 +374,7 @@ function drawRoomLabels(ctx, view, st, pal, boxes) {
 
 function drawFurniture(ctx, view, st, pal) {
   const sel = st.selection && st.selection.type === 'furniture' ? st.selection.id : null;
+  const warnSet = st.furnitureWarn instanceof Set ? st.furnitureWarn : new Set();
   for (const f of planFurniture(st.plan)) {
     if (!isNum(f.x) || !isNum(f.y) || !isNum(f.w) || !isNum(f.d)) continue;
     const [px0, py0] = view.toPx([f.x, f.y + f.d]);
@@ -382,11 +383,12 @@ function drawFurniture(ctx, view, st, pal) {
     const h = py1 - py0;
     if (w < 2 || h < 2) continue;
     const selected = f.id === sel;
+    const warned = warnSet.has(f.id);
     ctx.save();
-    // 底色:半透明,壓在房間色上還看得出房間類型
-    ctx.fillStyle = alphaColor(pal.gold, selected ? 0.34 : 0.16);
-    ctx.strokeStyle = selected ? pal.goldBright : alphaColor(pal.goldBright, 0.7);
-    ctx.lineWidth = selected ? 1.8 : 1.2;
+    // 底色:半透明,壓在房間色上還看得出房間類型;有避忌的用陶土色標示
+    ctx.fillStyle = warned ? alphaColor(pal.terracotta, selected ? 0.4 : 0.22) : alphaColor(pal.gold, selected ? 0.34 : 0.16);
+    ctx.strokeStyle = selected ? pal.goldBright : warned ? pal.terracotta : alphaColor(pal.goldBright, 0.7);
+    ctx.lineWidth = selected ? 1.8 : warned ? 1.6 : 1.2;
     ctx.beginPath();
     const r = Math.min(4, w / 4, h / 4);
     ctx.moveTo(px0 + r, py0);
@@ -438,6 +440,24 @@ function drawFurniture(ctx, view, st, pal) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(fitText(ctx, short, w - 6, 11, 8), (px0 + px1) / 2, (py0 + py1) / 2);
+    }
+    // 有避忌的家具:右上角一個小警示角標(避免只有顏色,色盲也看得出)
+    if (warned && w > 16 && h > 12) {
+      const s = 7;
+      const bx = px1 - s;
+      const by = py0;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.lineTo(bx + s, by);
+      ctx.lineTo(bx + s, by + s);
+      ctx.closePath();
+      ctx.fillStyle = pal.cinnabar;
+      ctx.fill();
+      ctx.fillStyle = pal.surface;
+      ctx.font = `700 9px ${UI_STACK}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('!', bx + s * 0.62, by + s * 0.42);
     }
     ctx.restore();
   }

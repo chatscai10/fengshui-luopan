@@ -22,7 +22,7 @@ test('報告模型:總覽三個重點、分區、附錄與四段免責', () => {
   assert.equal(model.overview.points[1].sub, '較適合');
   assert.match(model.overview.points[2].value, /五黃在南方/);
   assert.ok(model.overview.paragraphs.length >= 4);
-  assert.deepEqual(model.sections.map((s) => s.id), ['orientation', 'bazhai', 'wealth', 'xuankong', 'annual', 'rooms', 'traditional']);
+  assert.deepEqual(model.sections.map((s) => s.id), ['orientation', 'bazhai', 'wealth', 'xuankong', 'annual', 'rooms', 'placement', 'traditional']);
   assert.equal(model.appendix.disclaimers.length, 4);
   assert.equal(model.appendix.sources.length, SOURCE_NOTES.length);
 });

@@ -7,13 +7,12 @@ import { zhPunct } from '../punct.js';
 import { renderReport } from '../../core/copy.js';
 import { DEFAULT_SETTINGS } from '../../core/settings.js';
 import { DIR8, DECLINATION_MODEL } from '../../core/geo.js';
-import { taijiPoint } from '../../core/plan.js';
 import { AUSPICIOUS_STARS } from '../../core/bazhai.js';
 import { badgeClass, renderInfoCard, TIER_LABEL, sanitizePage, safeReport } from './wealth.js';
 import {
   buildChartGridModel, buildAnnualGridModel, renderStarGrid, drawStarGrid, gridToText,
 } from '../canvas/starGrid.js';
-import { buildPlacementCards, buildPlacementBlock } from '../../core/placement.js';
+import { buildPlacementBlock } from '../../core/placement.js';
 import { cssVar, KAI_STACK, UI_STACK } from '../canvas/canvasUtil.js';
 
 // ─────────────────────────── 資料模型(純函式) ───────────────────────────
@@ -148,6 +147,11 @@ export function buildReportModel(state, report, rawPage) {
   const chart = buildChartGridModel(report);
   const annualGrid = buildAnnualGridModel(report);
   const xk = cardsOf(page, 'xuankong');
+  const placement = buildPlacementBlock(report, {
+    plan: (state && state.plan) || null,
+    taiji: (report.planShares && report.planShares.taiji) || null,
+    up: report.planShares && Number.isFinite(report.planShares.planUpBearing) ? report.planShares.planUpBearing : null,
+  });
   const sections = [
     { id: 'orientation', title: '你家的方位', hint: SECTION_HINT.orientation, cards: cardsOf(page, 'orientation') },
     { id: 'bazhai', title: '命卦與八宅', hint: SECTION_HINT.bazhai, cards: cardsOf(page, 'ming'), bazhai: buildBazhaiBlock(report), needResidents: (report.bazhai.residents || []).length === 0 },
@@ -155,6 +159,7 @@ export function buildReportModel(state, report, rawPage) {
     { id: 'xuankong', title: '玄空飛星與星盤', hint: SECTION_HINT.xuankong, cards: xk.filter((c) => !c.id.startsWith('xk.room.')), grid: chart, needYear: !chart, limit: 6 },
     { id: 'annual', title: '流年盤與太歲三煞', hint: SECTION_HINT.annual, cards: cardsOf(page, 'annual'), grid: annualGrid },
     { id: 'rooms', title: '各房間建議', hint: SECTION_HINT.rooms, cards: xk.filter((c) => c.id.startsWith('xk.room.')) },
+    { id: 'placement', title: '室內重點擺設與禁忌', hint: SECTION_HINT.placement, cards: (placement && placement.cards) || [] },
     { id: 'traditional', title: '傳統說法與少數派', hint: SECTION_HINT.traditional, cards: cardsOf(page, 'traditional') },
   ];
   return {
@@ -561,27 +566,6 @@ export async function mount(root, ctx) {
       add(collapsible(s.id, s.title, sectionBody(s, ctx), {
         count: s.cards.length ? `${s.cards.length} 則` : null,
         note: cautions ? '需要留意' : null,
-      }));
-    }
-
-    // 重點擺設方針 (床位、書桌、廚房爐灶與避忌提示)
-    const plState = state || {};
-    let taiji = null;
-    let up = null;
-    try {
-      const enginePlan = ctx.store.input().plan;
-      if (enginePlan && Number.isFinite(enginePlan.planUpBearing)) up = enginePlan.planUpBearing;
-      if (enginePlan) taiji = taijiPoint(enginePlan, plState.settings || {}).point;
-    } catch { /* 方位未知就只做通則分析 */ }
-    const placeBlock = buildPlacementBlock(report, { plan: plState.plan, taiji, up });
-    if (placeBlock && placeBlock.cards && placeBlock.cards.length) {
-      const pCautions = placeBlock.cards.filter((c) => c.level === 'caution').length;
-      add(collapsible('placement', '室內重點擺設與禁忌', [
-        h('p', { class: 'sub v-report-hint' }, SECTION_HINT.placement),
-        cardList(placeBlock.cards),
-      ], {
-        count: `${placeBlock.cards.length} 則`,
-        note: pCautions ? '需要留意' : null,
       }));
     }
 
