@@ -525,6 +525,13 @@ export function applyRoomRect(plan, roomId, newRect) {
     const nm = (id) => roomDisplayName(plan, planRooms(plan).find((r) => r.id === id));
     return { error: `「${nm(roomId)}」不能和「${nm(otherId)}」重疊` };
   }
+  // 房間移動或調整後,自動重算受影響家具的所屬房間
+  for (const f of planFurniture(plan)) {
+    const cx = f.x + (Number(f.w) || 0) / 2;
+    const cy = f.y + (Number(f.d) || 0) / 2;
+    const rid = hitRoom(plan, [cx, cy]);
+    if (rid) f.roomId = rid;
+  }
   fitOutline(plan);
   return { ok: true, removed };
 }
@@ -612,8 +619,11 @@ export function removeRoom(plan, id) {
   const gone = planOpenings(plan).filter((o) => o.roomId === id).map((o) => o.id);
   plan.openings = planOpenings(plan).filter((o) => o.roomId !== id);
   if (gone.includes(plan.mainDoor)) plan.mainDoor = null;
+  // 連帶移除該房間內的家具(避免孤兒家具懸空)
+  const goneFurn = planFurniture(plan).filter((f) => f.roomId === id).map((f) => f.id);
+  plan.furniture = planFurniture(plan).filter((f) => f.roomId !== id);
   fitOutline(plan);
-  return { ok: true, removedOpenings: gone };
+  return { ok: true, removedOpenings: gone, removedFurniture: goneFurn };
 }
 
 export function setRoomType(plan, id, type) {
