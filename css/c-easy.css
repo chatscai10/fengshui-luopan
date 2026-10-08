@@ -15,12 +15,9 @@
   transform-origin: 50% 50%;
 }
 .c-dial-label {
-  transform-box: fill-box;
-  transform-origin: center;
   fill: var(--text);
 }
-.c-dial--anim .c-dial-rot,
-.c-dial--anim .c-dial-label {
+.c-dial--anim .c-dial-rot {
   transition: transform 120ms linear;
 }
 .c-dial-face { fill: var(--surface-2); }
@@ -34,8 +31,7 @@
 .c-dial-idle .c-dial-rot { opacity: 0.45; }
 .c-dial-idle .c-dial-sector { fill: none; stroke: none; }
 @media (prefers-reduced-motion: reduce) {
-  .c-dial--anim .c-dial-rot,
-  .c-dial--anim .c-dial-label { transition: none; }
+  .c-dial--anim .c-dial-rot { transition: none; }
 }
 
 /* ── 平面圖預覽 ── */

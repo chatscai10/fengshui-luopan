@@ -106,7 +106,6 @@ export function mountDirDial(container, { size = 240, pointerLabel = EASY_TEXT['
       const hd = normalizeBearing(headingDeg);
       angle = dialAngleToward(angle, hd);
       rot.style.transform = `rotate(${angle.toFixed(2)}deg)`;
-      for (const t of labels) t.style.transform = `rotate(${(-angle).toFixed(2)}deg)`;
       const index = Math.floor(((hd + 22.5) % 360) / 45) % 8;
       if (index !== lastIndex) {
         lastIndex = index;
